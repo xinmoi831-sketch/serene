@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serene — API Tester</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f8fafc;color:#1a1d23;padding:2rem}
+h1{font-size:22px;margin-bottom:4px}
+.sub{color:#6b7280;font-size:14px;margin-bottom:2rem}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:1.25rem}
+.card h2{font-size:15px;margin-bottom:1rem;color:#111}
+label{display:block;font-size:12px;color:#6b7280;margin-bottom:4px;margin-top:10px}
+input,textarea{width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:13px;font-family:inherit}
+input:focus,textarea:focus{outline:none;border-color:#6366f1}
+button{margin-top:12px;width:100%;padding:9px;background:#1a1d23;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer}
+button:hover{background:#374151}
+button:disabled{background:#9ca3af;cursor:not-allowed}
+.result{margin-top:10px;background:#f1f5f9;border-radius:7px;padding:10px;font-size:12px;font-family:monospace;white-space:pre-wrap;word-break:break-all;max-height:180px;overflow-y:auto;color:#1a1d23}
+.ok{border-left:3px solid #22c55e}
+.err{border-left:3px solid #ef4444}
+.token-box{background:#fefce8;border:1px solid #fde68a;border-radius:7px;padding:10px;font-size:11px;font-family:monospace;word-break:break-all;margin-bottom:1rem}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.b-green{background:#dcfce7;color:#15803d}
+.b-red{background:#fee2e2;color:#dc2626}
+.status-bar{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px;margin-bottom:1.5rem;font-size:13px}
+</style>
+</head>
+<body>
+
+<h1>🌿 Serene API Tester</h1>
+<p class="sub">Test your backend directly in the browser — no Postman needed</p>
+
+<div class="status-bar">
+  <span id="serverStatus">⏳ Checking server...</span>
+  <span id="tokenStatus" style="margin-left:auto"></span>
+</div>
+
+<div id="tokenArea" style="display:none">
+  <div style="font-size:12px;color:#6b7280;margin-bottom:4px">Your login token (auto-used in requests)</div>
+  <div class="token-box" id="tokenDisplay">No token yet — register or login first</div>
+</div>
+
+<div class="grid">
+
+  <!-- REGISTER -->
+  <div class="card">
+    <h2>1. Register account</h2>
+    <label>Name</label>
+    <input id="reg-name" value="Test User" />
+    <label>Email</label>
+    <input id="reg-email" value="test@gmail.com" />
+    <label>Password</label>
+    <input id="reg-pass" type="password" value="password123" />
+    <button onclick="register()">Register →</button>
+    <div class="result" id="reg-result" style="display:none"></div>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="card">
+    <h2>2. Login</h2>
+    <label>Email</label>
+    <input id="login-email" value="test@gmail.com" />
+    <label>Password</label>
+    <input id="login-pass" type="password" value="password123" />
+    <button onclick="login()">Login →</button>
+    <div class="result" id="login-result" style="display:none"></div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="card">
+    <h2>3. Send AI message</h2>
+    <label>Mood</label>
+    <input id="chat-mood" value="okay" />
+    <label>Message</label>
+    <textarea id="chat-msg" rows="3">I've been feeling stressed lately with work</textarea>
+    <button onclick="sendChat()">Send to AI →</button>
+    <div class="result" id="chat-result" style="display:none"></div>
+  </div>
+
+  <!-- MOOD -->
+  <div class="card">
+    <h2>4. Log mood</h2>
+    <label>Mood (good / okay / low / distressed)</label>
+    <input id="mood-val" value="okay" />
+    <label>Note (optional)</label>
+    <input id="mood-note" value="Feeling a bit tired today" />
+    <button onclick="logMood()">Log mood →</button>
+    <div class="result" id="mood-result" style="display:none"></div>
+  </div>
+
+  <!-- JOURNAL -->
+  <div class="card">
+    <h2>5. Save journal entry</h2>
+    <label>Entry</label>
+    <textarea id="journal-content" rows="3">Today was challenging but I managed to get through it.</textarea>
+    <button onclick="saveJournal()">Save entry →</button>
+    <div class="result" id="journal-result" style="display:none"></div>
+  </div>
+
+  <!-- PLANS -->
+  <div class="card">
+    <h2>6. View subscription plans</h2>
+    <p style="font-size:13px;color:#6b7280;margin-top:6px">See all available plans including Visa, Mastercard and PayPal options</p>
+    <button onclick="getPlans()">Get plans →</button>
+    <div class="result" id="plans-result" style="display:none"></div>
+  </div>
+
+</div>
+
+<script>
+let token = localStorage.getItem("serene_token") || "";
+
+function updateTokenDisplay() {
+  const ta = document.getElementById("tokenArea");
+  const td = document.getElementById("tokenDisplay");
+  const ts = document.getElementById("tokenStatus");
+  if (token) {
+    ta.style.display = "block";
+    td.textContent = token.slice(0, 60) + "...";
+    ts.innerHTML = '<span class="badge b-green">✓ Logged in</span>';
+  } else {
+    td.textContent = "No token yet — register or login first";
+    ts.innerHTML = '<span class="badge b-red">Not logged in</span>';
+  }
+}
+
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { "Content-Type": "application/json" },
+  };
+  if (token) opts.headers["Authorization"] = "Bearer " + token;
+  if (body)  opts.body = JSON.stringify(body);
+  const res = await fetch(path, opts);
+  const data = await res.json();
+  return { ok: res.ok, status: res.status, data };
+}
+
+function show(id, result) {
+  const el = document.getElementById(id);
+  el.style.display = "block";
+  el.className = "result " + (result.ok ? "ok" : "err");
+  el.textContent = JSON.stringify(result.data, null, 2);
+}
+
+async function checkServer() {
+  try {
+    const r = await fetch("/");
+    const d = await r.json();
+    document.getElementById("serverStatus").textContent = "✅ Server running — " + d.app;
+  } catch {
+    document.getElementById("serverStatus").textContent = "❌ Server not responding";
+  }
+}
+
+async function register() {
+  const r = await api("POST", "/api/auth/register", {
+    name:     document.getElementById("reg-name").value,
+    email:    document.getElementById("reg-email").value,
+    password: document.getElementById("reg-pass").value,
+  });
+  if (r.ok && r.data.token) {
+    token = r.data.token;
+    localStorage.setItem("serene_token", token);
+    updateTokenDisplay();
+  }
+  show("reg-result", r);
+}
+
+async function login() {
+  const r = await api("POST", "/api/auth/login", {
+    email:    document.getElementById("login-email").value,
+    password: document.getElementById("login-pass").value,
+  });
+  if (r.ok && r.data.token) {
+    token = r.data.token;
+    localStorage.setItem("serene_token", token);
+    updateTokenDisplay();
+  }
+  show("login-result", r);
+}
+
+async function sendChat() {
+  if (!token) return alert("Please register or login first.");
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = "Waiting for AI...";
+  const r = await api("POST", "/api/chat/message", {
+    message: document.getElementById("chat-msg").value,
+    mood:    document.getElementById("chat-mood").value,
+  });
+  btn.disabled = false;
+  btn.textContent = "Send to AI →";
+  show("chat-result", r);
+}
+
+async function logMood() {
+  if (!token) return alert("Please register or login first.");
+  const r = await api("POST", "/api/journal/mood", {
+    mood: document.getElementById("mood-val").value,
+    note: document.getElementById("mood-note").value,
+  });
+  show("mood-result", r);
+}
+
+async function saveJournal() {
+  if (!token) return alert("Please register or login first.");
+  const r = await api("POST", "/api/journal/entry", {
+    content: document.getElementById("journal-content").value,
+  });
+  show("journal-result", r);
+}
+
+async function getPlans() {
+  const r = await api("GET", "/api/subscription/plans");
+  show("plans-result", r);
+}
+
+checkServer();
+updateTokenDisplay();
+</script>
+</body>
+</html>

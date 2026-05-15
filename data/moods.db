@@ -1,0 +1,3 @@
+{"id":"73908d26-a501-4939-a858-28745bb7f43d","userId":"0eba2f36-ac0d-401d-ab95-0c769c818673","mood":"distressed","note":null,"createdAt":"2026-05-15T13:39:18.726Z","_id":"M6LKSLKSJRBVErKC"}
+{"$$indexCreated":{"fieldName":"userId","unique":false,"sparse":false}}
+{"$$indexCreated":{"fieldName":"userId"}}

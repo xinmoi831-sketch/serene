@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<title>Serene</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css"/>
+<link rel="stylesheet" href="/css/style.css"/>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+.auth-wrap{min-height:100vh;display:none;flex-direction:row}
+.auth-wrap.active{display:flex}
+.auth-left{display:none;flex:1;position:relative;overflow:hidden;background:#050810}
+@media(min-width:768px){.auth-left{display:block}}
+.auth-photo{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.2s}
+.auth-photo.active{opacity:1}
+.auth-photo::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(10,15,30,0.75),rgba(99,102,241,0.2))}
+.auth-right{width:100%;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2rem 1.5rem;background:linear-gradient(160deg,#0a0f1e,#0d1428)}
+@media(min-width:768px){.auth-right{width:420px}}
+.auth-inner{width:100%;max-width:360px}
+.float-card{position:absolute;z-index:10;background:rgba(10,15,30,0.85);backdrop-filter:blur(20px);border:0.5px solid rgba(255,255,255,0.15);border-radius:16px;padding:14px 18px;color:#f0f4ff;font-family:Inter,sans-serif;animation:floatUp 6s ease-in-out infinite}
+@keyframes floatUp{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.marquee-wrap{position:absolute;bottom:0;left:0;right:0;z-index:20;overflow:hidden;background:linear-gradient(90deg,rgba(10,15,30,0.9),rgba(99,102,241,0.25),rgba(10,15,30,0.9));padding:10px 0}
+.marquee-track{display:flex;gap:60px;width:max-content;animation:marquee 24s linear infinite}
+.marquee-item{font-size:13px;font-weight:500;color:rgba(255,255,255,0.8);white-space:nowrap;font-family:Inter,sans-serif}
+.marquee-item span{color:#a5b4fc;margin:0 6px}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.photo-dots{position:absolute;bottom:8%;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:20}
+.photo-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.3);cursor:pointer;transition:all .3s}
+.photo-dot.active{background:#818cf8;transform:scale(1.4)}
+.auth-quote{position:absolute;bottom:16%;left:0;right:0;z-index:10;padding:0 32px;text-align:center}
+.auth-quote-text{font-family:'Playfair Display',serif;font-style:italic;font-size:17px;color:rgba(255,255,255,0.9);line-height:1.6;text-shadow:0 2px 12px rgba(0,0,0,0.5)}
+.auth-quote-author{font-size:12px;color:rgba(255,255,255,0.5);margin-top:8px}
+.code-row{display:flex;gap:8px;justify-content:center;margin:16px 0}
+.code-box{width:46px;height:54px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius);font-size:22px;font-weight:600;color:var(--text);text-align:center;font-family:Inter,sans-serif}
+.code-box:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- DRAWER OVERLAY -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+<!-- DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-logo serif">🌿 Serene</div>
+    <div class="drawer-tagline">Your mental wellness companion</div>
+    <div class="drawer-user">
+      <div class="drawer-avatar" id="drawerAvatar">?</div>
+      <div>
+        <div class="drawer-username" id="drawerUsername">Loading...</div>
+        <div class="drawer-email" id="drawerEmail"></div>
+      </div>
+    </div>
+  </div>
+  <nav class="drawer-nav">
+    <div class="drawer-section-label">Menu</div>
+    <button class="drawer-nav-item active" data-tab="chat" onclick="navigateTo('chat');closeDrawer()">
+      <i class="ti ti-message-circle drawer-nav-icon"></i>
+      <span class="drawer-nav-label">Chat</span>
+    </button>
+    <button class="drawer-nav-item" data-tab="journal" onclick="navigateTo('journal');closeDrawer()">
+      <i class="ti ti-notebook drawer-nav-icon"></i>
+      <span class="drawer-nav-label">Journal</span>
+    </button>
+    <button class="drawer-nav-item" data-tab="insights" onclick="navigateTo('insights');closeDrawer()">
+      <i class="ti ti-chart-line drawer-nav-icon"></i>
+      <span class="drawer-nav-label">Insights</span>
+    </button>
+    <div class="drawer-divider"></div>
+    <div class="drawer-section-label">Account</div>
+    <button class="drawer-nav-item" data-tab="settings" onclick="navigateTo('settings');closeDrawer()">
+      <i class="ti ti-settings drawer-nav-icon"></i>
+      <span class="drawer-nav-label">Settings</span>
+    </button>
+    <button class="drawer-nav-item" onclick="showPlans();closeDrawer()">
+      <i class="ti ti-crown drawer-nav-icon"></i>
+      <span class="drawer-nav-label">Upgrade to Pro</span>
+      <span class="drawer-nav-badge">7 days free</span>
+    </button>
+  </nav>
+  <div class="drawer-footer">
+    <div class="drawer-plan-chip" id="drawerPlanChip">Free plan</div>
+    <button class="btn btn-outline btn-sm" onclick="doLogout()" style="width:100%">
+      <i class="ti ti-logout"></i> Log out
+    </button>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div class="auth-wrap" id="page-login">
+  <div class="auth-left">
+    <div class="auth-photo active" id="photo0" style="background-image:url('https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&q=80')"></div>
+    <div class="auth-photo" id="photo1" style="background-image:url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80')"></div>
+    <div class="auth-photo" id="photo2" style="background-image:url('https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=800&q=80')"></div>
+    <div class="float-card" style="bottom:18%;left:6%;animation-delay:0s">
+      <div style="font-size:22px;margin-bottom:6px">🧠</div>
+      <div style="font-size:11px;color:#8b9dc3;text-transform:uppercase;letter-spacing:.07em">Mental health matters</div>
+      <div style="font-size:15px;font-weight:600;color:#a5b4fc;margin-top:2px">You are not alone</div>
+    </div>
+    <div class="float-card" style="top:20%;right:6%;animation-delay:2.5s">
+      <div style="font-size:22px;margin-bottom:6px">💊</div>
+      <div style="font-size:11px;color:#8b9dc3;text-transform:uppercase;letter-spacing:.07em">AI-powered guidance</div>
+      <div style="font-size:15px;font-weight:600;color:#a5b4fc;margin-top:2px">24/7 support</div>
+    </div>
+    <div class="auth-quote">
+      <div class="auth-quote-text" id="quoteText">"The greatest wealth is health."</div>
+      <div class="auth-quote-author" id="quoteAuthor">— Virgil</div>
+    </div>
+    <div class="photo-dots">
+      <div class="photo-dot active" onclick="goToPhoto(0)"></div>
+      <div class="photo-dot" onclick="goToPhoto(1)"></div>
+      <div class="photo-dot" onclick="goToPhoto(2)"></div>
+    </div>
+    <div class="marquee-wrap">
+      <div class="marquee-track">
+        <span class="marquee-item">Your mental health is our priority <span>*</span></span>
+        <span class="marquee-item">You are never alone <span>*</span></span>
+        <span class="marquee-item">Evidence-based care, available 24/7 <span>*</span></span>
+        <span class="marquee-item">Compassionate AI wellness support <span>*</span></span>
+        <span class="marquee-item">Your mental health is our priority <span>*</span></span>
+        <span class="marquee-item">You are never alone <span>*</span></span>
+        <span class="marquee-item">Evidence-based care, available 24/7 <span>*</span></span>
+        <span class="marquee-item">Compassionate AI wellness support <span>*</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-inner">
+      <div style="text-align:center;margin-bottom:2rem">
+        <div style="font-size:48px;margin-bottom:12px">🌿</div>
+        <h1 style="font-size:32px;font-weight:700;background:linear-gradient(135deg,#a5b4fc,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:'Playfair Display',serif">Serene</h1>
+        <p style="font-size:14px;color:var(--text2);margin-top:6px">Your mental wellness companion</p>
+      </div>
+      <div class="glass-strong" style="padding:1.75rem">
+        <div id="loginAlert" class="alert"></div>
+        <div class="input-group">
+          <label>Email address</label>
+          <input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com"/>
+        </div>
+        <div class="input-group">
+          <label>Password</label>
+          <input id="loginPass" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/>
+        </div>
+        <button class="btn btn-primary" id="loginBtn" onclick="doLogin()" style="margin-top:4px">
+          <i class="ti ti-login"></i> Log in
+        </button>
+        <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
+          <div style="flex:1;height:0.5px;background:var(--border)"></div>
+          <span style="font-size:12px;color:var(--text3)">or</span>
+          <div style="flex:1;height:0.5px;background:var(--border)"></div>
+        </div>
+        <button class="btn btn-outline" onclick="signInWithGoogle()" style="gap:10px;margin-bottom:12px">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
+          Continue with Google
+        </button>
+        <p style="text-align:center;font-size:13px;color:var(--text2)">
+          Don't have an account?
+          <a href="#" onclick="showPage('register')" style="color:var(--accent2);text-decoration:none;font-weight:500"> Create account</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div class="auth-wrap" id="page-register">
+  <div class="auth-left">
+    <div class="auth-photo active" style="background-image:url('https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=800&q=80')"></div>
+    <div class="float-card" style="bottom:18%;left:6%">
+      <div style="font-size:22px;margin-bottom:6px">🩺</div>
+      <div style="font-size:11px;color:#8b9dc3;text-transform:uppercase;letter-spacing:.07em">Professional guidance</div>
+      <div style="font-size:15px;font-weight:600;color:#a5b4fc;margin-top:2px">Evidence-based care</div>
+    </div>
+    <div class="float-card" style="top:20%;right:6%;animation-delay:2s">
+      <div style="font-size:22px;margin-bottom:6px">🔒</div>
+      <div style="font-size:11px;color:#8b9dc3;text-transform:uppercase;letter-spacing:.07em">Your data is safe</div>
+      <div style="font-size:15px;font-weight:600;color:#a5b4fc;margin-top:2px">End-to-end encrypted</div>
+    </div>
+    <div class="auth-quote">
+      <div class="auth-quote-text">"Taking care of your mental health is just as important as your physical health."</div>
+      <div class="auth-quote-author">— World Health Organization</div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-inner">
+      <div style="text-align:center;margin-bottom:2rem">
+        <div style="font-size:48px;margin-bottom:12px">🌿</div>
+        <h1 style="font-size:32px;font-weight:700;background:linear-gradient(135deg,#a5b4fc,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:'Playfair Display',serif">Serene</h1>
+        <p style="font-size:14px;color:var(--text2);margin-top:6px">Create your free account</p>
+      </div>
+      <div class="glass-strong" style="padding:1.75rem">
+        <div id="regAlert" class="alert"></div>
+        <div class="input-group">
+          <label>Your name</label>
+          <input id="regName" type="text" autocomplete="name" placeholder="Your name"/>
+        </div>
+        <div class="input-group">
+          <label>Email address</label>
+          <input id="regEmail" type="email" autocomplete="email" placeholder="you@example.com"/>
+        </div>
+        <div class="input-group">
+          <label>Password</label>
+          <input id="regPass" type="password" autocomplete="new-password" placeholder="Minimum 8 characters" onkeydown="if(event.key==='Enter')doRegister()"/>
+        </div>
+        <button class="btn btn-primary" id="regBtn" onclick="doRegister()" style="margin-top:4px">
+          <i class="ti ti-user-plus"></i> Create account
+        </button>
+        <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
+          <div style="flex:1;height:0.5px;background:var(--border)"></div>
+          <span style="font-size:12px;color:var(--text3)">or</span>
+          <div style="flex:1;height:0.5px;background:var(--border)"></div>
+        </div>
+        <button class="btn btn-outline" onclick="signInWithGoogle()" style="gap:10px">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
+          Continue with Google
+        </button>
+        <p style="text-align:center;font-size:13px;margin-top:12px;color:var(--text2)">
+          Already have an account?
+          <a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none;font-weight:500"> Log in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VERIFY EMAIL -->
+<div class="page" id="page-verify" style="background:linear-gradient(160deg,#0a0f1e,#0d1428)">
+  <div class="container" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:2rem 0">
+    <div style="text-align:center;margin-bottom:2rem">
+      <div style="font-size:48px;margin-bottom:12px">📧</div>
+      <h2>Verify your email</h2>
+      <p style="font-size:14px;color:var(--text2);margin-top:8px">We sent a 6-digit code to <strong id="verifyEmailDisplay" style="color:var(--accent2)">your email</strong></p>
+    </div>
+    <div class="glass-strong" style="padding:1.75rem">
+      <div id="verifyAlert" class="alert"></div>
+      <p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:4px">Enter verification code</p>
+      <div class="code-row">
+        <input class="code-box" id="vd0" maxlength="1" oninput="codeInput(this,0,'v')" onkeydown="codeBack(event,0,'v')"/>
+        <input class="code-box" id="vd1" maxlength="1" oninput="codeInput(this,1,'v')" onkeydown="codeBack(event,1,'v')"/>
+        <input class="code-box" id="vd2" maxlength="1" oninput="codeInput(this,2,'v')" onkeydown="codeBack(event,2,'v')"/>
+        <input class="code-box" id="vd3" maxlength="1" oninput="codeInput(this,3,'v')" onkeydown="codeBack(event,3,'v')"/>
+        <input class="code-box" id="vd4" maxlength="1" oninput="codeInput(this,4,'v')" onkeydown="codeBack(event,4,'v')"/>
+        <input class="code-box" id="vd5" maxlength="1" oninput="codeInput(this,5,'v')" onkeydown="codeBack(event,5,'v')"/>
+      </div>
+      <button class="btn btn-primary" id="verifyBtn" onclick="submitVerification()">Verify</button>
+      <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)">
+        Didn't get it? <a href="#" onclick="resendVerification()" style="color:var(--accent2);text-decoration:none">Resend code</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- 2FA -->
+<div class="page" id="page-2fa" style="background:linear-gradient(160deg,#0a0f1e,#0d1428)">
+  <div class="container" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:2rem 0">
+    <div style="text-align:center;margin-bottom:2rem">
+      <div style="font-size:48px;margin-bottom:12px">🔐</div>
+      <h2>Two-factor authentication</h2>
+      <p style="font-size:14px;color:var(--text2);margin-top:8px">Enter the 6-digit code sent to your email</p>
+    </div>
+    <div class="glass-strong" style="padding:1.75rem">
+      <div id="twoFaAlert" class="alert"></div>
+      <div class="code-row">
+        <input class="code-box" id="td0" maxlength="1" oninput="codeInput(this,0,'t')" onkeydown="codeBack(event,0,'t')"/>
+        <input class="code-box" id="td1" maxlength="1" oninput="codeInput(this,1,'t')" onkeydown="codeBack(event,1,'t')"/>
+        <input class="code-box" id="td2" maxlength="1" oninput="codeInput(this,2,'t')" onkeydown="codeBack(event,2,'t')"/>
+        <input class="code-box" id="td3" maxlength="1" oninput="codeInput(this,3,'t')" onkeydown="codeBack(event,3,'t')"/>
+        <input class="code-box" id="td4" maxlength="1" oninput="codeInput(this,4,'t')" onkeydown="codeBack(event,4,'t')"/>
+        <input class="code-box" id="td5" maxlength="1" oninput="codeInput(this,5,'t')" onkeydown="codeBack(event,5,'t')"/>
+      </div>
+      <button class="btn btn-primary" id="twoFaBtn" onclick="submit2FA()">Verify</button>
+      <p style="text-align:center;font-size:13px;margin-top:14px">
+        <a href="#" onclick="showPage('login')" style="color:var(--text3);text-decoration:none">Back to login</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="page" id="page-app">
+  <div class="navbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="hamburger" id="hamburgerBtn" onclick="toggleDrawer()">
+        <span></span><span></span><span></span>
+      </button>
+      <div>
+        <div class="navbar-brand serif">Serene</div>
+        <div class="navbar-sub" id="currentTabLabel">Chat</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="userPlan"></span>
+      <div style="display:flex;flex-direction:column;align-items:center;cursor:default">
+        <span id="emotionTracker" style="font-size:22px;transition:all 0.4s ease">😐</span>
+        <span id="emotionLabel" style="font-size:9px;color:var(--text3);margin-top:1px">Neutral</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="tab-content" id="tab-chat" style="display:flex;flex-direction:column;flex:1">
+    <div class="mood-section">
+      <div class="mood-label">How are you feeling?</div>
+      <div class="mood-pills">
+        <button class="mood-pill" data-mood="good" onclick="setMood('good',this)">😊 Good</button>
+        <button class="mood-pill active" data-mood="okay" onclick="setMood('okay',this)">😐 Okay</button>
+        <button class="mood-pill" data-mood="low" onclick="setMood('low',this)">😔 Low</button>
+        <button class="mood-pill" data-mood="distressed" onclick="setMood('distressed',this)">😰 Distressed</button>
+      </div>
+    </div>
+    <div class="crisis-banner" id="crisisBanner" style="display:none">
+      <i class="ti ti-shield-heart" style="font-size:20px;flex-shrink:0"></i>
+      <div><strong>Need immediate support?</strong><br><span>Call or text 988 — available 24/7, free</span></div>
+    </div>
+    <div class="chat-area" id="chatMessages"></div>
+    <div class="chat-input-area">
+      <div class="chat-row">
+        <textarea class="chat-textarea" id="chatInput" rows="1" placeholder="Share what's on your mind…" onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0">
+          <div style="position:relative">
+            <button class="voice-mode-btn" id="voiceModeBtn" onclick="handleVoiceBtnClick()" title="Voice mode">
+              <i class="ti ti-microphone"></i>
+            </button>
+            <span id="voiceBadge" style="position:absolute;top:-6px;right:-6px;background:var(--accent);color:#fff;font-size:9px;font-weight:600;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--bg)">3</span>
+          </div>
+          <button class="voice-mode-btn" id="summaryBtn" onclick="summarizeChat()" title="Summarise" style="font-size:15px">📋</button>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+            <i class="ti ti-arrow-up"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOURNAL -->
+  <div class="tab-content" id="tab-journal" style="display:none;flex-direction:column;flex:1;overflow-y:auto">
+    <div class="container" style="padding-top:1.25rem;padding-bottom:120px;flex:1">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+        <h2>Journal</h2>
+        <button class="btn btn-outline btn-sm" onclick="showNewEntry()"><i class="ti ti-plus"></i> New entry</button>
+      </div>
+      <div id="newEntryForm" class="glass" style="display:none;margin-bottom:1.25rem;padding:1.25rem">
+        <div class="input-group">
+          <textarea id="journalContent" rows="5" placeholder="Write your thoughts…"></textarea>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;font-size:13px;color:var(--text2)">
+          <input type="checkbox" id="wantsReflection" style="width:auto;accent-color:var(--accent)"/>
+          <label for="wantsReflection" style="cursor:pointer">AI reflection (Pro)</label>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" id="saveEntryBtn" onclick="saveJournalEntry()" style="flex:1"><i class="ti ti-check"></i> Save entry</button>
+          <button class="btn btn-outline" onclick="hideNewEntry()" style="flex:0 0 auto;width:auto;padding:14px 18px"><i class="ti ti-x"></i></button>
+        </div>
+      </div>
+      <div id="journalList"></div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="tab-content" id="tab-insights" style="display:none;flex-direction:column;flex:1;overflow-y:auto">
+    <div class="container" style="padding-top:1.25rem;padding-bottom:120px;flex:1">
+      <h2 style="margin-bottom:1.25rem">Insights</h2>
+      <div id="insightsContent"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="tab-content" id="tab-settings" style="display:none;flex-direction:column;flex:1;overflow-y:auto">
+    <div class="container" style="padding-top:1.25rem;padding-bottom:120px;flex:1">
+      <h2 style="margin-bottom:1.25rem">Settings</h2>
+      <div class="glass" style="padding:1.25rem;margin-bottom:1rem">
+        <h3 style="margin-bottom:14px;color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:.08em">Account</h3>
+        <div class="settings-row"><span class="settings-label">Email</span><span class="settings-value" id="settingsEmail"></span></div>
+        <div class="settings-row">
+          <span class="settings-label">Two-factor auth</span>
+          <button id="toggle2faBtn" class="btn btn-outline btn-sm" onclick="toggle2FA()">Enable 2FA</button>
+        </div>
+        <div style="margin-top:14px">
+          <button class="btn btn-outline btn-sm" onclick="doLogout()"><i class="ti ti-logout"></i> Log out</button>
+        </div>
+      </div>
+      <div class="glass" style="padding:1.25rem;margin-bottom:1rem">
+        <h3 style="margin-bottom:14px;color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:.08em">Subscription</h3>
+        <div class="settings-row"><span class="settings-label">Current plan</span><span id="settingsPlan"></span></div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+          <button id="upgradeBtn" class="btn btn-primary" onclick="showPlans()"><i class="ti ti-crown"></i> Upgrade to Pro</button>
+          <button id="manageBtn" class="btn btn-outline" onclick="openPortal()" style="display:none"><i class="ti ti-settings"></i> Manage subscription</button>
+        </div>
+      </div>
+      <div class="glass" style="padding:1.25rem;border-color:rgba(244,63,94,0.3)">
+        <h3 style="margin-bottom:10px;color:var(--danger)">Danger zone</h3>
+        <p style="font-size:13px;margin-bottom:14px;color:var(--text2)">Permanently delete your account and all data.</p>
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteAccount()">Delete account</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav" style="display:none"></nav>
+</div>
+
+<!-- PLANS MODAL -->
+<div id="plansModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:400;align-items:flex-end;justify-content:center">
+  <div class="glass-strong" style="border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:1.75rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+      <h2>Choose a plan</h2>
+      <button onclick="hidePlans()" style="background:var(--surface2);border:0.5px solid var(--border);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="plansList"></div>
+    <p style="text-align:center;font-size:12px;color:var(--text3);margin-top:12px">Visa, Mastercard and PayPal accepted</p>
+  </div>
+</div>
+
+<!-- VOICE OVERLAY -->
+<div class="voice-overlay" id="voiceOverlay">
+  <button class="voice-close-btn" onclick="Voice.exitVoiceMode()"><i class="ti ti-x"></i></button>
+  <div class="voice-orb" id="voiceOrb" onclick="Voice.toggleVoiceMode()">🌿</div>
+  <div class="voice-status" id="voiceStatus">Tap the orb to speak</div>
+  <div class="voice-live-text" id="voiceLiveText"></div>
+  <div class="voice-error" id="voiceError"></div>
+</div>
+
+<!-- VOICE LIMIT MODAL -->
+<div id="voiceLimitModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:600;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="glass-strong" style="border-radius:20px;padding:2rem;max-width:340px;width:100%;text-align:center">
+    <div style="font-size:40px;margin-bottom:14px">🎙️</div>
+    <h2 style="margin-bottom:10px;font-size:20px">Voice limit reached</h2>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:1.5rem;line-height:1.6">Free users get <strong style="color:var(--accent2)">3 voice sessions per day</strong>. Upgrade to Pro for unlimited.</p>
+    <button class="btn btn-primary" style="margin-bottom:10px" onclick="hideVoiceLimitModal();showPlans()"><i class="ti ti-crown"></i> Upgrade to Pro</button>
+    <button class="btn btn-outline" onclick="hideVoiceLimitModal()">Maybe later</button>
+  </div>
+</div>
+
+<script src="/js/emotion.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/voice.js"></script>
+<script src="/js/tts.js"></script>
+<script>
+// Page routing
+function showPage(id) {
+  document.querySelectorAll(".page,.auth-wrap").forEach(function(p){ p.classList.remove("active"); });
+  var el = document.getElementById("page-" + id);
+  if (el) el.classList.add("active");
+}
+
+// Photo slideshow
+var quotes = [
+  {text:'"The greatest wealth is health."', author:'— Virgil'},
+  {text:'"Mental health is not a destination, but a process."', author:'— Noam Shpancer'},
+  {text:'"You don\'t have to be positive all the time."', author:'— Lori Deschene'},
+];
+var currentPhoto = 0;
+function goToPhoto(n) {
+  var photos = [document.getElementById("photo0"), document.getElementById("photo1"), document.getElementById("photo2")];
+  photos.forEach(function(p,i){ if(p) p.classList.toggle("active", i===n); });
+  document.querySelectorAll(".photo-dot").forEach(function(d,i){ d.classList.toggle("active", i===n); });
+  currentPhoto = n;
+  var q = quotes[n] || quotes[0];
+  var qt = document.getElementById("quoteText");
+  var qa = document.getElementById("quoteAuthor");
+  if (qt) qt.textContent = q.text;
+  if (qa) qa.textContent = q.author;
+}
+setInterval(function(){ goToPhoto((currentPhoto+1)%3); }, 5000);
+
+// Code inputs
+function codeInput(el, idx, prefix) {
+  el.value = el.value.replace(/[^0-9]/g,"").slice(-1);
+  if (el.value && idx < 5) { var n = document.getElementById(prefix+"d"+(idx+1)); if(n) n.focus(); }
+  var code = "";
+  for (var i=0;i<6;i++) { var d = document.getElementById(prefix+"d"+i); code += d ? (d.value||"") : ""; }
+  if (code.length === 6) { if (prefix==="v") submitVerification(); else submit2FA(); }
+}
+function codeBack(e, idx, prefix) {
+  if (e.key==="Backspace" && !e.target.value && idx>0) { var p = document.getElementById(prefix+"d"+(idx-1)); if(p) p.focus(); }
+}
+function getCode(prefix) {
+  var code = "";
+  for (var i=0;i<6;i++) { var d = document.getElementById(prefix+"d"+i); code += d ? (d.value||"") : ""; }
+  return code;
+}
+
+// Email verification
+async function submitVerification() {
+  var code = getCode("v");
+  if (code.length < 6) return;
+  var token = api.getToken();
+  setLoading("verifyBtn", true);
+  var res = await fetch("/api/auth/verify-email", {method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({code:code})});
+  var data = await res.json();
+  setLoading("verifyBtn", false);
+  if (res.ok) { showApp(); }
+  else { showAlert(document.getElementById("verifyAlert"), data.error||"Incorrect code.", "error"); }
+}
+async function resendVerification() {
+  var token = api.getToken();
+  await fetch("/api/auth/send-verification",{method:"POST",headers:{"Authorization":"Bearer "+token}});
+  showAlert(document.getElementById("verifyAlert"),"Code resent! Check your email.","success");
+}
+
+// 2FA
+var pending2FAUserId = null;
+async function submit2FA() {
+  var code = getCode("t");
+  if (code.length < 6 || !pending2FAUserId) return;
+  setLoading("twoFaBtn", true);
+  var res = await fetch("/api/auth/verify-2fa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:pending2FAUserId,code:code})});
+  var data = await res.json();
+  setLoading("twoFaBtn", false);
+  if (res.ok) { showApp(); }
+  else { showAlert(document.getElementById("twoFaAlert"), data.error||"Incorrect code.", "error"); }
+}
+async function toggle2FA() {
+  var token = api.getToken();
+  var res = await fetch("/api/auth/toggle-2fa",{method:"POST",headers:{"Authorization":"Bearer "+token}});
+  var data = await res.json();
+  if (res.ok) { var btn = document.getElementById("toggle2faBtn"); if(btn) btn.textContent = data.twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"; }
+}
+
+// Google Sign-In
+var GOOGLE_CLIENT_ID = "376451848884-hcdi67fcdr3f1of4fefd7gqnvpka9m91.apps.googleusercontent.com";
+
+function signInWithGoogle() {
+  if (typeof google === "undefined") {
+    alert("Google script is loading. Please wait a moment and try again.");
+    return;
+  }
+  google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential, auto_select: false});
+  google.accounts.id.prompt(function(n) {
+    if (n.isNotDisplayed() || n.isSkippedMoment()) {
+      var wrap = document.createElement("div");
+      wrap.id = "gWrap";
+      wrap.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center";
+      wrap.innerHTML = "<div style='background:#fff;border-radius:16px;padding:2rem;text-align:center;min-width:280px'><p style='margin-bottom:1rem;color:#333;font-size:15px;font-weight:500'>Sign in with Google</p><div id='gBtn'></div><br><button onclick='document.getElementById(\"gWrap\").remove()' style='color:#999;border:none;background:none;cursor:pointer;font-size:13px'>Cancel</button></div>";
+      document.body.appendChild(wrap);
+      google.accounts.id.renderButton(document.getElementById("gBtn"),{theme:"outline",size:"large"});
+    }
+  });
+}
+
+async function handleGoogleCredential(response) {
+  var wrap = document.getElementById("gWrap");
+  if (wrap) wrap.remove();
+  if (!response || !response.credential) return;
+  var res = await fetch("/api/auth/google",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential:response.credential})});
+  var data = await res.json();
+  if (res.ok) { api.setToken(data.token); state.user = data.user; showApp(); }
+  else alert(data.error || "Google sign-in failed. Please try again.");
+}
+
+// Drawer
+function toggleDrawer() {
+  var d=document.getElementById("drawer"),o=document.getElementById("drawerOverlay"),b=document.getElementById("hamburgerBtn");
+  if(d.classList.contains("open")){closeDrawer();}
+  else{d.classList.add("open");o.classList.add("open");b.classList.add("open");}
+}
+function closeDrawer() {
+  document.getElementById("drawer").classList.remove("open");
+  document.getElementById("drawerOverlay").classList.remove("open");
+  document.getElementById("hamburgerBtn").classList.remove("open");
+}
+var tsX=0;
+document.getElementById("drawer").addEventListener("touchstart",function(e){tsX=e.touches[0].clientX;});
+document.getElementById("drawer").addEventListener("touchend",function(e){if(tsX-e.changedTouches[0].clientX>60)closeDrawer();});
+</script>
+</body>
+</html>
