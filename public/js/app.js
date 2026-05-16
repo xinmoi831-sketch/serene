@@ -444,6 +444,11 @@ function renderInsights() {
 function loadSettings() {
   const u = state.user;
   if (!u) return;
+  // Inject currency selector
+  var currWrap = document.getElementById("currencySelectorWrap");
+  if (currWrap && typeof Currency !== "undefined") {
+    currWrap.innerHTML = Currency.buildSelector();
+  }
   const emailEl = document.getElementById("settingsEmail");
   const planEl = document.getElementById("settingsPlan");
   const upgradeBtn = document.getElementById("upgradeBtn");

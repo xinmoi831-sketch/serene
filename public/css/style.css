@@ -1143,3 +1143,29 @@ h3 { font-size: 16px; font-weight: 500; }
   0%,100% { transform:scale(1); opacity:0.6; }
   50%      { transform:scale(1.6); opacity:1; }
 }
+
+/* ── Currency converter ── */
+.currency-local {
+  font-size: 12px; color: var(--accent2);
+  font-weight: 400; margin-left: 4px;
+}
+.currency-select {
+  width: 100%; padding: 10px 14px;
+  background: var(--surface2);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text); font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+}
+.currency-select:focus { outline: none; border-color: var(--accent); }
+
+/* ── Legal footer ── */
+.legal-footer {
+  text-align: center; padding: 1.5rem;
+  font-size: 12px; color: var(--text3);
+  border-top: 0.5px solid var(--border);
+  margin-top: auto;
+}
+.legal-footer a { color: var(--text2); text-decoration: none; margin: 0 8px; }
+.legal-footer a:hover { color: var(--accent2); }

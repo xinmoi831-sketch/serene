@@ -163,6 +163,11 @@
           Don't have an account?
           <a href="#" onclick="showPage('register')" style="color:var(--accent2);text-decoration:none;font-weight:500"> Create account</a>
         </p>
+        <p style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">
+          By signing in you agree to our
+          <a href="/legal.html" style="color:var(--text2);text-decoration:none">Terms of Service</a> and
+          <a href="/legal.html" style="color:var(--text2);text-decoration:none">Privacy Policy</a>
+        </p>
       </div>
     </div>
   </div>
@@ -393,6 +398,17 @@
           <button id="manageBtn" class="btn btn-outline" onclick="openPortal()" style="display:none"><i class="ti ti-settings"></i> Manage subscription</button>
         </div>
       </div>
+      <div class="glass" style="padding:1.25rem;margin-bottom:1rem">
+        <h3 style="margin-bottom:14px;color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:.08em">Currency</h3>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Show prices in your local currency</p>
+        <div id="currencySelectorWrap"></div>
+      </div>
+      <div class="glass" style="padding:1.25rem;margin-bottom:1rem">
+        <h3 style="margin-bottom:14px;color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:.08em">Legal</h3>
+        <a href="/legal.html" style="display:block;padding:10px 0;color:var(--accent2);font-size:14px;text-decoration:none;border-bottom:0.5px solid var(--border)">Terms of Service →</a>
+        <a href="/legal.html" onclick="setTimeout(()=>{document.querySelector('[onclick=\'showDoc(\'privacy\')\']')?.click()},100)" style="display:block;padding:10px 0;color:var(--accent2);font-size:14px;text-decoration:none;border-bottom:0.5px solid var(--border)">Privacy Policy →</a>
+        <a href="/legal.html" style="display:block;padding:10px 0;color:var(--accent2);font-size:14px;text-decoration:none">Medical Disclaimer →</a>
+      </div>
       <div class="glass" style="padding:1.25rem;border-color:rgba(244,63,94,0.3)">
         <h3 style="margin-bottom:10px;color:var(--danger)">Danger zone</h3>
         <p style="font-size:13px;margin-bottom:14px;color:var(--text2)">Permanently delete your account and all data.</p>
@@ -437,6 +453,7 @@
 </div>
 
 <script src="/js/emotion.js"></script>
+<script src="/js/currency.js"></script>
 <script src="/js/i18n.js"></script>
 <script src="/js/api.js"></script>
 <script src="/js/app.js"></script>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Serene — Legal & Policies</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#0a0f1e;color:#f0f4ff;line-height:1.7;font-size:15px}
+.navbar{position:sticky;top:0;background:rgba(10,15,30,0.95);backdrop-filter:blur(20px);border-bottom:0.5px solid rgba(255,255,255,0.1);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;z-index:100}
+.navbar-brand{font-size:20px;font-weight:700;color:#a5b4fc;text-decoration:none}
+.back-btn{color:#8b9dc3;text-decoration:none;font-size:14px;display:flex;align-items:center;gap:6px}
+.back-btn:hover{color:#f0f4ff}
+.container{max-width:720px;margin:0 auto;padding:2rem 1.5rem 4rem}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2rem;padding-bottom:1rem;border-bottom:0.5px solid rgba(255,255,255,0.1)}
+.tab{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#8b9dc3;transition:all .2s}
+.tab.active{background:rgba(99,102,241,0.2);border-color:rgba(99,102,241,0.4);color:#a5b4fc}
+.doc{display:none}
+.doc.active{display:block}
+h1{font-size:26px;font-weight:600;color:#f0f4ff;margin-bottom:8px}
+h2{font-size:18px;font-weight:600;color:#a5b4fc;margin:2rem 0 10px}
+h3{font-size:15px;font-weight:500;color:#c7d2fe;margin:1.25rem 0 8px}
+p{color:#8b9dc3;margin-bottom:12px}
+ul{color:#8b9dc3;padding-left:1.5rem;margin-bottom:12px}
+li{margin-bottom:6px}
+.updated{font-size:12px;color:#4a5568;margin-bottom:2rem}
+.highlight{background:rgba(99,102,241,0.1);border:0.5px solid rgba(99,102,241,0.25);border-radius:12px;padding:16px;margin:1rem 0}
+.highlight p{color:#c7d2fe;margin:0}
+.warning{background:rgba(244,63,94,0.1);border:0.5px solid rgba(244,63,94,0.25);border-radius:12px;padding:16px;margin:1rem 0}
+.warning p{color:#fda4af;margin:0;font-weight:500}
+.badge{display:inline-block;background:rgba(99,102,241,0.2);color:#a5b4fc;font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;margin-bottom:1rem}
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/" class="navbar-brand">🌿 Serene</a>
+  <a href="/" class="back-btn">← Back to app</a>
+</nav>
+
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" onclick="showDoc('tos')">Terms of Service</div>
+    <div class="tab" onclick="showDoc('privacy')">Privacy Policy</div>
+    <div class="tab" onclick="showDoc('disclaimer')">Medical Disclaimer</div>
+    <div class="tab" onclick="showDoc('crisis')">Crisis Response</div>
+    <div class="tab" onclick="showDoc('responsibility')">User Agreement</div>
+  </div>
+
+  <!-- TERMS OF SERVICE -->
+  <div class="doc active" id="doc-tos">
+    <span class="badge">Legal Document</span>
+    <h1>Terms of Service</h1>
+    <p class="updated">Last updated: May 2026</p>
+    <div class="highlight"><p>By using Serene, you agree to these terms. Please read them carefully. They are written in plain language so everyone can understand them.</p></div>
+
+    <h2>1. What Serene Is</h2>
+    <p>Serene is an AI-powered mental wellness companion. It is designed to provide emotional support, general wellness information, and a safe space to talk. Serene is a support tool — not a medical service.</p>
+
+    <h2>2. What Serene Is Not</h2>
+    <div class="warning"><p>🚨 Serene is NOT a licensed therapist, psychologist, doctor, or medical provider. It cannot diagnose conditions, prescribe medication, or replace professional mental health care.</p></div>
+
+    <h2>3. Who Can Use Serene</h2>
+    <ul>
+      <li>You must be at least 13 years old to use Serene</li>
+      <li>Users under 18 should have parental awareness and guidance</li>
+      <li>By using Serene you confirm you meet the age requirement</li>
+    </ul>
+
+    <h2>4. Your Account</h2>
+    <ul>
+      <li>You are responsible for keeping your password safe</li>
+      <li>Do not share your account with others</li>
+      <li>You can delete your account at any time from Settings</li>
+    </ul>
+
+    <h2>5. Subscription and Payments</h2>
+    <ul>
+      <li>Free plan includes 200 messages per day</li>
+      <li>Pro Monthly plan is $19 per month</li>
+      <li>Live Session is $25 per session</li>
+      <li>Pro plans include a 7-day free trial</li>
+      <li>You can cancel anytime — no hidden fees</li>
+    </ul>
+
+    <h2>6. Acceptable Use</h2>
+    <p>You agree not to use Serene to:</p>
+    <ul>
+      <li>Harass, threaten, or harm others</li>
+      <li>Share illegal or harmful content</li>
+      <li>Attempt to break or exploit the system</li>
+      <li>Pretend to be someone else</li>
+    </ul>
+
+    <h2>7. Our Responsibility</h2>
+    <p>Serene provides support information in good faith. We are not responsible for decisions you make based on conversations with Serene. Always seek professional help for serious mental health concerns.</p>
+
+    <h2>8. Changes to These Terms</h2>
+    <p>We may update these terms from time to time. We will notify you of major changes. Continued use of Serene means you accept the updated terms.</p>
+
+    <h2>9. Contact</h2>
+    <p>For questions about these terms, contact us through the app or at the support page.</p>
+  </div>
+
+  <!-- PRIVACY POLICY -->
+  <div class="doc" id="doc-privacy">
+    <span class="badge">Legal Document</span>
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: May 2026</p>
+    <div class="highlight"><p>We take your privacy very seriously. Your mental health conversations are personal and we treat them that way.</p></div>
+
+    <h2>1. What We Collect</h2>
+    <ul>
+      <li><strong>Account info:</strong> Your name and email address</li>
+      <li><strong>Chat messages:</strong> Your conversations with Serene</li>
+      <li><strong>Journal entries:</strong> Notes you write in the app</li>
+      <li><strong>Mood logs:</strong> Your mood check-ins</li>
+      <li><strong>Usage data:</strong> How many messages you send per day</li>
+    </ul>
+
+    <h2>2. How We Protect Your Data</h2>
+    <div class="highlight"><p>All your messages and journal entries are encrypted using AES-256 encryption — the same standard used by banks. Your data is stored securely and cannot be read without your unique encryption key.</p></div>
+
+    <h2>3. What We Do NOT Do</h2>
+    <ul>
+      <li>We do NOT sell your data to anyone</li>
+      <li>We do NOT share your conversations with third parties</li>
+      <li>We do NOT use your data to train AI models</li>
+      <li>We do NOT show you ads based on your conversations</li>
+    </ul>
+
+    <h2>4. Who Can See Your Data</h2>
+    <p>Only you can see your conversations. Our team does not read your personal messages. We may access anonymized usage statistics to improve the app.</p>
+
+    <h2>5. Third-Party Services</h2>
+    <ul>
+      <li><strong>Groq:</strong> Powers the AI responses (your messages are sent to Groq's servers to generate replies)</li>
+      <li><strong>Google:</strong> If you use Google Sign-In</li>
+      <li><strong>Payment provider:</strong> Handles payment processing (we never store your card details)</li>
+    </ul>
+
+    <h2>6. Your Rights</h2>
+    <ul>
+      <li>You can download your data at any time</li>
+      <li>You can delete your account and all data permanently from Settings</li>
+      <li>You can request information about what data we hold</li>
+    </ul>
+
+    <h2>7. Data Retention</h2>
+    <p>We keep your data for as long as your account is active. When you delete your account, all your data is permanently removed within 24 hours.</p>
+
+    <h2>8. Cookies</h2>
+    <p>We use only essential cookies to keep you logged in. We do not use tracking or advertising cookies.</p>
+
+    <h2>9. Children's Privacy</h2>
+    <p>Serene is not intended for children under 13. If you believe a child under 13 is using Serene, please contact us and we will remove their account.</p>
+  </div>
+
+  <!-- MEDICAL DISCLAIMER -->
+  <div class="doc" id="doc-disclaimer">
+    <span class="badge">Important Notice</span>
+    <h1>Medical Disclaimer</h1>
+    <p class="updated">Last updated: May 2026</p>
+    <div class="warning"><p>🏥 Serene is NOT a medical device and is NOT a replacement for professional mental health care. Please read this carefully.</p></div>
+
+    <h2>Serene is a Support Tool Only</h2>
+    <p>Serene provides emotional support, general wellness information, and a safe space to express your feelings. It is powered by artificial intelligence and is not staffed by licensed healthcare professionals.</p>
+
+    <h2>What Serene Cannot Do</h2>
+    <ul>
+      <li>Diagnose any mental health condition</li>
+      <li>Prescribe or recommend specific medications</li>
+      <li>Provide clinical therapy or psychiatric treatment</li>
+      <li>Replace consultation with a licensed professional</li>
+      <li>Guarantee the accuracy of health information provided</li>
+    </ul>
+
+    <h2>When to Seek Professional Help</h2>
+    <p>Please contact a licensed mental health professional if you experience:</p>
+    <ul>
+      <li>Persistent depression or anxiety lasting more than two weeks</li>
+      <li>Thoughts of suicide or self-harm</li>
+      <li>Hallucinations or loss of touch with reality</li>
+      <li>Severe mood swings or behavioral changes</li>
+      <li>Substance dependency or addiction</li>
+    </ul>
+
+    <h2>Emergency Situations</h2>
+    <div class="warning"><p>🚨 If you or someone you know is in immediate danger, call emergency services (999, 911, or your local emergency number) immediately. Do not rely on Serene in an emergency.</p></div>
+
+    <h2>Information Accuracy</h2>
+    <p>While Serene strives to provide helpful and accurate wellness information, AI-generated content may contain errors or outdated information. Always verify medical information with a qualified healthcare provider.</p>
+
+    <h2>No Doctor-Patient Relationship</h2>
+    <p>Using Serene does not create a doctor-patient or therapist-client relationship. The conversations you have with Serene are for informational and emotional support purposes only.</p>
+  </div>
+
+  <!-- CRISIS RESPONSE -->
+  <div class="doc" id="doc-crisis">
+    <span class="badge">Safety Information</span>
+    <h1>Crisis Response Policy</h1>
+    <p class="updated">Last updated: May 2026</p>
+    <div class="warning"><p>🚨 If you are in immediate danger right now, please call emergency services or a crisis line immediately. Serene cannot physically intervene or guarantee your safety.</p></div>
+
+    <h2>Crisis Lines — Available 24/7</h2>
+    <div class="highlight">
+      <p><strong>International:</strong> findahelpline.com — find your country's crisis line</p>
+      <p style="margin-top:8px"><strong>USA:</strong> Call or text 988 (Suicide and Crisis Lifeline)</p>
+      <p style="margin-top:8px"><strong>UK:</strong> Call 116 123 (Samaritans)</p>
+      <p style="margin-top:8px"><strong>Zambia:</strong> Contact your nearest hospital or call 991 (emergency)</p>
+    </div>
+
+    <h2>How Serene Handles Crisis Situations</h2>
+    <ul>
+      <li>Serene automatically detects crisis language in conversations</li>
+      <li>When detected, Serene switches to a calm, short-response safety mode</li>
+      <li>Serene always provides real-world crisis resources in these situations</li>
+      <li>Serene encourages you to contact a real person</li>
+    </ul>
+
+    <h2>Limitations of AI in Crisis</h2>
+    <p>Serene is an AI and has important limitations in crisis situations:</p>
+    <ul>
+      <li>It cannot call emergency services on your behalf</li>
+      <li>It cannot physically be present with you</li>
+      <li>It cannot guarantee response times</li>
+      <li>It may not always perfectly detect crisis language</li>
+    </ul>
+
+    <h2>Our Commitment</h2>
+    <p>We are committed to building Serene in a way that prioritizes your safety above everything else. If you have feedback about how Serene handled a crisis situation, please contact us so we can improve.</p>
+
+    <h2>What to Do Right Now If You Are in Crisis</h2>
+    <ul>
+      <li>Tell someone you trust what you are feeling</li>
+      <li>Call a crisis line — they are free, confidential, and available 24/7</li>
+      <li>Go to your nearest hospital emergency department</li>
+      <li>Call emergency services if you are in immediate danger</li>
+    </ul>
+  </div>
+
+  <!-- USER RESPONSIBILITY -->
+  <div class="doc" id="doc-responsibility">
+    <span class="badge">User Agreement</span>
+    <h1>User Responsibility Agreement</h1>
+    <p class="updated">Last updated: May 2026</p>
+    <div class="highlight"><p>By using Serene you acknowledge and agree to the following responsibilities. This is written simply so it is easy to understand.</p></div>
+
+    <h2>I Understand That Serene Is an AI</h2>
+    <p>I understand that Serene is powered by artificial intelligence and is not a real human, therapist, doctor, or counselor. Its responses are generated by a computer program.</p>
+
+    <h2>I Will Seek Professional Help When Needed</h2>
+    <p>I understand that Serene is a support tool and agree to seek professional mental health care when my situation requires it. I will not use Serene as a substitute for professional treatment.</p>
+
+    <h2>I Take Responsibility for My Own Decisions</h2>
+    <p>I understand that any decisions I make based on conversations with Serene are my own responsibility. Serene provides support and information, not instructions or medical advice.</p>
+
+    <h2>I Will Use Serene Appropriately</h2>
+    <p>I agree to use Serene only for its intended purpose — emotional support and mental wellness. I will not use it to harm myself or others.</p>
+
+    <h2>I Understand the Emergency Policy</h2>
+    <p>I understand that in an emergency I should contact emergency services or a crisis line — not rely solely on Serene. I know that Serene cannot physically help me in an emergency.</p>
+
+    <h2>I Am the Appropriate Age</h2>
+    <p>I confirm that I am at least 13 years old, or that I have parental permission to use Serene if I am between 13 and 18 years old.</p>
+
+    <h2>I Respect Other Users</h2>
+    <p>I agree not to use Serene in ways that could harm other people or violate anyone's privacy.</p>
+
+    <h2>Ethical AI Use</h2>
+    <p>I understand that Serene is designed with ethical principles including:</p>
+    <ul>
+      <li>No encouragement of self-harm</li>
+      <li>No medical prescriptions or dosage advice</li>
+      <li>No manipulation or creation of emotional dependency</li>
+      <li>Always encouraging real-world human connection</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+function showDoc(id) {
+  document.querySelectorAll('.doc').forEach(d => d.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('doc-' + id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
