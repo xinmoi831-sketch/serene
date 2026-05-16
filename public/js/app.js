@@ -503,19 +503,42 @@ async function initiatePayment(planId, method) {
 function showPaymentMethodModal(planId) {
   var existing = document.getElementById("paymentMethodModal");
   if (existing) existing.remove();
-
   var modal = document.createElement("div");
   modal.id = "paymentMethodModal";
   modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:700;display:flex;align-items:flex-end;justify-content:center;padding:1rem";
-  modal.innerHTML =
-    '<div style="background:#0d1428;border:0.5px solid rgba(255,255,255,0.15);border-radius:24px 24px 0 0;padding:2rem;width:100%;max-width:480px">' +
-    '<h3 style="color:#f0f4ff;font-size:18px;margin-bottom:8px;text-align:center">Choose payment method</h3>' +
-    '<p style="color:#8b9dc3;font-size:13px;text-align:center;margin-bottom:1.5rem">Select how you want to pay</p>' +
-    '<button onclick="initiatePayment('' + planId + '','dpo')" style="width:100%;padding:14px;background:rgba(99,102,241,0.15);border:0.5px solid rgba(99,102,241,0.3);border-radius:12px;color:#a5b4fc;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px">💳 Card Payment (Visa / Mastercard)</button>' +
-    '<button onclick="initiatePayment('' + planId + '','paypal')" style="width:100%;padding:14px;background:rgba(0,112,243,0.1);border:0.5px solid rgba(0,112,243,0.3);border-radius:12px;color:#60a5fa;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px">🅿️ PayPal</button>' +
-    '<button onclick="initiatePayment('' + planId + '','mobilemoney')" style="width:100%;padding:14px;background:rgba(255,196,0,0.1);border:0.5px solid rgba(255,196,0,0.3);border-radius:12px;color:#fbbf24;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:center;gap:10px">📱 Mobile Money (MTN / Airtel)</button>' +
-    '<button onclick="hidePaymentMethodModal()" style="width:100%;padding:12px;background:transparent;border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;color:#8b9dc3;font-size:14px;cursor:pointer">Cancel</button>' +
-    "</div>";
+
+  var wrap = document.createElement("div");
+  wrap.style.cssText = "background:#0d1428;border:0.5px solid rgba(255,255,255,0.15);border-radius:24px 24px 0 0;padding:2rem;width:100%;max-width:480px";
+
+  var title = document.createElement("h3");
+  title.style.cssText = "color:#f0f4ff;font-size:18px;margin-bottom:8px;text-align:center";
+  title.textContent = "Choose payment method";
+  wrap.appendChild(title);
+
+  var sub = document.createElement("p");
+  sub.style.cssText = "color:#8b9dc3;font-size:13px;text-align:center;margin-bottom:1.5rem";
+  sub.textContent = "Select how you want to pay";
+  wrap.appendChild(sub);
+
+  function makeBtn(emoji, label, method, bg, borderColor, textColor) {
+    var btn = document.createElement("button");
+    btn.style.cssText = "width:100%;padding:14px;background:" + bg + ";border:0.5px solid " + borderColor + ";border-radius:12px;color:" + textColor + ";font-size:15px;font-weight:500;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px";
+    btn.textContent = emoji + " " + label;
+    btn.onclick = function() { initiatePayment(planId, method); };
+    return btn;
+  }
+
+  wrap.appendChild(makeBtn("💳", "Card Payment (Visa / Mastercard)", "dpo",        "rgba(99,102,241,0.15)",  "rgba(99,102,241,0.3)",  "#a5b4fc"));
+  wrap.appendChild(makeBtn("🅿️", "PayPal",                           "paypal",      "rgba(0,112,243,0.1)",    "rgba(0,112,243,0.3)",   "#60a5fa"));
+  wrap.appendChild(makeBtn("📱", "Mobile Money (MTN / Airtel)",      "mobilemoney", "rgba(255,196,0,0.1)",    "rgba(255,196,0,0.3)",   "#fbbf24"));
+
+  var cancel = document.createElement("button");
+  cancel.style.cssText = "width:100%;padding:12px;background:transparent;border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;color:#8b9dc3;font-size:14px;cursor:pointer;margin-top:6px";
+  cancel.textContent = "Cancel";
+  cancel.onclick = hidePaymentMethodModal;
+  wrap.appendChild(cancel);
+
+  modal.appendChild(wrap);
   document.body.appendChild(modal);
 }
 
