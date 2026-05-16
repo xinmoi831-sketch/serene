@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const { collections, findOne } = require("../lib/db");
 
 const PLANS = {
-  free:   { messagesPerDay: 10,  journals: 5,       reflections: false, label: "Free" },
+  free:   { messagesPerDay: 200, journals: 5,       reflections: false, label: "Free" },
   pro:    { messagesPerDay: 500, journals: Infinity, reflections: true,  label: "Pro Monthly" },
   annual: { messagesPerDay: 500, journals: Infinity, reflections: true,  label: "Pro Annual" },
 };
