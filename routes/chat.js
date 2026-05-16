@@ -267,6 +267,7 @@ router.post("/message", authenticate, checkDailyLimit, async (req, res) => {
     const userId = req.user.id;
     const mode = detectMode(message.trim());
     const isCrisis = mode === "crisis";
+    console.log("[CHAT] user:", userId, "mode:", mode, "message length:", message.length);
 
     // Handle casual messages instantly
     const casualReply = getCasualResponse(message);
@@ -296,9 +297,11 @@ router.post("/message", authenticate, checkDailyLimit, async (req, res) => {
 
     let reply;
     try {
+      console.log("[GROQ] calling API, mode:", mode);
       reply = await callGroq(groqMessages, mode);
+      console.log("[GROQ] success, reply length:", reply.length);
     } catch (err) {
-      console.error("Groq failed:", err.message);
+      console.error("[GROQ] FAILED:", err.message);
       reply = getFallback(mode);
     }
 
@@ -323,7 +326,7 @@ router.post("/message", authenticate, checkDailyLimit, async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Chat route error:", err.message);
+    console.error("[CHAT ERROR]", err.message, err.stack);
     res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });
