@@ -212,14 +212,14 @@ function renderChat() {
   scrollToBottom();
 }
 
-// Clean scroll system — anchor + single requestAnimationFrame
-// Fires AFTER DOM paint, guaranteed. No timeouts, no loops.
+// Definitive scroll system — double rAF guarantees post-paint execution
+// rAF1 queues after current frame, rAF2 executes after browser has painted
 function scrollToBottom(smooth) {
   requestAnimationFrame(function() {
-    var anchor = document.getElementById("scrollAnchor");
-    if (anchor) {
-      anchor.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "end" });
-    }
+    requestAnimationFrame(function() {
+      var anchor = document.getElementById("scrollAnchor");
+      if (anchor) anchor.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "end" });
+    });
   });
 }
 
@@ -418,8 +418,9 @@ function loadSettings() {
   if (!u) return;
   // Inject currency selector
   var currWrap = document.getElementById("currencySelectorWrap");
-  if (currWrap && typeof Currency !== "undefined") {
-    currWrap.innerHTML = Currency.buildSelector();
+  if (currWrap && typeof CurrencySystem !== "undefined") {
+    currWrap.innerHTML = '<select class="currency-select" onchange="CurrencySystem.setManual(this.value)">' +
+      CurrencySystem.buildSelector() + "</select>";
   }
   const emailEl = document.getElementById("settingsEmail");
   const planEl = document.getElementById("settingsPlan");
