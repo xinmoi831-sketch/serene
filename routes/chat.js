@@ -244,7 +244,14 @@ router.post("/message", authenticate, checkDailyLimit, async (req, res) => {
       reply = await callGroq(groqMessages, mode);
     } catch (err) {
       console.error("Groq error:", err.message);
-      return res.status(503).json({ error: "AI is not responding. Please try again in a moment." });
+      // For crisis mode, never show generic error — give a safe fallback
+      if (mode === 'crisis') {
+        reply = "I hear you and I am here with you right now. Please reach out to a crisis line immediately — call or text 988. You do not have to face this alone. Can you tell me where you are right now?";
+      } else if (mode === 'distress') {
+        reply = "I am here and I am listening. It sounds like you are going through something really difficult. Can you tell me a little more about what is happening?";
+      } else {
+        return res.status(503).json({ error: "AI is not responding. Please try again in a moment." });
+      }
     }
 
     const now = new Date().toISOString();
