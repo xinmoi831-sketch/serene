@@ -2,14 +2,14 @@
 let state = {
   user: null,
   mood: "okay",
-  chatMessages: [  ],
+  chatMessages: [],
+  journalEntries: [],
+  moodHistory: [],
   currentPage: "chat",
   sending: false,
   voiceUsedToday: 0,
   VOICE_FREE_LIMIT: 3,
 };
-
-let msgCounter = 0;
 
 window.addEventListener("DOMContentLoaded", async () => {
   window.APP_LANG = localStorage.getItem("serene_lang") || "en";
@@ -212,83 +212,79 @@ function renderChat() {
   scrollToBottom();
 }
 
-// ── Improved Auto-Scroll Functions ─────────────────────────────────────
-
-function scrollToBottom() {
-  const area = document.getElementById("chatMessages");
+// Robust scroll system using both scrollTop and scrollIntoView
+function scrollToBottom(smooth) {
+  var area = document.getElementById("chatMessages");
+  var anchor = document.getElementById("scrollAnchor");
   if (!area) return;
 
-  area.scrollTo({
-    top: area.scrollHeight,
-    behavior: "smooth"
+  var behavior = smooth ? "smooth" : "auto";
+
+  function doScroll() {
+    // Method 1: direct scrollTop
+    area.scrollTop = area.scrollHeight;
+    // Method 2: scroll anchor into view (most reliable)
+    if (anchor) {
+      anchor.scrollIntoView({ behavior: behavior, block: "end" });
+    }
+  }
+
+  // Fire multiple times to beat race conditions
+  doScroll();
+  setTimeout(doScroll, 0);
+  requestAnimationFrame(function() {
+    doScroll();
+    requestAnimationFrame(doScroll);
   });
+  setTimeout(doScroll, 100);
+  setTimeout(doScroll, 300);
 }
 
-  // Force scroll
-function scrollToBottom() {
+let msgCounter = 0;
+function appendMessageToDOM(role, content, time, isNew) {
+  if (isNew === undefined) isNew = true;
   const area = document.getElementById("chatMessages");
   if (!area) return;
-
-  requestAnimationFrame(() => {
-    area.scrollTop = area.scrollHeight;
-  });
-
-  setTimeout(() => {
-    area.scrollTop = area.scrollHeight;
-  }, 50);
-
-  setTimeout(() => {
-    area.scrollTop = area.scrollHeight;
-  }, 200);
-}
-// ── Updated appendMessageToDOM ────────────────────────────────────────
-function appendMessageToDOM(role, content, time, isNew = true) {
-  const area = document.getElementById("chatMessages");
-  if (!area) return;
-
   const msgId = "msg-" + (++msgCounter);
   const div = document.createElement("div");
   div.className = "msg " + (role === "user" ? "user" : "ai");
   div.setAttribute("data-msg-id", msgId);
-
   const timeStr = time ? new Date(time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
-
+  const bubbleCls = "bubble" + (isNew && role === "assistant" ? " new-reply" : "");
   const ttsBtn = (role === "assistant" && typeof TTS !== "undefined" && TTS.isSupported())
-    ? `<div class="msg-actions"><button class="tts-play-btn" onclick="TTS.play('${msgId}')" title="Play audio"><i class="ti ti-volume"></i></button><span class="msg-time-inline">${timeStr}</span></div>`
-    : `<div class="msg-time">${timeStr}</div>`;
-
-  div.innerHTML = `
-    <div class="msg-sender">${role === "user" ? "You" : "Serene"}</div>
-    <div class="bubble ${isNew && role === "assistant" ? "new-reply" : ""}">${escHtml(content)}</div>
-    ${ttsBtn}
-  `;
-
-  area.appendChild(div);
-  scrollToBottom();
+    ? '<div class="msg-actions"><button class="tts-play-btn" onclick="TTS.play(\'' + msgId + '\')" title="Play audio"><i class="ti ti-volume"></i></button><span class="msg-time-inline">' + timeStr + "</span></div>"
+    : '<div class="msg-time">' + timeStr + "</div>";
+  div.innerHTML = '<div class="msg-sender">' + (role === "user" ? "You" : "Serene") + "</div>" +
+    '<div class="' + bubbleCls + '">' + escHtml(content) + "</div>" + ttsBtn;
+  // Insert before scroll anchor so anchor stays at bottom
+  var anchor = document.getElementById("scrollAnchor");
+  if (anchor) {
+    area.insertBefore(div, anchor);
+  } else {
+    area.appendChild(div);
+  }
+  // Scroll immediately then again after image/font load
+  scrollToBottom(false);
+  // Use MutationObserver to catch any async content
+  var observer = new MutationObserver(function() {
+    scrollToBottom(false);
+    observer.disconnect();
+  });
+  observer.observe(area, { childList: true, subtree: true, characterData: true });
+  setTimeout(function() { observer.disconnect(); }, 1000);
 }
 
-// ── Updated showThinking ─────────────────────────────────────────────
 function showThinking() {
   const area = document.getElementById("chatMessages");
   if (!area) return;
-
-  // Remove old thinking indicator if exists
-  const oldThinking = document.getElementById("thinkingIndicator");
-  if (oldThinking) oldThinking.remove();
-
+  const welcome = area.querySelector(".welcome-card");
+  if (welcome) welcome.style.opacity = "0.4";
   const div = document.createElement("div");
   div.className = "msg ai";
   div.id = "thinkingIndicator";
-  div.innerHTML = `
-    <div class="msg-sender">Serene</div>
-    <div class="thinking-bubble">
-      <div class="thinking-dot"></div>
-      <div class="thinking-dot"></div>
-      <div class="thinking-dot"></div>
-    </div>
-  `;
+  div.innerHTML = '<div class="msg-sender">Serene</div><div class="thinking-bubble"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div>';
   area.appendChild(div);
-  scrollToBottom();
+  scrollToBottom(false);
 }
 
 function hideThinking() {
@@ -332,6 +328,9 @@ async function sendMessage() {
     if (typeof EmotionTracker !== "undefined") EmotionTracker.track(text, reply);
     const crisisBanner = document.getElementById("crisisBanner");
     if (res.data.isCrisis && crisisBanner) crisisBanner.style.display = "flex";
+    // Smooth scroll after AI response — feels natural like WhatsApp
+    setTimeout(function() { scrollToBottom(true); }, 50);
+    setTimeout(function() { scrollToBottom(true); }, 300);
     if (res.data.dailyLimit && res.data.dailyUsed) {
       const remaining = res.data.dailyLimit - res.data.dailyUsed;
       if (remaining <= 2 && state.user && state.user.plan === "free") {
