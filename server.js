@@ -43,10 +43,11 @@ app.use("/api/", rateLimit({
   skip: req => req.path.includes("/webhook"),
 }));
 
-// Groq test endpoint — visit /api/test-groq to check if AI is working
+// Groq test endpoint
 app.get("/api/test-groq", async (req, res) => {
-  const apiKey = (process.env.GROQ_API_KEY || "").trim();
-  if (!apiKey) return res.json({ ok: false, error: "GROQ_API_KEY is not set" });
+  const rawKey = process.env.GROQ_API_KEY || "";
+  const apiKey = rawKey.trim();
+  if (!apiKey) return res.json({ ok: false, error: "GROQ_API_KEY is not set", raw_length: rawKey.length });
   try {
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -58,10 +59,10 @@ app.get("/api/test-groq", async (req, res) => {
       }),
     });
     const data = await response.json();
-    if (!response.ok) return res.json({ ok: false, status: response.status, error: data });
-    res.json({ ok: true, reply: data.choices?.[0]?.message?.content, keyPrefix: apiKey.substring(0, 8) });
+    if (!response.ok) return res.json({ ok: false, status: response.status, error: data, keyPrefix: apiKey.substring(0, 10), keyLength: apiKey.length });
+    res.json({ ok: true, reply: data.choices?.[0]?.message?.content, keyPrefix: apiKey.substring(0, 10), keyLength: apiKey.length });
   } catch (err) {
-    res.json({ ok: false, error: err.message });
+    res.json({ ok: false, error: err.message, keyPrefix: apiKey.substring(0, 10) });
   }
 });
 
