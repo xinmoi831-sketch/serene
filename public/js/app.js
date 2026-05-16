@@ -32,7 +32,10 @@ function showApp() {
   showPage("app");
   updateUserUI();
   navigateTo("chat");
-  setTimeout(() => { if (typeof EmotionTracker !== "undefined") EmotionTracker.init(); }, 300);
+  setTimeout(function() {
+    if (typeof EmotionTracker !== "undefined") EmotionTracker.init();
+    if (typeof ScrollEngine !== "undefined") ScrollEngine.init();
+  }, 300);
 }
 
 function navigateTo(tab) {
@@ -205,23 +208,19 @@ function renderChat() {
   if (state.chatMessages.length === 0) {
     const d = document.createElement("div");
     d.innerHTML = getWelcomeHTML();
-    if (d.firstElementChild) area.appendChild(d.firstElementChild);
+    if (d.firstElementChild) {
+      var anchor = document.getElementById("scrollAnchor");
+      if (anchor) area.insertBefore(d.firstElementChild, anchor);
+      else area.appendChild(d.firstElementChild);
+    }
   } else {
     state.chatMessages.forEach(function(m) { appendMessageToDOM(m.role, m.content, m.createdAt, false); });
   }
-  scrollToBottom();
+  if (typeof ScrollEngine !== "undefined") ScrollEngine.onLoad();
 }
 
-// Definitive scroll system — double rAF guarantees post-paint execution
-// rAF1 queues after current frame, rAF2 executes after browser has painted
-function scrollToBottom(smooth) {
-  requestAnimationFrame(function() {
-    requestAnimationFrame(function() {
-      var anchor = document.getElementById("scrollAnchor");
-      if (anchor) anchor.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "end" });
-    });
-  });
-}
+// Scroll is handled by ScrollEngine (scroll.js)
+// Do not add any scroll logic here
 
 let msgCounter = 0;
 function appendMessageToDOM(role, content, time, isNew) {
@@ -239,14 +238,15 @@ function appendMessageToDOM(role, content, time, isNew) {
     : '<div class="msg-time">' + timeStr + "</div>";
   div.innerHTML = '<div class="msg-sender">' + (role === "user" ? "You" : "Serene") + "</div>" +
     '<div class="' + bubbleCls + '">' + escHtml(content) + "</div>" + ttsBtn;
-  // Always insert before anchor so anchor stays pinned at bottom
   var anchor = document.getElementById("scrollAnchor");
-  if (anchor) {
-    area.insertBefore(div, anchor);
-  } else {
-    area.appendChild(div);
+  if (anchor) area.insertBefore(div, anchor);
+  else area.appendChild(div);
+  // ScrollEngine handles timing — MutationObserver fires automatically
+  // We also call explicitly for guaranteed scroll
+  if (typeof ScrollEngine !== "undefined") {
+    if (role === "user") ScrollEngine.onUserMessage();
+    else ScrollEngine.onAIMessage();
   }
-  scrollToBottom(false);
 }
 
 function showThinking() {
@@ -258,8 +258,10 @@ function showThinking() {
   div.className = "msg ai";
   div.id = "thinkingIndicator";
   div.innerHTML = '<div class="msg-sender">Serene</div><div class="thinking-bubble"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div>';
-  area.appendChild(div);
-  scrollToBottom(false);
+  var anchor2 = document.getElementById("scrollAnchor");
+  if (anchor2) area.insertBefore(div, anchor2);
+  else area.appendChild(div);
+  if (typeof ScrollEngine !== "undefined") ScrollEngine.onUserMessage();
 }
 
 function hideThinking() {
@@ -303,6 +305,7 @@ async function sendMessage() {
     if (typeof EmotionTracker !== "undefined") EmotionTracker.track(text, reply);
     const crisisBanner = document.getElementById("crisisBanner");
     if (res.data.isCrisis && crisisBanner) crisisBanner.style.display = "flex";
+    if (typeof ScrollEngine !== "undefined") ScrollEngine.onAIMessage();
     if (res.data.dailyLimit && res.data.dailyUsed) {
       const remaining = res.data.dailyLimit - res.data.dailyUsed;
       if (remaining <= 2 && state.user && state.user.plan === "free") {

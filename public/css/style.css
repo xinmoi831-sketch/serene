@@ -265,10 +265,15 @@ h3 { font-size: 16px; font-weight: 500; }
   bottom: 0;
   left: 0;
   right: 0;
-  background: transparent;
-  background-color: transparent;
-  padding: 12px 16px 24px;
   z-index: 99;
+  padding: 10px 14px 20px;
+  /* Glassmorphism background */
+  background: linear-gradient(
+    to top,
+    rgba(10, 15, 30, 0.98) 0%,
+    rgba(10, 15, 30, 0.85) 70%,
+    transparent 100%
+  );
 }
 .quick-chips { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 9px; }
 .quick-chips::-webkit-scrollbar { display: none; }
@@ -285,28 +290,59 @@ h3 { font-size: 16px; font-weight: 500; }
   border-color: rgba(99,102,241,0.4);
   transform: translateY(-1px);
 }
-.chat-row { display: flex; gap: 10px; align-items: flex-end; width: 100%; max-width: 480px; margin: 0 auto; }
+.chat-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  /* Glassmorphism container */
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 26px;
+  padding: 6px 6px 6px 16px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 0.5px rgba(99, 102, 241, 0.15) inset,
+    0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.chat-row:focus-within {
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 0.5px rgba(99, 102, 241, 0.3) inset,
+    0 0 20px rgba(99, 102, 241, 0.12);
+}
 .chat-textarea {
   flex: 1;
-  padding: 11px 16px;
+  padding: 10px 4px;
   background: transparent !important;
   background-color: transparent !important;
-  border: 0.5px solid rgba(255,255,255,0.2);
-  border-radius: 20px;
-  font-size: 14px;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  font-size: 15px;
   font-family: 'Inter', sans-serif;
   resize: none;
-  min-height: 42px;
-  max-height: 100px;
-  line-height: 1.5;
+  min-height: 40px;
+  max-height: 120px;
+  line-height: 1.55;
   color: var(--text);
   -webkit-appearance: none;
   appearance: none;
+  caret-color: var(--accent2);
 }
-.chat-textarea::placeholder { color: var(--text3); }
+.chat-textarea::placeholder {
+  color: rgba(139, 157, 195, 0.6);
+}
 .chat-textarea:focus {
-  outline: none;
-  border-color: rgba(99,102,241,0.6);
+  outline: none !important;
+  border: none !important;
 }
 .send-btn {
   width: 42px; height: 42px; border-radius: 50%;
