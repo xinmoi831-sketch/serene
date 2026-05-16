@@ -43,6 +43,28 @@ app.use("/api/", rateLimit({
   skip: req => req.path.includes("/webhook"),
 }));
 
+// Groq test endpoint — visit /api/test-groq to check if AI is working
+app.get("/api/test-groq", async (req, res) => {
+  const apiKey = (process.env.GROQ_API_KEY || "").trim();
+  if (!apiKey) return res.json({ ok: false, error: "GROQ_API_KEY is not set" });
+  try {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: "Say hello in one word" }],
+        max_tokens: 10,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) return res.json({ ok: false, status: response.status, error: data });
+    res.json({ ok: true, reply: data.choices?.[0]?.message?.content, keyPrefix: apiKey.substring(0, 8) });
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
+});
+
 // Load routes safely
 try {
   const authRoutes         = require("./routes/auth");

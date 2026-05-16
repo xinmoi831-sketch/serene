@@ -160,41 +160,72 @@ function detectMode(message) {
 }
 
 async function callGroq(messages, mode) {
-  // Add mode-specific instruction to the last user message context
-  const modeInstruction = mode === 'crisis'
-    ? '\n\n[SYSTEM: CRISIS MODE ACTIVE. Respond in maximum 3-5 short lines only. Be calm and safe. Include crisis resources.]'
-    : mode === 'distress'
-    ? '\n\n[SYSTEM: DISTRESS MODE. Respond in maximum 4-8 lines. Be warm and include one gentle question.]'
-    : '';
+  // Clean the API key — remove any accidental spaces
+  const apiKey = (process.env.GROQ_API_KEY || "").trim();
+
+  if (!apiKey) {
+    throw new Error("GROQ_API_KEY is missing or empty");
+  }
+
+  console.log("Calling Groq API, mode:", mode, "key starts with:", apiKey.substring(0, 8));
+
+  const modeInstruction = mode === "crisis"
+    ? "\n\n[SYSTEM: CRISIS MODE ACTIVE. Respond in maximum 3-5 short lines only. Be calm and safe. Include crisis resources.]"
+    : mode === "distress"
+    ? "\n\n[SYSTEM: DISTRESS MODE. Respond in maximum 4-8 lines. Be warm and include one gentle question.]"
+    : "";
 
   const messagesWithMode = messages.map((m, i) => {
-    if (i === messages.length - 1 && m.role === 'user' && modeInstruction) {
+    if (i === messages.length - 1 && m.role === "user" && modeInstruction) {
       return { ...m, content: m.content + modeInstruction };
     }
     return m;
   });
 
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + process.env.GROQ_API_KEY,
-    },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: messagesWithMode,
-      max_tokens: mode === 'crisis' ? 150 : mode === 'distress' ? 250 : 600,
-      temperature: mode === 'crisis' ? 0.3 : 0.75,
-    }),
-  });
+  // Add 25 second timeout so it never hangs
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
 
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error("Groq error: " + response.status + " " + err);
+  try {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apiKey,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: messagesWithMode,
+        max_tokens: mode === "crisis" ? 150 : mode === "distress" ? 250 : 600,
+        temperature: mode === "crisis" ? 0.3 : 0.75,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error("Groq API error:", response.status, err);
+      throw new Error("Groq error: " + response.status + " " + err);
+    }
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content;
+    if (!reply) {
+      console.error("Groq returned empty response:", JSON.stringify(data));
+      throw new Error("Empty response from Groq");
+    }
+    console.log("Groq responded successfully, length:", reply.length);
+    return reply;
+
+  } catch (err) {
+    clearTimeout(timeout);
+    if (err.name === "AbortError") {
+      throw new Error("Groq request timed out after 25 seconds");
+    }
+    throw err;
   }
-
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content || "I am here and I am listening. Can you tell me more about what is going on?";
 }
 
 // POST /api/chat/message
