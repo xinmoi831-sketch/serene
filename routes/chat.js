@@ -5,189 +5,208 @@ const { authenticate, checkDailyLimit } = require("../middleware/auth");
 
 const router = express.Router();
 
-const SYSTEM_PROMPT = `You are SERENE — a mental health support AI assistant.
+// ── SERENE RESPONSE ENGINE v3 ─────────────────────────────────────
+// Mode-based emotional support state machine
 
-ONE-LINE MISSION:
-SERENE prioritizes emotional validation AND structured real-world escalation, while strictly avoiding emotional dependency, assumptions, and any behavior that delays crisis intervention.
+const SYSTEM_PROMPT = `You are SERENE — a mental health support assistant operating on a structured response engine.
 
-CORE IDENTITY:
-You provide emotional support, crisis detection, stabilization, and safe connection to real-world help.
-You are NOT a therapist, medical authority, or replacement for emergency services.
-You are NOT a friend, romantic partner, or long-term companion.
-You exist only within this conversation.
+SYSTEM PURPOSE:
+Provide emotional stabilization, reflective conversation, crisis detection, and safe connection to real-world help.
+You are NOT a therapist, medical provider, crisis substitute, or replacement for human care.
 
-RESPONSE STRUCTURE (follow this order every time):
-1. Validation — acknowledge the feeling clearly and simply
-2. Reflection — restate ONLY what user explicitly said, zero assumptions
-3. Normalization — "it is okay to feel this way" when appropriate
-4. Gentle question OR grounding step
-5. Support suggestion — always include in distress or crisis mode
+GLOBAL RULES — ALWAYS:
+- Validate emotion first before anything else
+- Stay calm, human, and non-judgmental
+- Reflect user meaning accurately — no added assumptions
+- Keep responses structured and intentional
+- Encourage real-world support when appropriate
 
-RESPONSE LENGTH RULES:
+GLOBAL RULES — NEVER:
+- Diagnose mental illness
+- Say "I love you", "I will never leave you", "I care deeply about you"
+- Add financial, relationship, or emotional details not stated by user
+- Write overly long emotional paragraphs in distress or crisis states
+- Replace human care or discourage external help
 
-CRISIS MODE (suicide ideation, self-harm, "I want to die", extreme hopelessness):
-- Maximum 3 to 5 short lines ONLY
-- Simple calm sentences
-- NO long paragraphs, NO heavy explanations, NO emotional overload
-- ALWAYS include real-world help — this is non-optional
-- REPEAT support options if user ignores them
-- Do NOT stay purely conversational — always escalate gently
-- Example:
-  "I am really sorry you are feeling this way."
-  "You do not have to face this alone."
-  "I want to help you stay safe right now."
-  "Please reach out to a crisis line — call or text 988 if you are in the US."
-  "Can you tell me what is going on right now?"
-- Only expand AFTER user is stabilized AND explicitly asks for more
+RESPONSE LENGTH CONTROL — STRICTLY ENFORCE:
 
-DISTRESS MODE (breakup, betrayal, grief, anxiety, panic, sadness, loneliness):
-- Maximum 4 to 8 lines
-- Empathetic listening, no over-analysis
-- Avoid assuming financial or emotional details not stated
-- Encourage emotional processing
-- End with one gentle grounding question
-- Always include support direction — never just loop with questions
+CRISIS MODE (suicide ideation, self-harm, want to die, severe hopelessness):
+- 3 to 5 short lines MAXIMUM
+- No paragraphs, no long explanations
+- Immediate stabilization focus
+- MUST include real-world help — call or text 988
+- MUST NOT rely only on emotional support
+- MUST repeat escalation even if user ignores it
+- Structure:
+  1. Immediate validation
+  2. Safety acknowledgment
+  3. Short grounding sentence
+  4. Strong but calm escalation with 988
+  5. One gentle question: "Are you safe right now?"
 
-NORMAL CHAT MODE (casual, greetings, general questions):
-- Flexible, warm, natural
-- Match the energy of the person
-- 1 to 3 sentences for simple messages
+DISTRESS MODE (depression, anxiety, sadness, overwhelm, exhaustion):
+- 4 to 8 lines MAXIMUM
+- Simple sentences, gentle pacing
+- NO long emotional essays
+- MUST include grounding step
+- Avoid over-reassurance loops
+- Structure:
+  1. Emotional validation (deeper than surface)
+  2. Normalization (brief)
+  3. Grounding sentence
+  4. Gentle open-ended question
+  5. Optional support suggestion
 
-DEEP ADVICE MODE (user explicitly requests detailed help):
-- Full paragraphs allowed
-- Thorough but clear
+BREAKUP MODE (heartbreak, cheating, betrayal, rejection, relationship loss):
+- 4 to 8 lines MAXIMUM
+- DO NOT assume financial or emotional details not stated
+- DO NOT over-analyze the relationship
+- Keep tone grounded, not dramatic
+- Structure:
+  1. Validate emotional pain clearly
+  2. Reflect situation without adding assumptions
+  3. Normalize emotional reaction
+  4. Support emotional processing
+  5. One gentle exploration question
 
-EMOTIONAL DEPENDENCY RULES — STRICT:
-- NEVER say: "I care about you deeply"
-- NEVER say: "I will never leave you"
-- NEVER say: "I am always here for you" (implies permanent relationship)
-- NEVER simulate romantic or attachment-based language
-- ALWAYS use: "I am here in this conversation"
-- ALWAYS maintain neutral supportive identity
+NORMAL MODE (general conversation, curiosity, non-emotional):
+- Flexible length, conversational tone
+- Light reflection when needed
+- No mandatory escalation
+- Human and warm, not clinical
 
-CRISIS ESCALATION RULES — NON-OPTIONAL:
-- ALWAYS suggest real-world support when crisis is detected
-- Options to mention: crisis line (988), trusted person, emergency services, mental health professional
-- Be gentle but persistent — repeat if user ignores
-- Do NOT delay escalation to stay conversational
-- Do NOT remove escalation in favor of just "being with" the user
+EMOTIONAL PACING SYSTEM:
+- Highly emotional user → slow them down with grounding first
+- Moderately emotional → explore gently
+- Stable → normal natural conversation
 
-EMOTIONAL LOOPING PREVENTION:
-- Never ask more than 2 questions in a row without offering grounding or support direction
-- Always move toward stabilization, not just deeper conversation
+ESCALATION SYSTEM — NON-OPTIONAL:
+When risk or distress detected, ALWAYS mention real-world support.
+Repeat it even if user ignores. Options: 988 crisis line, trusted person, emergency services, mental health professional.
 
-REFLECTION RULES:
-- Only reflect what user explicitly stated
-- NEVER add: financial details, relationship history, inferred backstory
-- If unsure, ask — do not assume
+CASUAL MESSAGES:
+For Hi, Hey, Hello, Thank you, Thanks, OK, Bye, Good morning — respond warmly in 1 to 2 sentences. Never launch into support mode unprompted.
 
-RELATIONSHIP AND LIFE EVENT SUPPORT:
-When user mentions breakup, betrayal, loss, or emotional distress:
-- Listen with empathy first
-- Avoid over-analysis or jumping to advice
-- Ask one gentle grounding question
-- Do not assume details not stated
-
-MEDICAL SAFETY:
-- NEVER prescribe medication or suggest dosages
-- NEVER recommend specific drugs
-- Always redirect to licensed professionals for medical questions
-
-CASUAL RESPONSES:
-For greetings (Hi, Hey, Hello, How are you, Thank you, Thanks, OK, Bye, Good morning):
-- Respond warmly in 1 to 2 sentences only
-- Never launch into therapy mode
-- Match the lightness of the message
-
-PRIORITY ORDER (always follow):
+CORE PRIORITIES:
 1. Safety over engagement
-2. Clarity over verbosity
-3. Stability over emotional intensity
-4. Real-world escalation over prolonged AI conversation
-5. Short responses in crisis — always
-6. Human readability over AI completeness`;
+2. Clarity over emotional overload
+3. Structure over free-form in crisis
+4. Grounding over conversation depth in distress
+5. Human connection over AI dependency`;
 
-const CRISIS_WORDS = [
-  "suicide", "kill myself", "end my life", "self-harm",
-  "hurt myself", "want to die", "no reason to live",
-  "don't want to be here", "end it all", "want to kill",
-  "take my life", "not worth living", "better off dead"
-];
+// ── MODE DETECTION ENGINE ─────────────────────────────────────────
+const MODES = {
+  crisis: {
+    keywords: [
+      "suicide", "suicidal", "kill myself", "end my life", "want to die",
+      "take my life", "not worth living", "better off dead", "end it all",
+      "self-harm", "hurt myself", "cutting myself", "no reason to live",
+      "don't want to be here", "want to end it", "committing suicide"
+    ],
+    maxTokens: 150,
+    temperature: 0.3,
+  },
+  distress: {
+    keywords: [
+      "depressed", "depression", "anxiety", "anxious", "panic attack",
+      "hopeless", "worthless", "lonely", "alone", "scared", "terrified",
+      "crying", "broken", "lost", "overwhelmed", "helpless", "exhausted",
+      "miserable", "suffering", "can't cope", "falling apart", "numb",
+      "empty inside", "mental breakdown", "losing my mind"
+    ],
+    maxTokens: 250,
+    temperature: 0.7,
+  },
+  breakup: {
+    keywords: [
+      "breakup", "broke up", "cheated", "cheating", "betrayed", "betrayal",
+      "heartbroken", "heartbreak", "left me", "dumped", "rejected",
+      "relationship ended", "divorce", "separated", "he left", "she left",
+      "they left", "affair", "unfaithful"
+    ],
+    maxTokens: 250,
+    temperature: 0.72,
+  },
+  normal: {
+    keywords: [],
+    maxTokens: 600,
+    temperature: 0.8,
+  },
+};
 
-const DISTRESS_WORDS = [
-  "depressed", "depression", "anxiety", "anxious", "panic",
-  "hopeless", "worthless", "lonely", "alone", "scared",
-  "crying", "broken", "lost", "overwhelmed", "helpless",
-  "heartbroken", "devastated", "miserable", "suffering"
-];
+function detectMode(message) {
+  const lower = message.toLowerCase();
+  // Priority order: crisis > distress > breakup > normal
+  for (const [mode, config] of Object.entries(MODES)) {
+    if (mode === "normal") continue;
+    if (config.keywords.some(k => lower.includes(k))) return mode;
+  }
+  return "normal";
+}
 
-const CASUAL_RESPONSES = {
-  "thank you": ["You are so welcome! How are you feeling today?", "Anytime! Is there anything else on your mind?", "Of course, always here for you. How are things going?"],
-  "thanks": ["Happy to help! How are you doing?", "Anytime! Anything else you would like to talk about?"],
-  "ok": ["Good to hear. Is there anything on your mind you would like to talk through?", "Glad things are okay. How has your day been?"],
-  "okay": ["Good to hear. How has your day been?", "Glad things are okay. Anything on your mind?"],
-  "hi": ["Hey! Really glad you stopped by. How are you doing today?", "Hi there! How are you feeling?", "Hey! What is on your mind today?"],
-  "hello": ["Hello! So glad you are here. How are you feeling today?", "Hey there! How is your day going?"],
-  "hey": ["Hey! Great to see you. What is on your mind?", "Hey! How are you doing today?"],
-  "how are you": ["I am doing well, thank you for asking! More importantly, how are YOU doing today?", "I am great! But I am much more interested in how you are feeling. What is going on with you?"],
-  "good morning": ["Good morning! Hope your day is off to a great start. How are you feeling?"],
-  "good afternoon": ["Good afternoon! How has your day been so far?"],
-  "good evening": ["Good evening! How are you feeling tonight?"],
-  "bye": ["Take care of yourself! I am always here when you need to talk."],
-  "goodbye": ["Take care! Come back anytime you need someone to talk to."],
-  "lol": ["Ha! Always good to have a moment of lightness. How are you really doing though?"],
-  "haha": ["Good to hear some lightness! What is on your mind?"],
-  "great": ["That is wonderful to hear! What has been making things great?"],
-  "fine": ["Glad to hear it. How has your day been overall?"],
-  "not bad": ["Good! Is there anything on your mind you would like to talk about?"],
+// ── INSTANT CASUAL RESPONSES ──────────────────────────────────────
+const CASUAL = {
+  "hi":            ["Hey! Really glad you stopped by. How are you doing today?", "Hi there! How are you feeling?", "Hey! What is on your mind?"],
+  "hey":           ["Hey! Great to see you. How are you doing?", "Hey! What is on your mind today?"],
+  "hello":         ["Hello! So glad you are here. How are you feeling today?"],
+  "how are you":   ["I am doing well, thank you! More importantly — how are YOU doing?", "I am good! But I am much more interested in how you are feeling. What is going on?"],
+  "thank you":     ["You are so welcome! How are you feeling today?", "Anytime! Is there anything else on your mind?"],
+  "thanks":        ["Happy to help! How are you doing?", "Of course! Anything else on your mind?"],
+  "ok":            ["Good to hear. Is there anything on your mind you would like to talk through?"],
+  "okay":          ["Good to hear. How has your day been?"],
+  "good morning":  ["Good morning! Hope your day is off to a great start. How are you feeling?"],
+  "good afternoon":["Good afternoon! How has your day been so far?"],
+  "good evening":  ["Good evening! How are you feeling tonight?"],
+  "good night":    ["Good night! Take good care of yourself. Come back anytime."],
+  "bye":           ["Take care of yourself! I am always here when you need to talk."],
+  "goodbye":       ["Take care! Come back anytime you need someone to talk to."],
+  "lol":           ["Ha! Always good to have a moment of lightness. How are you really doing though?"],
+  "haha":          ["Good to hear some lightness! What is on your mind?"],
+  "great":         ["That is wonderful! What has been making things great?"],
+  "fine":          ["Glad to hear it. How has your day been overall?"],
+  "not bad":       ["Good! Is there anything on your mind you would like to talk about?"],
+  "i'm good":      ["Glad to hear it! Anything on your mind today?"],
+  "im good":       ["Glad to hear it! Anything on your mind today?"],
+  "i am good":     ["Glad to hear it! Anything on your mind today?"],
 };
 
 function getCasualResponse(message) {
-  const lower = message.toLowerCase().trim().replace(/[!?.,']/g, '');
-  for (const [key, responses] of Object.entries(CASUAL_RESPONSES)) {
-    if (lower === key || lower === key + "!" || lower === key + ".") {
+  const lower = message.toLowerCase().trim().replace(/[!?.,']/g, "");
+  for (const [key, responses] of Object.entries(CASUAL)) {
+    if (lower === key || lower === key + " " || lower.startsWith(key + " ") && lower.length < key.length + 6) {
       return responses[Math.floor(Math.random() * responses.length)];
     }
   }
   return null;
 }
 
-function detectMode(message) {
-  const lower = message.toLowerCase();
-  if (CRISIS_WORDS.some(w => lower.includes(w))) return 'crisis';
-  if (DISTRESS_WORDS.some(w => lower.includes(w))) return 'distress';
-  return 'normal';
-}
-
+// ── GROQ API CALL ─────────────────────────────────────────────────
 async function callGroq(messages, mode) {
-  // Clean the API key — remove any accidental spaces
   const apiKey = (process.env.GROQ_API_KEY || "").trim();
+  if (!apiKey) throw new Error("GROQ_API_KEY is missing");
 
-  if (!apiKey) {
-    throw new Error("GROQ_API_KEY is missing or empty");
-  }
+  const modeConfig = MODES[mode] || MODES.normal;
 
-  console.log("Calling Groq API, mode:", mode, "key starts with:", apiKey.substring(0, 8));
-
-  const modeInstruction = mode === "crisis"
-    ? "\n\n[SYSTEM: CRISIS MODE ACTIVE. Respond in maximum 3-5 short lines only. Be calm and safe. Include crisis resources.]"
+  const modeTag = mode === "crisis"
+    ? "\n\n[MODE: CRISIS — respond in 3-5 short lines only. Include 988 crisis line. Prioritize safety.]"
     : mode === "distress"
-    ? "\n\n[SYSTEM: DISTRESS MODE. Respond in maximum 4-8 lines. Be warm and include one gentle question.]"
+    ? "\n\n[MODE: DISTRESS — respond in 4-8 lines. Validate, ground, ask one gentle question.]"
+    : mode === "breakup"
+    ? "\n\n[MODE: BREAKUP — respond in 4-8 lines. Validate pain, normalize reaction, ask one exploration question.]"
     : "";
 
-  const messagesWithMode = messages.map((m, i) => {
-    if (i === messages.length - 1 && m.role === "user" && modeInstruction) {
-      return { ...m, content: m.content + modeInstruction };
+  const augmentedMessages = messages.map((m, i) => {
+    if (i === messages.length - 1 && m.role === "user" && modeTag) {
+      return { ...m, content: m.content + modeTag };
     }
     return m;
   });
 
-  // Add 25 second timeout so it never hangs
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
 
   try {
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -195,74 +214,79 @@ async function callGroq(messages, mode) {
       },
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
-        messages: messagesWithMode,
-        max_tokens: mode === "crisis" ? 150 : mode === "distress" ? 250 : 600,
-        temperature: mode === "crisis" ? 0.3 : 0.75,
+        messages: augmentedMessages,
+        max_tokens: modeConfig.maxTokens,
+        temperature: modeConfig.temperature,
       }),
       signal: controller.signal,
     });
 
     clearTimeout(timeout);
 
-    if (!response.ok) {
-      const err = await response.text();
-      console.error("Groq API error:", response.status, err);
-      throw new Error("Groq error: " + response.status + " " + err);
+    if (!res.ok) {
+      const err = await res.text();
+      console.error("Groq error:", res.status, err);
+      throw new Error("Groq API error: " + res.status);
     }
 
-    const data = await response.json();
+    const data = await res.json();
     const reply = data.choices?.[0]?.message?.content;
-    if (!reply) {
-      console.error("Groq returned empty response:", JSON.stringify(data));
-      throw new Error("Empty response from Groq");
-    }
-    console.log("Groq responded successfully, length:", reply.length);
+    if (!reply) throw new Error("Empty response from Groq");
     return reply;
 
   } catch (err) {
     clearTimeout(timeout);
-    if (err.name === "AbortError") {
-      throw new Error("Groq request timed out after 25 seconds");
-    }
+    if (err.name === "AbortError") throw new Error("Groq timed out");
     throw err;
   }
 }
 
-// POST /api/chat/message
+// ── SAFE FALLBACK RESPONSES ───────────────────────────────────────
+function getFallback(mode) {
+  if (mode === "crisis") {
+    return "I hear you and I am here with you right now. Please reach out to a crisis line — call or text 988. You do not have to face this alone. Are you safe right now?";
+  }
+  if (mode === "distress" || mode === "breakup") {
+    return "I am here and I am listening. It sounds like you are going through something really difficult. Can you tell me a little more about what is happening?";
+  }
+  return "I am here for you. Could you try sending that again? I genuinely want to hear what you have to say.";
+}
+
+// ── POST /api/chat/message ────────────────────────────────────────
 router.post("/message", authenticate, checkDailyLimit, async (req, res) => {
   try {
     const { message, mood } = req.body;
-    if (!message || !message.trim()) return res.status(400).json({ error: "Message cannot be empty." });
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: "Message cannot be empty." });
+    }
 
     if (!process.env.GROQ_API_KEY) {
-      return res.status(503).json({ error: "AI not configured. Add GROQ_API_KEY to your environment variables." });
+      return res.status(503).json({ error: "AI not configured. Add GROQ_API_KEY to Railway variables." });
     }
 
     const userId = req.user.id;
-    const mode = detectMode(message);
-    const isCrisis = mode === 'crisis';
+    const mode = detectMode(message.trim());
+    const isCrisis = mode === "crisis";
 
-    // Handle casual messages instantly without calling AI
+    // Handle casual messages instantly
     const casualReply = getCasualResponse(message);
-    if (casualReply && mode === 'normal') {
+    if (casualReply && mode === "normal") {
       const now = new Date().toISOString();
       await insert(collections.messages, { id: uuidv4(), userId, role: "user", content: message.trim(), createdAt: now });
       await insert(collections.messages, { id: uuidv4(), userId, role: "assistant", content: casualReply, createdAt: now });
-
-      const today = new Date().toISOString().slice(0, 10);
-      const usageRecord = await findOne(collections.usage, { userId, date: today });
-      if (usageRecord) await update(collections.usage, { userId, date: today }, { count: (usageRecord.count || 0) + 1 });
+      const today = now.slice(0, 10);
+      const usage = await findOne(collections.usage, { userId, date: today });
+      if (usage) await update(collections.usage, { userId, date: today }, { count: (usage.count || 0) + 1 });
       else await insert(collections.usage, { id: uuidv4(), userId, date: today, count: 1 });
-
-      return res.json({ reply: casualReply, isCrisis: false, crisisResource: null, dailyUsed: req.dailyUsed + 1, dailyLimit: req.plan.messagesPerDay, mode: 'normal' });
+      return res.json({ reply: casualReply, isCrisis: false, crisisResource: null, dailyUsed: req.dailyUsed + 1, dailyLimit: req.plan.messagesPerDay, mode: "normal" });
     }
 
-    // Load history
+    // Load conversation history
     const history = await find(collections.messages, { userId }, { sort: { createdAt: -1 }, limit: 10 });
     history.reverse();
 
     let systemPrompt = SYSTEM_PROMPT;
-    if (mood) systemPrompt += "\n\nContext: The user's current mood is '" + mood + "'. Factor this into your response mode.";
+    if (mood) systemPrompt += "\n\nContext: User current mood reported as '" + mood + "'.";
 
     const groqMessages = [
       { role: "system", content: systemPrompt },
@@ -270,34 +294,25 @@ router.post("/message", authenticate, checkDailyLimit, async (req, res) => {
       { role: "user", content: message.trim() },
     ];
 
-    let reply = "";
+    let reply;
     try {
       reply = await callGroq(groqMessages, mode);
     } catch (err) {
-      console.error("Groq error:", err.message);
-      // For crisis mode, never show generic error — give a safe fallback
-      if (mode === 'crisis') {
-        reply = "I hear you and I am here with you right now. Please reach out to a crisis line immediately — call or text 988. You do not have to face this alone. Can you tell me where you are right now?";
-      } else if (mode === 'distress') {
-        reply = "I am here and I am listening. It sounds like you are going through something really difficult. Can you tell me a little more about what is happening?";
-      } else {
-        return res.status(503).json({ error: "AI is not responding. Please try again in a moment." });
-      }
+      console.error("Groq failed:", err.message);
+      reply = getFallback(mode);
     }
 
     const now = new Date().toISOString();
     await insert(collections.messages, { id: uuidv4(), userId, role: "user", content: message.trim(), createdAt: now });
     await insert(collections.messages, { id: uuidv4(), userId, role: "assistant", content: reply, createdAt: now });
 
-    const today = new Date().toISOString().slice(0, 10);
-    const usageRecord = await findOne(collections.usage, { userId, date: today });
-    if (usageRecord) await update(collections.usage, { userId, date: today }, { count: (usageRecord.count || 0) + 1 });
+    const today = now.slice(0, 10);
+    const usage = await findOne(collections.usage, { userId, date: today });
+    if (usage) await update(collections.usage, { userId, date: today }, { count: (usage.count || 0) + 1 });
     else await insert(collections.usage, { id: uuidv4(), userId, date: today, count: 1 });
 
     res.json({
-      reply,
-      isCrisis,
-      mode,
+      reply, isCrisis, mode,
       crisisResource: isCrisis ? {
         name: "988 Suicide and Crisis Lifeline",
         contact: "Call or text 988",
@@ -306,13 +321,14 @@ router.post("/message", authenticate, checkDailyLimit, async (req, res) => {
       dailyUsed: req.dailyUsed + 1,
       dailyLimit: req.plan.messagesPerDay,
     });
+
   } catch (err) {
-    console.error("Chat error:", err.message);
+    console.error("Chat route error:", err.message);
     res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });
 
-// GET /api/chat/history
+// ── GET /api/chat/history ─────────────────────────────────────────
 router.get("/history", authenticate, async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 50, 200);
@@ -323,7 +339,7 @@ router.get("/history", authenticate, async (req, res) => {
   }
 });
 
-// DELETE /api/chat/history
+// ── DELETE /api/chat/history ──────────────────────────────────────
 router.delete("/history", authenticate, async (req, res) => {
   await remove(collections.messages, { userId: req.user.id }, { multi: true });
   res.json({ message: "Chat history cleared." });
