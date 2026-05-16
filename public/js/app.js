@@ -212,32 +212,15 @@ function renderChat() {
   scrollToBottom();
 }
 
-// Robust scroll system using both scrollTop and scrollIntoView
+// Clean scroll system — anchor + single requestAnimationFrame
+// Fires AFTER DOM paint, guaranteed. No timeouts, no loops.
 function scrollToBottom(smooth) {
-  var area = document.getElementById("chatMessages");
-  var anchor = document.getElementById("scrollAnchor");
-  if (!area) return;
-
-  var behavior = smooth ? "smooth" : "auto";
-
-  function doScroll() {
-    // Method 1: direct scrollTop
-    area.scrollTop = area.scrollHeight;
-    // Method 2: scroll anchor into view (most reliable)
-    if (anchor) {
-      anchor.scrollIntoView({ behavior: behavior, block: "end" });
-    }
-  }
-
-  // Fire multiple times to beat race conditions
-  doScroll();
-  setTimeout(doScroll, 0);
   requestAnimationFrame(function() {
-    doScroll();
-    requestAnimationFrame(doScroll);
+    var anchor = document.getElementById("scrollAnchor");
+    if (anchor) {
+      anchor.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "end" });
+    }
   });
-  setTimeout(doScroll, 100);
-  setTimeout(doScroll, 300);
 }
 
 let msgCounter = 0;
@@ -256,22 +239,14 @@ function appendMessageToDOM(role, content, time, isNew) {
     : '<div class="msg-time">' + timeStr + "</div>";
   div.innerHTML = '<div class="msg-sender">' + (role === "user" ? "You" : "Serene") + "</div>" +
     '<div class="' + bubbleCls + '">' + escHtml(content) + "</div>" + ttsBtn;
-  // Insert before scroll anchor so anchor stays at bottom
+  // Always insert before anchor so anchor stays pinned at bottom
   var anchor = document.getElementById("scrollAnchor");
   if (anchor) {
     area.insertBefore(div, anchor);
   } else {
     area.appendChild(div);
   }
-  // Scroll immediately then again after image/font load
   scrollToBottom(false);
-  // Use MutationObserver to catch any async content
-  var observer = new MutationObserver(function() {
-    scrollToBottom(false);
-    observer.disconnect();
-  });
-  observer.observe(area, { childList: true, subtree: true, characterData: true });
-  setTimeout(function() { observer.disconnect(); }, 1000);
 }
 
 function showThinking() {
@@ -328,9 +303,6 @@ async function sendMessage() {
     if (typeof EmotionTracker !== "undefined") EmotionTracker.track(text, reply);
     const crisisBanner = document.getElementById("crisisBanner");
     if (res.data.isCrisis && crisisBanner) crisisBanner.style.display = "flex";
-    // Smooth scroll after AI response — feels natural like WhatsApp
-    setTimeout(function() { scrollToBottom(true); }, 50);
-    setTimeout(function() { scrollToBottom(true); }, 300);
     if (res.data.dailyLimit && res.data.dailyUsed) {
       const remaining = res.data.dailyLimit - res.data.dailyUsed;
       if (remaining <= 2 && state.user && state.user.plan === "free") {
