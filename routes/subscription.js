@@ -14,23 +14,56 @@ router.get("/plans", (req, res) => {
   res.json({
     plans: [
       {
-        id: "free", name: "Free", price: "$0", interval: "forever",
-        features: ["10 AI messages per day","5 journal entries","Mood tracking","End-to-end encryption"],
+        id: "free",
+        name: "Free",
+        price: "$0",
+        interval: "forever",
+        features: [
+          "200 AI messages per day",
+          "5 journal entries",
+          "Mood tracking",
+          "End-to-end encryption",
+          "Basic chat history",
+        ],
       },
       {
-        id: "pro_monthly", name: "Pro", price: "$9.99", interval: "per month",
+        id: "pro_monthly",
+        name: "Pro Monthly",
+        price: "$19",
+        interval: "per month",
         stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
-        trial: "7-day free trial", popular: true,
-        features: ["500 AI messages per day","Unlimited journal entries","AI journal reflections","Mood analytics","Export your data","Priority support"],
+        trial: "7-day free trial",
+        popular: true,
+        features: [
+          "Unlimited AI messages per day",
+          "Unlimited journal entries",
+          "AI journal reflections",
+          "Mood analytics and insights",
+          "Export all your data",
+          "Priority support",
+          "End-to-end encryption",
+        ],
       },
       {
-        id: "pro_annual", name: "Pro Annual", price: "$79", interval: "per year",
-        stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
-        savings: "Save $40 vs monthly", trial: "7-day free trial",
-        features: ["Everything in Pro Monthly","2 months free","Annual wellness report"],
+        id: "live_session",
+        name: "Live Session",
+        price: "$25",
+        interval: "per session",
+        stripePriceId: process.env.STRIPE_PRICE_LIVE_SESSION,
+        features: [
+          "1-on-1 live AI wellness session",
+          "60 minutes dedicated support",
+          "Session summary and action plan",
+          "Follow-up resources",
+          "Priority response time",
+        ],
       },
     ],
-    paymentMethods: ["Visa", "Mastercard", "PayPal"],
+    paymentMethods: [
+      { name: "Mastercard", icon: "credit-card" },
+      { name: "PayPal",     icon: "brand-paypal" },
+      { name: "Stripe",     icon: "credit-card" },
+    ],
   });
 });
 
@@ -39,10 +72,13 @@ router.post("/checkout", authenticate, async (req, res) => {
   try {
     const stripe = getStripe();
     if (!stripe) {
-      return res.status(503).json({ error: "Payments not configured yet. Add STRIPE_SECRET_KEY to your .env file.", setupRequired: true });
+      return res.status(503).json({
+        error: "Payment system not configured yet. Add your Stripe key to the Railway variables.",
+        setupRequired: true,
+      });
     }
 
-    const { priceId } = req.body;
+    const { priceId, mode } = req.body;
     if (!priceId) return res.status(400).json({ error: "Price ID is required." });
 
     let customerId = req.user.stripeCustomerId;
@@ -57,18 +93,30 @@ router.post("/checkout", authenticate, async (req, res) => {
     }
 
     const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-    const session = await stripe.checkout.sessions.create({
+
+    // Live sessions are one-time payments, subscriptions are recurring
+    const checkoutMode = mode === "payment" ? "payment" : "subscription";
+
+    const sessionConfig = {
       customer: customerId,
-      mode: "subscription",
+      mode: checkoutMode,
       payment_method_types: ["card", "paypal"],
       line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: { trial_period_days: 7, metadata: { userId: req.user.id } },
-      success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/payment-cancel`,
+      success_url: baseUrl + "/payment-success?session_id={CHECKOUT_SESSION_ID}",
+      cancel_url: baseUrl + "/payment-cancel",
       metadata: { userId: req.user.id },
       allow_promotion_codes: true,
-    });
+    };
 
+    // Only add trial for subscriptions
+    if (checkoutMode === "subscription") {
+      sessionConfig.subscription_data = {
+        trial_period_days: 7,
+        metadata: { userId: req.user.id },
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
     res.json({ checkoutUrl: session.url, sessionId: session.id });
   } catch (err) {
     console.error("Checkout error:", err.message);
@@ -80,12 +128,11 @@ router.post("/checkout", authenticate, async (req, res) => {
 router.post("/portal", authenticate, async (req, res) => {
   try {
     const stripe = getStripe();
-    if (!stripe) return res.status(503).json({ error: "Payments not configured.", setupRequired: true });
+    if (!stripe) return res.status(503).json({ error: "Payment system not configured.", setupRequired: true });
     if (!req.user.stripeCustomerId) return res.status(400).json({ error: "No subscription found." });
-
     const session = await stripe.billingPortal.sessions.create({
       customer: req.user.stripeCustomerId,
-      return_url: `${process.env.FRONTEND_URL || "http://localhost:3000"}/settings`,
+      return_url: (process.env.FRONTEND_URL || "http://localhost:3000") + "/settings",
     });
     res.json({ portalUrl: session.url });
   } catch (err) {
@@ -107,14 +154,12 @@ router.get("/status", authenticate, (req, res) => {
 router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   const stripe = getStripe();
   if (!stripe) return res.json({ received: true });
-
   let event;
   try {
     event = stripe.webhooks.constructEvent(req.body, req.headers["stripe-signature"], process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     return res.status(400).json({ error: "Webhook signature invalid." });
   }
-
   const obj = event.data.object;
   try {
     switch (event.type) {
@@ -122,8 +167,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       case "customer.subscription.updated": {
         const userId = obj.metadata?.userId;
         if (!userId) break;
-        const isAnnual = obj.items?.data[0]?.price?.id === process.env.STRIPE_PRICE_ANNUAL;
-        const newPlan = (obj.status === "active" || obj.status === "trialing") ? (isAnnual ? "annual" : "pro") : "free";
+        const newPlan = (obj.status === "active" || obj.status === "trialing") ? "pro" : "free";
         await update(collections.users, { id: userId }, {
           plan: newPlan,
           stripeSubscriptionId: obj.id,
@@ -151,7 +195,6 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
   } catch (err) {
     console.error("Webhook error:", err.message);
   }
-
   res.json({ received: true });
 });
 

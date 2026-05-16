@@ -44,6 +44,6 @@ var api = {
   getMoodHistory: function(token) { return this.get("/api/journal/mood/history", token); },
 
   getPlans:       function() { return this.get("/api/subscription/plans"); },
-  checkout:       function(priceId, token) { return this.post("/api/subscription/checkout", { priceId: priceId }, token); },
+  checkout:       function(priceId, mode, token) { return this.post("/api/subscription/checkout", { priceId: priceId, mode: mode || "subscription" }, token); },
   openPortal:     function(token) { return this.post("/api/subscription/portal", {}, token); },
 };

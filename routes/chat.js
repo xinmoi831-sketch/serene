@@ -53,6 +53,35 @@ const CRISIS_WORDS = [
   "don't want to be here", "end it all"
 ];
 
+// Simple casual responses - handle before sending to AI
+const CASUAL_RESPONSES = {
+  "thank you": ["You are so welcome! That is what I am here for. How are you feeling right now?", "Anytime! It genuinely makes me happy to help. Is there anything else on your mind?", "Of course! I am always here for you. How are things going overall?"],
+  "thanks": ["Happy to help! How are you doing today?", "Anytime! Is there anything else you would like to talk about?", "Of course! I am always here. How are you feeling?"],
+  "ok": ["Good to hear! Is there anything on your mind you would like to talk through?", "Glad you are okay! How has your day been going?"],
+  "okay": ["Good to hear! How has your day been?", "Glad things are okay! Anything on your mind?"],
+  "hi": ["Hey! Really glad you stopped by. How are you doing today?", "Hi there! Good to see you. How are you feeling?", "Hey! What is on your mind today?"],
+  "hello": ["Hello! So glad you are here. How are you feeling today?", "Hey there! How is your day going?"],
+  "hey": ["Hey! Great to see you. What is on your mind?", "Hey! How are you doing today?", "Hey there! How are things going?"],
+  "how are you": ["I am doing really well, thank you for asking! More importantly — how are YOU doing today?", "I am great! But I am much more interested in how you are feeling. What is going on with you?"],
+  "good morning": ["Good morning! Hope your day is off to a great start. How are you feeling?", "Good morning! How are you doing today?"],
+  "good afternoon": ["Good afternoon! How has your day been so far?", "Good afternoon! How are you feeling today?"],
+  "good evening": ["Good evening! How has your day been?", "Good evening! How are you feeling tonight?"],
+  "bye": ["Take care of yourself! Remember I am always here when you need to talk.", "Goodbye! Take care and come back anytime."],
+  "goodbye": ["Take care! I am always here whenever you need me.", "Goodbye! Wishing you a wonderful day."],
+  "lol": ["Ha! Glad there is a moment of lightness. What is going on with you today?", "I love that! How are you doing?"],
+  "haha": ["Always good to have a laugh! How are you really doing though?", "Good to hear some lightness! What is on your mind?"],
+};
+
+function getCasualResponse(message) {
+  const lower = message.toLowerCase().trim().replace(/[!?.]/g, '');
+  for (const [key, responses] of Object.entries(CASUAL_RESPONSES)) {
+    if (lower === key || lower.includes(key)) {
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+  }
+  return null;
+}
+
 async function callGroq(messages) {
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
@@ -105,12 +134,19 @@ router.post("/message", authenticate, checkDailyLimit, async (req, res) => {
 
     const isCrisis = CRISIS_WORDS.some(w => message.toLowerCase().includes(w));
 
+    // Check for casual messages first - no need to call AI for simple greetings
+    const casualReply = getCasualResponse(message);
+
     let reply = "";
-    try {
-      reply = await callGroq(groqMessages);
-    } catch (err) {
-      console.error("Groq error:", err.message);
-      return res.status(503).json({ error: "AI is not responding. Check your GROQ_API_KEY in .env" });
+    if (casualReply && !isCrisis) {
+      reply = casualReply;
+    } else {
+      try {
+        reply = await callGroq(groqMessages);
+      } catch (err) {
+        console.error("Groq error:", err.message);
+        return res.status(503).json({ error: "AI is not responding. Check your GROQ_API_KEY in .env" });
+      }
     }
 
     const now = new Date().toISOString();

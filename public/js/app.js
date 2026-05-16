@@ -439,9 +439,12 @@ async function showPlans() {
 
 function hidePlans() { document.getElementById("plansModal").style.display = "none"; }
 
-async function startCheckout(priceId) {
-  if (!priceId || priceId === "undefined") { alert("Stripe not configured yet. Add your STRIPE_SECRET_KEY to .env."); return; }
-  const res = await api.checkout(priceId, api.getToken());
+async function startCheckout(priceId, mode) {
+  if (!priceId || priceId === "undefined") {
+    alert("Payments not configured yet.\n\nTo enable:\n1. Go to dashboard.stripe.com\n2. Create products: Pro Monthly at $19 and Live Session at $25\n3. Add the price IDs to Railway variables as STRIPE_PRICE_MONTHLY and STRIPE_PRICE_LIVE_SESSION\n4. Add your STRIPE_SECRET_KEY to Railway variables");
+    return;
+  }
+  const res = await api.checkout(priceId, mode || "subscription", api.getToken());
   if (res.ok) window.location.href = res.data.checkoutUrl;
   else alert(res.data.error || "Could not start checkout.");
 }
