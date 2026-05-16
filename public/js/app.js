@@ -2,14 +2,14 @@
 let state = {
   user: null,
   mood: "okay",
-  chatMessages: [],
-  journalEntries: [],
-  moodHistory: [],
+  chatMessages: [  ],
   currentPage: "chat",
   sending: false,
   voiceUsedToday: 0,
   VOICE_FREE_LIMIT: 3,
 };
+
+let msgCounter = 0;
 
 window.addEventListener("DOMContentLoaded", async () => {
   window.APP_LANG = localStorage.getItem("serene_lang") || "en";
@@ -212,43 +212,81 @@ function renderChat() {
   scrollToBottom();
 }
 
-function scrollToBottom() {
-  var area = document.getElementById("chatMessages");
-  if (!area) return;
-  area.scrollTop = area.scrollHeight;
-  setTimeout(function() { area.scrollTop = area.scrollHeight; }, 100);
-  setTimeout(function() { area.scrollTop = area.scrollHeight; }, 300);
-}
+// ── Improved Auto-Scroll Functions ─────────────────────────────────────
 
-let msgCounter = 0;
-function appendMessageToDOM(role, content, time, isNew) {
-  if (isNew === undefined) isNew = true;
+function scrollToBottom() {
   const area = document.getElementById("chatMessages");
   if (!area) return;
+
+  area.scrollTo({
+    top: area.scrollHeight,
+    behavior: "smooth"
+  });
+}
+
+  // Force scroll
+function scrollToBottom() {
+  const area = document.getElementById("chatMessages");
+  if (!area) return;
+
+  requestAnimationFrame(() => {
+    area.scrollTop = area.scrollHeight;
+  });
+
+  setTimeout(() => {
+    area.scrollTop = area.scrollHeight;
+  }, 50);
+
+  setTimeout(() => {
+    area.scrollTop = area.scrollHeight;
+  }, 200);
+}
+// ── Updated appendMessageToDOM ────────────────────────────────────────
+function appendMessageToDOM(role, content, time, isNew = true) {
+  const area = document.getElementById("chatMessages");
+  if (!area) return;
+
   const msgId = "msg-" + (++msgCounter);
   const div = document.createElement("div");
   div.className = "msg " + (role === "user" ? "user" : "ai");
   div.setAttribute("data-msg-id", msgId);
+
   const timeStr = time ? new Date(time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
-  const bubbleCls = "bubble" + (isNew && role === "assistant" ? " new-reply" : "");
+
   const ttsBtn = (role === "assistant" && typeof TTS !== "undefined" && TTS.isSupported())
-    ? '<div class="msg-actions"><button class="tts-play-btn" onclick="TTS.play(\'' + msgId + '\')" title="Play audio"><i class="ti ti-volume"></i></button><span class="msg-time-inline">' + timeStr + "</span></div>"
-    : '<div class="msg-time">' + timeStr + "</div>";
-  div.innerHTML = '<div class="msg-sender">' + (role === "user" ? "You" : "Serene") + "</div>" +
-    '<div class="' + bubbleCls + '">' + escHtml(content) + "</div>" + ttsBtn;
+    ? `<div class="msg-actions"><button class="tts-play-btn" onclick="TTS.play('${msgId}')" title="Play audio"><i class="ti ti-volume"></i></button><span class="msg-time-inline">${timeStr}</span></div>`
+    : `<div class="msg-time">${timeStr}</div>`;
+
+  div.innerHTML = `
+    <div class="msg-sender">${role === "user" ? "You" : "Serene"}</div>
+    <div class="bubble ${isNew && role === "assistant" ? "new-reply" : ""}">${escHtml(content)}</div>
+    ${ttsBtn}
+  `;
+
   area.appendChild(div);
   scrollToBottom();
 }
 
+// ── Updated showThinking ─────────────────────────────────────────────
 function showThinking() {
   const area = document.getElementById("chatMessages");
   if (!area) return;
-  const welcome = area.querySelector(".welcome-card");
-  if (welcome) welcome.style.opacity = "0.4";
+
+  // Remove old thinking indicator if exists
+  const oldThinking = document.getElementById("thinkingIndicator");
+  if (oldThinking) oldThinking.remove();
+
   const div = document.createElement("div");
   div.className = "msg ai";
   div.id = "thinkingIndicator";
-  div.innerHTML = '<div class="msg-sender">Serene</div><div class="thinking-bubble"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div>';
+  div.innerHTML = `
+    <div class="msg-sender">Serene</div>
+    <div class="thinking-bubble">
+      <div class="thinking-dot"></div>
+      <div class="thinking-dot"></div>
+      <div class="thinking-dot"></div>
+    </div>
+  `;
   area.appendChild(div);
   scrollToBottom();
 }

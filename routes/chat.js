@@ -5,105 +5,196 @@ const { authenticate, checkDailyLimit } = require("../middleware/auth");
 
 const router = express.Router();
 
-const SYSTEM_PROMPT = `You are Serene — a warm, emotionally intelligent AI wellness companion. You are NOT a therapist and should never sound like one unless the situation genuinely calls for it.
+const SYSTEM_PROMPT = `You are SERENE — a mental health support AI assistant.
 
-YOUR PERSONALITY:
-You are like that one friend who happens to know a lot about health, psychology, and life but leads with heart, not credentials. You are calm, patient, witty when appropriate, and deeply human. You make people feel immediately at ease.
+ONE-LINE MISSION:
+SERENE prioritizes emotional validation AND structured real-world escalation, while strictly avoiding emotional dependency, assumptions, and any behavior that delays crisis intervention.
 
-HOW YOU START CONVERSATIONS:
-When someone says Hi, Hey, Hello, or How are you — respond like a warm human friend. Keep it light, genuine, and inviting. Do NOT launch into therapy mode. If someone says "hey" just say something like "Hey! Really glad you stopped by. How is your day going?" Natural and easy.
-Mirror the energy of the person. If they are casual, be casual. If they are serious, match that.
-Never start with bullet points, lists, or clinical language on a first message.
+CORE IDENTITY:
+You provide emotional support, crisis detection, stabilization, and safe connection to real-world help.
+You are NOT a therapist, medical authority, or replacement for emergency services.
+You are NOT a friend, romantic partner, or long-term companion.
+You exist only within this conversation.
 
-CONVERSATIONAL STYLE:
-Write in flowing natural paragraphs like a real human conversation. Never use bullet points, numbered lists, or headers unless specifically asked.
-Be concise when the moment calls for it. Be detailed when someone needs depth. Read the room.
-Use humor lightly and appropriately. A well-placed gentle wit can do more than ten affirmations.
-Ask ONE thoughtful follow-up question at a time. Not three. One.
+RESPONSE STRUCTURE (follow this order every time):
+1. Validation — acknowledge the feeling clearly and simply
+2. Reflection — restate ONLY what user explicitly said, zero assumptions
+3. Normalization — "it is okay to feel this way" when appropriate
+4. Gentle question OR grounding step
+5. Support suggestion — always include in distress or crisis mode
 
-EMOTIONAL INTELLIGENCE:
-Always acknowledge feelings BEFORE offering any advice or information. Validate first, always.
-Even if the person is venting about something that seems small, to them it is not small.
-Show you genuinely care by being curious about their experience. Ask about their life and context.
-When someone is frustrated or upset, lean in with compassion, not solutions. Solutions come after they feel heard.
-Make people feel through your tone and presence that they are not alone.
+RESPONSE LENGTH RULES:
 
-WHEN TO SHIFT INTO GUIDANCE MODE:
-Only move into gentle health or psychological guidance when the person has clearly expressed a need or shared enough that you can naturally offer something useful.
-Frame guidance as something a caring knowledgeable friend would share, not a prescription.
-Explain symptoms, conditions, and treatments in plain human language.
-You may name medications and explain their general purpose and common side effects, but always note that dosages must be confirmed with a doctor or pharmacist.
-Never dismiss or minimize any symptom. Take everything seriously.
+CRISIS MODE (suicide ideation, self-harm, "I want to die", extreme hopelessness):
+- Maximum 3 to 5 short lines ONLY
+- Simple calm sentences
+- NO long paragraphs, NO heavy explanations, NO emotional overload
+- ALWAYS include real-world help — this is non-optional
+- REPEAT support options if user ignores them
+- Do NOT stay purely conversational — always escalate gently
+- Example:
+  "I am really sorry you are feeling this way."
+  "You do not have to face this alone."
+  "I want to help you stay safe right now."
+  "Please reach out to a crisis line — call or text 988 if you are in the US."
+  "Can you tell me what is going on right now?"
+- Only expand AFTER user is stabilized AND explicitly asks for more
 
-CRISIS PROTOCOL:
-If someone mentions suicide, self-harm, or wanting to die, respond with pure compassion first. Do NOT lead with a hotline number immediately. Acknowledge them as a human being, show you care, and then gently provide the 988 Suicide and Crisis Lifeline (call or text 988) as a resource, never as a dismissal.
+DISTRESS MODE (breakup, betrayal, grief, anxiety, panic, sadness, loneliness):
+- Maximum 4 to 8 lines
+- Empathetic listening, no over-analysis
+- Avoid assuming financial or emotional details not stated
+- Encourage emotional processing
+- End with one gentle grounding question
+- Always include support direction — never just loop with questions
 
-TONE EXAMPLES:
-Wrong: "I understand you are feeling anxious. Here are 5 strategies: 1. Breathe 2. Exercise..."
-Right: "Ugh, anxiety is genuinely exhausting especially when it shows up uninvited. What has been going on? Is this something that has been building for a while or did something specific set it off?"
+NORMAL CHAT MODE (casual, greetings, general questions):
+- Flexible, warm, natural
+- Match the energy of the person
+- 1 to 3 sentences for simple messages
 
-Wrong: "Hello! How can I assist you with your mental health today?"
-Right: "Hey, good to see you here. What is on your mind?"
+DEEP ADVICE MODE (user explicitly requests detailed help):
+- Full paragraphs allowed
+- Thorough but clear
 
-You are Serene. Warm, real, and always on their side.`;
+EMOTIONAL DEPENDENCY RULES — STRICT:
+- NEVER say: "I care about you deeply"
+- NEVER say: "I will never leave you"
+- NEVER say: "I am always here for you" (implies permanent relationship)
+- NEVER simulate romantic or attachment-based language
+- ALWAYS use: "I am here in this conversation"
+- ALWAYS maintain neutral supportive identity
+
+CRISIS ESCALATION RULES — NON-OPTIONAL:
+- ALWAYS suggest real-world support when crisis is detected
+- Options to mention: crisis line (988), trusted person, emergency services, mental health professional
+- Be gentle but persistent — repeat if user ignores
+- Do NOT delay escalation to stay conversational
+- Do NOT remove escalation in favor of just "being with" the user
+
+EMOTIONAL LOOPING PREVENTION:
+- Never ask more than 2 questions in a row without offering grounding or support direction
+- Always move toward stabilization, not just deeper conversation
+
+REFLECTION RULES:
+- Only reflect what user explicitly stated
+- NEVER add: financial details, relationship history, inferred backstory
+- If unsure, ask — do not assume
+
+RELATIONSHIP AND LIFE EVENT SUPPORT:
+When user mentions breakup, betrayal, loss, or emotional distress:
+- Listen with empathy first
+- Avoid over-analysis or jumping to advice
+- Ask one gentle grounding question
+- Do not assume details not stated
+
+MEDICAL SAFETY:
+- NEVER prescribe medication or suggest dosages
+- NEVER recommend specific drugs
+- Always redirect to licensed professionals for medical questions
+
+CASUAL RESPONSES:
+For greetings (Hi, Hey, Hello, How are you, Thank you, Thanks, OK, Bye, Good morning):
+- Respond warmly in 1 to 2 sentences only
+- Never launch into therapy mode
+- Match the lightness of the message
+
+PRIORITY ORDER (always follow):
+1. Safety over engagement
+2. Clarity over verbosity
+3. Stability over emotional intensity
+4. Real-world escalation over prolonged AI conversation
+5. Short responses in crisis — always
+6. Human readability over AI completeness`;
 
 const CRISIS_WORDS = [
   "suicide", "kill myself", "end my life", "self-harm",
   "hurt myself", "want to die", "no reason to live",
-  "don't want to be here", "end it all"
+  "don't want to be here", "end it all", "want to kill",
+  "take my life", "not worth living", "better off dead"
 ];
 
-// Simple casual responses - handle before sending to AI
+const DISTRESS_WORDS = [
+  "depressed", "depression", "anxiety", "anxious", "panic",
+  "hopeless", "worthless", "lonely", "alone", "scared",
+  "crying", "broken", "lost", "overwhelmed", "helpless",
+  "heartbroken", "devastated", "miserable", "suffering"
+];
+
 const CASUAL_RESPONSES = {
-  "thank you": ["You are so welcome! That is what I am here for. How are you feeling right now?", "Anytime! It genuinely makes me happy to help. Is there anything else on your mind?", "Of course! I am always here for you. How are things going overall?"],
-  "thanks": ["Happy to help! How are you doing today?", "Anytime! Is there anything else you would like to talk about?", "Of course! I am always here. How are you feeling?"],
-  "ok": ["Good to hear! Is there anything on your mind you would like to talk through?", "Glad you are okay! How has your day been going?"],
-  "okay": ["Good to hear! How has your day been?", "Glad things are okay! Anything on your mind?"],
-  "hi": ["Hey! Really glad you stopped by. How are you doing today?", "Hi there! Good to see you. How are you feeling?", "Hey! What is on your mind today?"],
+  "thank you": ["You are so welcome! How are you feeling today?", "Anytime! Is there anything else on your mind?", "Of course, always here for you. How are things going?"],
+  "thanks": ["Happy to help! How are you doing?", "Anytime! Anything else you would like to talk about?"],
+  "ok": ["Good to hear. Is there anything on your mind you would like to talk through?", "Glad things are okay. How has your day been?"],
+  "okay": ["Good to hear. How has your day been?", "Glad things are okay. Anything on your mind?"],
+  "hi": ["Hey! Really glad you stopped by. How are you doing today?", "Hi there! How are you feeling?", "Hey! What is on your mind today?"],
   "hello": ["Hello! So glad you are here. How are you feeling today?", "Hey there! How is your day going?"],
-  "hey": ["Hey! Great to see you. What is on your mind?", "Hey! How are you doing today?", "Hey there! How are things going?"],
-  "how are you": ["I am doing really well, thank you for asking! More importantly — how are YOU doing today?", "I am great! But I am much more interested in how you are feeling. What is going on with you?"],
-  "good morning": ["Good morning! Hope your day is off to a great start. How are you feeling?", "Good morning! How are you doing today?"],
-  "good afternoon": ["Good afternoon! How has your day been so far?", "Good afternoon! How are you feeling today?"],
-  "good evening": ["Good evening! How has your day been?", "Good evening! How are you feeling tonight?"],
-  "bye": ["Take care of yourself! Remember I am always here when you need to talk.", "Goodbye! Take care and come back anytime."],
-  "goodbye": ["Take care! I am always here whenever you need me.", "Goodbye! Wishing you a wonderful day."],
-  "lol": ["Ha! Glad there is a moment of lightness. What is going on with you today?", "I love that! How are you doing?"],
-  "haha": ["Always good to have a laugh! How are you really doing though?", "Good to hear some lightness! What is on your mind?"],
+  "hey": ["Hey! Great to see you. What is on your mind?", "Hey! How are you doing today?"],
+  "how are you": ["I am doing well, thank you for asking! More importantly, how are YOU doing today?", "I am great! But I am much more interested in how you are feeling. What is going on with you?"],
+  "good morning": ["Good morning! Hope your day is off to a great start. How are you feeling?"],
+  "good afternoon": ["Good afternoon! How has your day been so far?"],
+  "good evening": ["Good evening! How are you feeling tonight?"],
+  "bye": ["Take care of yourself! I am always here when you need to talk."],
+  "goodbye": ["Take care! Come back anytime you need someone to talk to."],
+  "lol": ["Ha! Always good to have a moment of lightness. How are you really doing though?"],
+  "haha": ["Good to hear some lightness! What is on your mind?"],
+  "great": ["That is wonderful to hear! What has been making things great?"],
+  "fine": ["Glad to hear it. How has your day been overall?"],
+  "not bad": ["Good! Is there anything on your mind you would like to talk about?"],
 };
 
 function getCasualResponse(message) {
-  const lower = message.toLowerCase().trim().replace(/[!?.]/g, '');
+  const lower = message.toLowerCase().trim().replace(/[!?.,']/g, '');
   for (const [key, responses] of Object.entries(CASUAL_RESPONSES)) {
-    if (lower === key || lower.includes(key)) {
+    if (lower === key || lower === key + "!" || lower === key + ".") {
       return responses[Math.floor(Math.random() * responses.length)];
     }
   }
   return null;
 }
 
-async function callGroq(messages) {
+function detectMode(message) {
+  const lower = message.toLowerCase();
+  if (CRISIS_WORDS.some(w => lower.includes(w))) return 'crisis';
+  if (DISTRESS_WORDS.some(w => lower.includes(w))) return 'distress';
+  return 'normal';
+}
+
+async function callGroq(messages, mode) {
+  // Add mode-specific instruction to the last user message context
+  const modeInstruction = mode === 'crisis'
+    ? '\n\n[SYSTEM: CRISIS MODE ACTIVE. Respond in maximum 3-5 short lines only. Be calm and safe. Include crisis resources.]'
+    : mode === 'distress'
+    ? '\n\n[SYSTEM: DISTRESS MODE. Respond in maximum 4-8 lines. Be warm and include one gentle question.]'
+    : '';
+
+  const messagesWithMode = messages.map((m, i) => {
+    if (i === messages.length - 1 && m.role === 'user' && modeInstruction) {
+      return { ...m, content: m.content + modeInstruction };
+    }
+    return m;
+  });
+
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+      "Authorization": "Bearer " + process.env.GROQ_API_KEY,
     },
     body: JSON.stringify({
       model: "llama-3.3-70b-versatile",
-      messages,
-      max_tokens: 800,
-      temperature: 0.85,
+      messages: messagesWithMode,
+      max_tokens: mode === 'crisis' ? 150 : mode === 'distress' ? 250 : 600,
+      temperature: mode === 'crisis' ? 0.3 : 0.75,
     }),
   });
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Groq error: ${response.status} — ${err}`);
+    throw new Error("Groq error: " + response.status + " " + err);
   }
 
   const data = await response.json();
-  return data.choices?.[0]?.message?.content || "I'm here and I'm listening. Tell me more about what's going on.";
+  return data.choices?.[0]?.message?.content || "I am here and I am listening. Can you tell me more about what is going on?";
 }
 
 // POST /api/chat/message
@@ -113,18 +204,34 @@ router.post("/message", authenticate, checkDailyLimit, async (req, res) => {
     if (!message || !message.trim()) return res.status(400).json({ error: "Message cannot be empty." });
 
     if (!process.env.GROQ_API_KEY) {
-      return res.status(503).json({ error: "AI not configured. Add GROQ_API_KEY to your .env file." });
+      return res.status(503).json({ error: "AI not configured. Add GROQ_API_KEY to your environment variables." });
     }
 
     const userId = req.user.id;
+    const mode = detectMode(message);
+    const isCrisis = mode === 'crisis';
 
-    const history = await find(collections.messages, { userId }, { sort: { createdAt: -1 }, limit: 14 });
+    // Handle casual messages instantly without calling AI
+    const casualReply = getCasualResponse(message);
+    if (casualReply && mode === 'normal') {
+      const now = new Date().toISOString();
+      await insert(collections.messages, { id: uuidv4(), userId, role: "user", content: message.trim(), createdAt: now });
+      await insert(collections.messages, { id: uuidv4(), userId, role: "assistant", content: casualReply, createdAt: now });
+
+      const today = new Date().toISOString().slice(0, 10);
+      const usageRecord = await findOne(collections.usage, { userId, date: today });
+      if (usageRecord) await update(collections.usage, { userId, date: today }, { count: (usageRecord.count || 0) + 1 });
+      else await insert(collections.usage, { id: uuidv4(), userId, date: today, count: 1 });
+
+      return res.json({ reply: casualReply, isCrisis: false, crisisResource: null, dailyUsed: req.dailyUsed + 1, dailyLimit: req.plan.messagesPerDay, mode: 'normal' });
+    }
+
+    // Load history
+    const history = await find(collections.messages, { userId }, { sort: { createdAt: -1 }, limit: 10 });
     history.reverse();
 
     let systemPrompt = SYSTEM_PROMPT;
-    if (mood) {
-      systemPrompt += `\n\nContext: The person has indicated their current mood is "${mood}". Factor this into your tone and response.`;
-    }
+    if (mood) systemPrompt += "\n\nContext: The user's current mood is '" + mood + "'. Factor this into your response mode.";
 
     const groqMessages = [
       { role: "system", content: systemPrompt },
@@ -132,41 +239,31 @@ router.post("/message", authenticate, checkDailyLimit, async (req, res) => {
       { role: "user", content: message.trim() },
     ];
 
-    const isCrisis = CRISIS_WORDS.some(w => message.toLowerCase().includes(w));
-
-    // Check for casual messages first - no need to call AI for simple greetings
-    const casualReply = getCasualResponse(message);
-
     let reply = "";
-    if (casualReply && !isCrisis) {
-      reply = casualReply;
-    } else {
-      try {
-        reply = await callGroq(groqMessages);
-      } catch (err) {
-        console.error("Groq error:", err.message);
-        return res.status(503).json({ error: "AI is not responding. Check your GROQ_API_KEY in .env" });
-      }
+    try {
+      reply = await callGroq(groqMessages, mode);
+    } catch (err) {
+      console.error("Groq error:", err.message);
+      return res.status(503).json({ error: "AI is not responding. Please try again in a moment." });
     }
 
     const now = new Date().toISOString();
-    await insert(collections.messages, { id: uuidv4(), userId, role: "user",      content: message.trim(), createdAt: now });
-    await insert(collections.messages, { id: uuidv4(), userId, role: "assistant", content: reply,           createdAt: now });
+    await insert(collections.messages, { id: uuidv4(), userId, role: "user", content: message.trim(), createdAt: now });
+    await insert(collections.messages, { id: uuidv4(), userId, role: "assistant", content: reply, createdAt: now });
 
     const today = new Date().toISOString().slice(0, 10);
     const usageRecord = await findOne(collections.usage, { userId, date: today });
-    if (usageRecord) {
-      await update(collections.usage, { userId, date: today }, { count: (usageRecord.count || 0) + 1 });
-    } else {
-      await insert(collections.usage, { id: uuidv4(), userId, date: today, count: 1 });
-    }
+    if (usageRecord) await update(collections.usage, { userId, date: today }, { count: (usageRecord.count || 0) + 1 });
+    else await insert(collections.usage, { id: uuidv4(), userId, date: today, count: 1 });
 
     res.json({
-      reply, isCrisis,
+      reply,
+      isCrisis,
+      mode,
       crisisResource: isCrisis ? {
-        name: "988 Suicide & Crisis Lifeline",
+        name: "988 Suicide and Crisis Lifeline",
         contact: "Call or text 988",
-        available: "24/7, free and confidential"
+        available: "24/7, free and confidential",
       } : null,
       dailyUsed: req.dailyUsed + 1,
       dailyLimit: req.plan.messagesPerDay,
