@@ -457,14 +457,71 @@ async function showPlans() {
 
 function hidePlans() { document.getElementById("plansModal").style.display = "none"; }
 
-async function startCheckout(priceId, mode) {
-  if (!priceId || priceId === "undefined") {
-    alert("Payments not configured yet.\n\nTo enable:\n1. Go to dashboard.stripe.com\n2. Create products: Pro Monthly at $19 and Live Session at $25\n3. Add the price IDs to Railway variables as STRIPE_PRICE_MONTHLY and STRIPE_PRICE_LIVE_SESSION\n4. Add your STRIPE_SECRET_KEY to Railway variables");
-    return;
+async function startCheckout(planId, mode) {
+  // Use new modular payment system — no Stripe
+  const token = api.getToken();
+  if (!token) { alert("Please log in first."); return; }
+
+  // Show payment method selection
+  showPaymentMethodModal(planId);
+}
+
+async function initiatePayment(planId, method) {
+  hidePaymentMethodModal();
+  const token = api.getToken();
+
+  // Get user country from browser
+  var country = "ZM"; // default Zambia
+  try {
+    var lang = navigator.language || "";
+    var region = lang.split("-")[1];
+    if (region) country = region.toUpperCase();
+  } catch(e) {}
+
+  setLoading("upgradeBtn", true);
+  const res = await fetch("/api/payments/initiate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token,
+      "X-Country": country,
+    },
+    body: JSON.stringify({ planId: planId, method: method }),
+  });
+  setLoading("upgradeBtn", false);
+
+  const data = await res.json();
+  if (res.ok && data.paymentUrl && data.paymentUrl !== "#mobile-money-sandbox") {
+    window.location.href = data.paymentUrl;
+  } else if (data.paymentUrl === "#mobile-money-sandbox") {
+    alert("Mobile Money payment\n\nTo activate live Mobile Money payments:\n1. Sign up at developers.mtn.com (MTN MoMo) or developer.airtel.africa (Airtel Money)\n2. Add MTN_MOMO_API_KEY or AIRTEL_MONEY_API_KEY to Railway variables\n\nCurrent status: Sandbox mode");
+  } else {
+    alert(data.error || "Payment could not be started. Please try again.");
   }
-  const res = await api.checkout(priceId, mode || "subscription", api.getToken());
-  if (res.ok) window.location.href = res.data.checkoutUrl;
-  else alert(res.data.error || "Could not start checkout.");
+}
+
+function showPaymentMethodModal(planId) {
+  var existing = document.getElementById("paymentMethodModal");
+  if (existing) existing.remove();
+
+  var modal = document.createElement("div");
+  modal.id = "paymentMethodModal";
+  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:700;display:flex;align-items:flex-end;justify-content:center;padding:1rem";
+  modal.innerHTML =
+    '<div style="background:#0d1428;border:0.5px solid rgba(255,255,255,0.15);border-radius:24px 24px 0 0;padding:2rem;width:100%;max-width:480px">' +
+    '<h3 style="color:#f0f4ff;font-size:18px;margin-bottom:8px;text-align:center">Choose payment method</h3>' +
+    '<p style="color:#8b9dc3;font-size:13px;text-align:center;margin-bottom:1.5rem">Select how you want to pay</p>' +
+    '<button onclick="initiatePayment('' + planId + '','dpo')" style="width:100%;padding:14px;background:rgba(99,102,241,0.15);border:0.5px solid rgba(99,102,241,0.3);border-radius:12px;color:#a5b4fc;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px">💳 Card Payment (Visa / Mastercard)</button>' +
+    '<button onclick="initiatePayment('' + planId + '','paypal')" style="width:100%;padding:14px;background:rgba(0,112,243,0.1);border:0.5px solid rgba(0,112,243,0.3);border-radius:12px;color:#60a5fa;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px">🅿️ PayPal</button>' +
+    '<button onclick="initiatePayment('' + planId + '','mobilemoney')" style="width:100%;padding:14px;background:rgba(255,196,0,0.1);border:0.5px solid rgba(255,196,0,0.3);border-radius:12px;color:#fbbf24;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:center;gap:10px">📱 Mobile Money (MTN / Airtel)</button>' +
+    '<button onclick="hidePaymentMethodModal()" style="width:100%;padding:12px;background:transparent;border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;color:#8b9dc3;font-size:14px;cursor:pointer">Cancel</button>' +
+    "</div>";
+  document.body.appendChild(modal);
+}
+
+function hidePaymentMethodModal() {
+  var m = document.getElementById("paymentMethodModal");
+  if (m) m.remove();
 }
 
 async function openPortal() {
