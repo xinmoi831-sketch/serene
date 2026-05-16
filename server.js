@@ -20,6 +20,9 @@ if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust Railway's proxy — required for rate limiting to work correctly
+app.set("trust proxy", 1);
+
 // Stripe webhook must come before express.json()
 app.use("/api/subscription/webhook", express.raw({ type: "application/json" }));
 
