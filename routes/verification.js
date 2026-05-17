@@ -186,19 +186,8 @@ router.post("/forgot-password", async (req, res) => {
   const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
   codes.set("reset_" + user.id, { code, expiry });
 
-  await sendEmail(
-    user.email,
-    "Reset your Serene password",
-    "You requested a password reset.
-
-Your reset code is:
-
-" + code + "
-
-This code expires in 10 minutes.
-
-If you did not request this, please ignore it."
-  );
+  var resetBody = "You requested a password reset. Your reset code is: " + code + ". This code expires in 10 minutes. If you did not request this, please ignore it.";
+  await sendEmail(user.email, "Reset your Serene password", resetBody);
 
   res.json({
     message: "Reset code sent. Check your email.",
