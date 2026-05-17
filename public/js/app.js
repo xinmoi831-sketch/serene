@@ -206,21 +206,22 @@ function renderChat() {
   if (!area) return;
   area.innerHTML = "";
   if (state.chatMessages.length === 0) {
-    const d = document.createElement("div");
+    var d = document.createElement("div");
     d.innerHTML = getWelcomeHTML();
     if (d.firstElementChild) {
-      var anchor = document.getElementById("scrollAnchor");
-      if (anchor) area.insertBefore(d.firstElementChild, anchor);
+      var anc = document.getElementById("scrollAnchor");
+      if (anc) area.insertBefore(d.firstElementChild, anc);
       else area.appendChild(d.firstElementChild);
     }
   } else {
-    state.chatMessages.forEach(function(m) { appendMessageToDOM(m.role, m.content, m.createdAt, false); });
+    state.chatMessages.forEach(function(m) {
+      appendMessageToDOM(m.role, m.content, m.createdAt, false);
+    });
   }
-  if (typeof ScrollEngine !== "undefined") ScrollEngine.onLoad();
+  ScrollEngine.onLoad();
 }
 
-// Scroll is handled by ScrollEngine (scroll.js)
-// Do not add any scroll logic here
+
 
 let msgCounter = 0;
 function appendMessageToDOM(role, content, time, isNew) {
@@ -238,15 +239,11 @@ function appendMessageToDOM(role, content, time, isNew) {
     : '<div class="msg-time">' + timeStr + "</div>";
   div.innerHTML = '<div class="msg-sender">' + (role === "user" ? "You" : "Serene") + "</div>" +
     '<div class="' + bubbleCls + '">' + escHtml(content) + "</div>" + ttsBtn;
-  var anchor = document.getElementById("scrollAnchor");
-  if (anchor) area.insertBefore(div, anchor);
+  var anc2 = document.getElementById("scrollAnchor");
+  if (anc2) area.insertBefore(div, anc2);
   else area.appendChild(div);
-  // ScrollEngine handles timing — MutationObserver fires automatically
-  // We also call explicitly for guaranteed scroll
-  if (typeof ScrollEngine !== "undefined") {
-    if (role === "user") ScrollEngine.onUserMessage();
-    else ScrollEngine.onAIMessage();
-  }
+  if (role === "user") ScrollEngine.onUserMessage();
+  else ScrollEngine.onAIMessage();
 }
 
 function showThinking() {
@@ -258,10 +255,10 @@ function showThinking() {
   div.className = "msg ai";
   div.id = "thinkingIndicator";
   div.innerHTML = '<div class="msg-sender">Serene</div><div class="thinking-bubble"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div>';
-  var anchor2 = document.getElementById("scrollAnchor");
-  if (anchor2) area.insertBefore(div, anchor2);
+  var anc3 = document.getElementById("scrollAnchor");
+  if (anc3) area.insertBefore(div, anc3);
   else area.appendChild(div);
-  if (typeof ScrollEngine !== "undefined") ScrollEngine.onUserMessage();
+  ScrollEngine.onUserMessage();
 }
 
 function hideThinking() {
@@ -305,7 +302,6 @@ async function sendMessage() {
     if (typeof EmotionTracker !== "undefined") EmotionTracker.track(text, reply);
     const crisisBanner = document.getElementById("crisisBanner");
     if (res.data.isCrisis && crisisBanner) crisisBanner.style.display = "flex";
-    if (typeof ScrollEngine !== "undefined") ScrollEngine.onAIMessage();
     if (res.data.dailyLimit && res.data.dailyUsed) {
       const remaining = res.data.dailyLimit - res.data.dailyUsed;
       if (remaining <= 2 && state.user && state.user.plan === "free") {
