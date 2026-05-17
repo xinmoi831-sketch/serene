@@ -16,45 +16,48 @@ function generateCode() {
 // Send code via email using a free email service
 // We use Brevo (free 300 emails/day) or fallback to console log for testing
 async function sendEmail(to, subject, body) {
-  if (!process.env.BREVO_API_KEY || process.env.BREVO_API_KEY.includes("REPLACE")) {
-    // No email service configured — log to console for testing
-    console.log("\n========================================");
-    console.log(`  EMAIL TO: ${to}`);
-    console.log(`  SUBJECT:  ${subject}`);
-    console.log(`  BODY:     ${body}`);
-    console.log("========================================\n");
+  const apiKey   = (process.env.BREVO_API_KEY || "").trim();
+  const fromEmail = (process.env.EMAIL_FROM || "").trim();
+
+  console.log("[EMAIL] Attempting to send to:", to);
+  console.log("[EMAIL] BREVO_API_KEY set:", !!apiKey && !apiKey.includes("REPLACE"));
+  console.log("[EMAIL] EMAIL_FROM:", fromEmail || "NOT SET");
+
+  if (!apiKey || apiKey.includes("REPLACE")) {
+    console.log("[EMAIL] No Brevo key — logging to console only");
+    console.log("CODE WOULD BE SENT TO:", to, "| BODY:", body);
     return true;
   }
 
   try {
-    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": process.env.BREVO_API_KEY,
-      },
-      body: JSON.stringify({
-        sender: { name: "Serene", email: process.env.EMAIL_FROM || "noreply@serene.app" },
-        to: [{ email: to }],
-        subject,
-        textContent: body,
-        htmlContent: `
-          <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;background:#0a0f1e;color:#f0f4ff;padding:32px;border-radius:16px">
-            <div style="text-align:center;margin-bottom:24px">
-              <span style="font-size:40px">🌿</span>
-              <h1 style="font-size:24px;color:#a5b4fc;margin:8px 0">Serene</h1>
-            </div>
-            <p style="font-size:15px;color:#8b9dc3;line-height:1.6">${body.replace(/\n/g,'<br>')}</p>
-            <div style="text-align:center;margin:28px 0">
-              <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#818cf8;background:rgba(99,102,241,0.15);padding:16px 28px;border-radius:12px">${body.match(/\d{6}/)?.[0] || ''}</span>
-            </div>
-            <p style="font-size:12px;color:#4a5568;text-align:center">This code expires in 10 minutes. If you didn't request this, please ignore it.</p>
-          </div>`,
-      }),
+    const payload = {
+      sender:      { name: "Serene", email: fromEmail || "noreply@serene.app" },
+      to:          [{ email: to }],
+      subject:     subject,
+      textContent: body,
+      htmlContent: "<div style='font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;background:#0a0f1e;color:#f0f4ff;padding:32px;border-radius:16px'><div style='text-align:center;margin-bottom:24px'><span style='font-size:40px'>🌿</span><h1 style='font-size:24px;color:#a5b4fc;margin:8px 0'>Serene</h1></div><p style='font-size:15px;color:#8b9dc3;line-height:1.6'>" + body + "</p><div style='text-align:center;margin:28px 0'><span style='font-size:36px;font-weight:700;letter-spacing:8px;color:#818cf8;background:rgba(99,102,241,0.15);padding:16px 28px;border-radius:12px'>" + (body.match(/\d{6}/) ? body.match(/\d{6}/)[0] : "") + "</span></div><p style='font-size:12px;color:#4a5568;text-align:center'>This code expires in 10 minutes.</p></div>",
+    };
+
+    console.log("[EMAIL] Sending via Brevo...");
+    const res  = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json", "api-key": apiKey },
+      body:    JSON.stringify(payload),
     });
-    return res.ok;
+
+    const responseText = await res.text();
+    console.log("[EMAIL] Brevo response status:", res.status);
+    console.log("[EMAIL] Brevo response:", responseText);
+
+    if (!res.ok) {
+      console.error("[EMAIL] Brevo failed:", res.status, responseText);
+      return false;
+    }
+
+    console.log("[EMAIL] Sent successfully to:", to);
+    return true;
   } catch (err) {
-    console.error("Email error:", err.message);
+    console.error("[EMAIL] Error:", err.message);
     return false;
   }
 }
