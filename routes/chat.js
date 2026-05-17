@@ -170,6 +170,26 @@ const CASUAL = {
   "i am good":     ["Glad to hear it! Anything on your mind today?"],
 };
 
+// Hard topic filter — catches non-emotional requests BEFORE calling AI
+const OFF_TOPIC_PATTERNS = [
+  /(algebra|calculus|equation|math|mathematics|geometry|trigonometry|solve|calculate|formula|integral|derivative)/i,
+  /(crypto|cryptocurrency|bitcoin|ethereum|dogecoin|trade|trading|invest|investment|stocks|shares|forex)/i,
+  /(code|coding|program|programming|javascript|python|html|css|sql|algorithm|debug|function|variable)/i,
+  /(recipe|cook|cooking|ingredient|calories|diet|nutrition|protein|carbs|workout|gym|exercise|fitness)/i,
+  /(legal|lawyer|law|lawsuit|contract|sue|court|attorney)/i,
+  /(medical|diagnosis|symptom|medicine|drug|prescription|dosage|disease|illness|treatment)/i,
+];
+
+const OFF_TOPIC_REPLY = "I am sorry, I cannot help with that. I am only here as an emotional companion. 💙 But if something about this is stressing or worrying you, I am here to listen.";
+
+function isOffTopic(message) {
+  const lower = message.toLowerCase();
+  // Allow if it's clearly about feelings related to the topic
+  const emotionalContext = /(feel|feeling|stress|worried|anxious|sad|scared|overwhelmed|struggling|cope|help me|i am|i'm)/i.test(lower);
+  if (emotionalContext) return false;
+  return OFF_TOPIC_PATTERNS.some(pattern => pattern.test(lower));
+}
+
 function getCasualResponse(message) {
   const lower = message.toLowerCase().trim().replace(/[!?.,']/g, "");
   for (const [key, responses] of Object.entries(CASUAL)) {
