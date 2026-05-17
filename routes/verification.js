@@ -166,4 +166,76 @@ router.post("/toggle-2fa", authenticate, async (req, res) => {
   });
 });
 
+// ── POST /api/auth/forgot-password ───────────────────────────────
+// Send password reset code to email
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required." });
+
+  const user = await findOne(collections.users, { email: email.toLowerCase().trim() });
+  if (!user) {
+    // Don't reveal if email exists
+    return res.json({ message: "If that email exists, a reset code was sent." });
+  }
+
+  if (!user.password) {
+    return res.json({ message: "This account uses Google Sign-In. Please log in with Google.", googleOnly: true });
+  }
+
+  const code   = generateCode();
+  const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+  codes.set("reset_" + user.id, { code, expiry });
+
+  await sendEmail(
+    user.email,
+    "Reset your Serene password",
+    "You requested a password reset.
+
+Your reset code is:
+
+" + code + "
+
+This code expires in 10 minutes.
+
+If you did not request this, please ignore it."
+  );
+
+  res.json({
+    message: "Reset code sent. Check your email.",
+    userId: user.id,
+    ...((!process.env.BREVO_API_KEY || process.env.BREVO_API_KEY.includes("REPLACE")) && { devCode: code }),
+  });
+});
+
+// ── POST /api/auth/reset-password ────────────────────────────────
+// Verify code and set new password
+router.post("/reset-password", async (req, res) => {
+  const { userId, code, newPassword } = req.body;
+  if (!userId || !code || !newPassword) {
+    return res.status(400).json({ error: "userId, code and newPassword are required." });
+  }
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: "Password must be at least 8 characters." });
+  }
+
+  const stored = codes.get("reset_" + userId);
+  if (!stored) return res.status(400).json({ error: "No reset code found. Please request a new one." });
+  if (Date.now() > stored.expiry) {
+    codes.delete("reset_" + userId);
+    return res.status(400).json({ error: "Code expired. Please request a new one." });
+  }
+  if (stored.code !== code.trim()) {
+    return res.status(400).json({ error: "Incorrect code. Please try again." });
+  }
+
+  codes.delete("reset_" + userId);
+
+  // Hash new password
+  const bcrypt     = require("bcryptjs");
+  const hashed     = await bcrypt.hash(newPassword, 12);
+  await update(collections.users, { id: userId }, { password: hashed });
+
+  res.json({ message: "Password reset successfully. You can now log in.", success: true });
+});
+
 module.exports = { router, sendEmail };

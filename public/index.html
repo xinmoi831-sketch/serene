@@ -150,6 +150,9 @@
         <button class="btn btn-primary" id="loginBtn" onclick="doLogin()" style="margin-top:4px">
           <i class="ti ti-login"></i> Log in
         </button>
+        <p style="text-align:right;margin-top:8px">
+          <a href="#" onclick="showPage('forgot')" style="font-size:13px;color:var(--text2);text-decoration:none">Forgot password?</a>
+        </p>
         <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
           <div style="flex:1;height:0.5px;background:var(--border)"></div>
           <span style="font-size:12px;color:var(--text3)">or</span>
@@ -167,6 +170,85 @@
           By signing in you agree to our
           <a href="/legal.html" style="color:var(--text2);text-decoration:none">Terms of Service</a> and
           <a href="/legal.html" style="color:var(--text2);text-decoration:none">Privacy Policy</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FORGOT PASSWORD -->
+<div class="auth-wrap" id="page-forgot">
+  <div class="auth-left">
+    <div class="auth-photo active" style="background-image:url('https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&q=80')"></div>
+    <div class="auth-quote">
+      <div class="auth-quote-text">"Every day is a fresh start."</div>
+      <div class="auth-quote-author">— Unknown</div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-inner">
+      <div style="text-align:center;margin-bottom:2rem">
+        <div style="font-size:48px;margin-bottom:12px">🔑</div>
+        <h1 style="font-size:28px;font-weight:700;color:#f0f4ff">Reset Password</h1>
+        <p style="font-size:14px;color:var(--text2);margin-top:6px">Enter your email and we will send you a code</p>
+      </div>
+      <div class="glass-strong" style="padding:1.75rem">
+        <div id="forgotAlert" class="alert"></div>
+        <div class="input-group">
+          <label>Email address</label>
+          <input id="forgotEmail" type="email" placeholder="you@example.com" autocomplete="email"/>
+        </div>
+        <button class="btn btn-primary" id="forgotBtn" onclick="doForgotPassword()">
+          <i class="ti ti-send"></i> Send reset code
+        </button>
+        <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)">
+          <a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">Back to login</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESET PASSWORD -->
+<div class="auth-wrap" id="page-reset">
+  <div class="auth-left">
+    <div class="auth-photo active" style="background-image:url('https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&q=80')"></div>
+    <div class="auth-quote">
+      <div class="auth-quote-text">"A fresh start begins with a single step."</div>
+      <div class="auth-quote-author">— Unknown</div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-inner">
+      <div style="text-align:center;margin-bottom:2rem">
+        <div style="font-size:48px;margin-bottom:12px">🔐</div>
+        <h1 style="font-size:28px;font-weight:700;color:#f0f4ff">New Password</h1>
+        <p style="font-size:14px;color:var(--text2);margin-top:6px">Enter the code we sent and your new password</p>
+      </div>
+      <div class="glass-strong" style="padding:1.75rem">
+        <div id="resetAlert" class="alert"></div>
+        <p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:8px">Enter the 6-digit code sent to your email</p>
+        <div class="code-row" style="margin-bottom:16px">
+          <input class="code-box" id="rd0" maxlength="1" oninput="codeInput(this,0,'r')" onkeydown="codeBack(event,0,'r')"/>
+          <input class="code-box" id="rd1" maxlength="1" oninput="codeInput(this,1,'r')" onkeydown="codeBack(event,1,'r')"/>
+          <input class="code-box" id="rd2" maxlength="1" oninput="codeInput(this,2,'r')" onkeydown="codeBack(event,2,'r')"/>
+          <input class="code-box" id="rd3" maxlength="1" oninput="codeInput(this,3,'r')" onkeydown="codeBack(event,3,'r')"/>
+          <input class="code-box" id="rd4" maxlength="1" oninput="codeInput(this,4,'r')" onkeydown="codeBack(event,4,'r')"/>
+          <input class="code-box" id="rd5" maxlength="1" oninput="codeInput(this,5,'r')" onkeydown="codeBack(event,5,'r')"/>
+        </div>
+        <div class="input-group">
+          <label>New password</label>
+          <input id="newPassword" type="password" placeholder="Minimum 8 characters" autocomplete="new-password"/>
+        </div>
+        <div class="input-group">
+          <label>Confirm new password</label>
+          <input id="confirmPassword" type="password" placeholder="Repeat your new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doResetPassword()"/>
+        </div>
+        <button class="btn btn-primary" id="resetBtn" onclick="doResetPassword()">
+          <i class="ti ti-check"></i> Reset password
+        </button>
+        <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)">
+          <a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">Back to login</a>
         </p>
       </div>
     </div>
@@ -494,7 +576,11 @@ function codeInput(el, idx, prefix) {
   if (el.value && idx < 5) { var n = document.getElementById(prefix+"d"+(idx+1)); if(n) n.focus(); }
   var code = "";
   for (var i=0;i<6;i++) { var d = document.getElementById(prefix+"d"+i); code += d ? (d.value||"") : ""; }
-  if (code.length === 6) { if (prefix==="v") submitVerification(); else submit2FA(); }
+  if (code.length === 6) {
+    if (prefix==="v") submitVerification();
+    else if (prefix==="t") submit2FA();
+    // r = reset password, handled by button
+  }
 }
 function codeBack(e, idx, prefix) {
   if (e.key==="Backspace" && !e.target.value && idx>0) { var p = document.getElementById(prefix+"d"+(idx-1)); if(p) p.focus(); }
@@ -571,6 +657,64 @@ async function handleGoogleCredential(response) {
   var data = await res.json();
   if (res.ok) { api.setToken(data.token); state.user = data.user; showApp(); }
   else alert(data.error || "Google sign-in failed. Please try again.");
+}
+
+// Forgot password
+var forgotUserId = null;
+
+async function doForgotPassword() {
+  var email = document.getElementById("forgotEmail").value.trim();
+  var alrt  = document.getElementById("forgotAlert");
+  if (!email) return showAlert(alrt, "Please enter your email address.", "error");
+  setLoading("forgotBtn", true);
+  var res = await fetch("/api/auth/forgot-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email }),
+  });
+  var data = await res.json();
+  setLoading("forgotBtn", false);
+  if (data.googleOnly) {
+    showAlert(alrt, "This account uses Google Sign-In. Please use the Continue with Google button.", "error");
+    return;
+  }
+  if (data.userId) {
+    forgotUserId = data.userId;
+    // Show dev code if in test mode
+    if (data.devCode) showAlert(alrt, "DEV MODE: Your code is " + data.devCode, "success");
+    else showAlert(alrt, "Code sent! Check your email.", "success");
+    setTimeout(function() { showPage("reset"); }, 1500);
+  } else {
+    showAlert(alrt, data.message || "Code sent! Check your email.", "success");
+    setTimeout(function() { showPage("reset"); }, 1500);
+  }
+}
+
+async function doResetPassword() {
+  var code     = getCode("r");
+  var newPass  = document.getElementById("newPassword").value;
+  var confirm  = document.getElementById("confirmPassword").value;
+  var alrt     = document.getElementById("resetAlert");
+  if (code.length < 6) return showAlert(alrt, "Please enter the full 6-digit code.", "error");
+  if (!newPass) return showAlert(alrt, "Please enter a new password.", "error");
+  if (newPass.length < 8) return showAlert(alrt, "Password must be at least 8 characters.", "error");
+  if (newPass !== confirm) return showAlert(alrt, "Passwords do not match.", "error");
+  if (!forgotUserId) return showAlert(alrt, "Session expired. Please start again.", "error");
+  setLoading("resetBtn", true);
+  var res = await fetch("/api/auth/reset-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: forgotUserId, code: code, newPassword: newPass }),
+  });
+  var data = await res.json();
+  setLoading("resetBtn", false);
+  if (res.ok && data.success) {
+    showAlert(alrt, "Password reset! Redirecting to login...", "success");
+    forgotUserId = null;
+    setTimeout(function() { showPage("login"); }, 2000);
+  } else {
+    showAlert(alrt, data.error || "Could not reset password.", "error");
+  }
 }
 
 // Drawer
