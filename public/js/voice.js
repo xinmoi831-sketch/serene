@@ -28,7 +28,7 @@ const VoiceSystem = (() => {
   // ── STATE MACHINE ─────────────────────────────────────────────────
   // Only ONE state at a time. All transitions go through here.
   function transition(newState) {
-    console.log('[Voice] ' + currentState + ' → ' + newState);
+    console.log('[Voice STATE] ' + currentState + ' → ' + newState + ' | isActive=' + isActive);
     currentState = newState;
     updateUI(newState);
   }
@@ -91,10 +91,13 @@ const VoiceSystem = (() => {
 
   // ── MIC STREAM ────────────────────────────────────────────────────
   async function startMicStream() {
+    console.log('[Voice MIC] Requesting microphone...');
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('[Voice MIC] Granted OK');
       return true;
     } catch(e) {
+      console.error('[Voice MIC] DENIED:', e.message);
       showError('Microphone permission denied. Please allow microphone access.');
       return false;
     }
@@ -117,6 +120,7 @@ const VoiceSystem = (() => {
     r.lang           = 'en-US';
 
     r.onresult = function(e) {
+      console.log('[Voice RESULT] Got result, state=' + currentState);
       if (currentState !== 'LISTENING') return;
       var final = '', interim = '';
       for (var i = e.resultIndex; i < e.results.length; i++) {
@@ -145,9 +149,10 @@ const VoiceSystem = (() => {
     };
 
     r.onend = function() {
-      // Auto-restart ONLY if still in LISTENING state
+      console.log('[Voice RECO] onend fired. state=' + currentState + ' isActive=' + isActive);
       if (currentState === 'LISTENING' && isActive) {
-        try { recognition.start(); } catch(e) {}
+        console.log('[Voice RECO] Auto-restarting recognition');
+        try { recognition.start(); } catch(e) { console.error('[Voice RECO] Restart failed:', e.message); }
       }
     };
 
@@ -155,12 +160,21 @@ const VoiceSystem = (() => {
   }
 
   function startListening() {
-    if (!isActive) return;
+    console.log('[Voice LISTEN] startListening called. isActive=' + isActive + ' state=' + currentState);
+    if (!isActive) { console.warn('[Voice LISTEN] Aborted - not active'); return; }
     transition('LISTENING');
     transcript = '';
-    if (!recognition) recognition = buildRecognition();
+    if (!recognition) {
+      console.log('[Voice LISTEN] Building new recognition instance');
+      recognition = buildRecognition();
+    }
     if (!recognition) { showError('Voice requires Chrome or Edge.'); return; }
-    try { recognition.start(); } catch(e) {}
+    try {
+      recognition.start();
+      console.log('[Voice LISTEN] recognition.start() called OK');
+    } catch(e) {
+      console.error('[Voice LISTEN] recognition.start() FAILED:', e.message);
+    }
   }
 
   function stopListening() {
@@ -217,7 +231,8 @@ const VoiceSystem = (() => {
 
   // ── SPEAK RESPONSE ────────────────────────────────────────────────
   function speakResponse(text) {
-    if (!isActive) return;
+    console.log('[Voice SPEAK] speakResponse called. isActive=' + isActive + ' text length=' + text.length);
+    if (!isActive) { console.warn('[Voice SPEAK] Aborted - not active'); return; }
     transition('SPEAKING');
     synth.cancel();
 
@@ -238,7 +253,7 @@ const VoiceSystem = (() => {
     function speakNext() {
       if (!isActive) { synth.cancel(); clearTimeout(speakTimer); return; }
       if (idx >= sentences.length) {
-        // All sentences done — AUTO return to listening for continuous conversation
+        console.log('[Voice SPEAK] All sentences done — returning to LISTENING');
         clearTimeout(speakTimer);
         startListening();
         return;
@@ -265,7 +280,8 @@ const VoiceSystem = (() => {
 
   // ── ENTER VOICE MODE ──────────────────────────────────────────────
   async function enterVoiceMode() {
-    if (isActive) return;
+    console.log('[Voice ENTER] enterVoiceMode called. isActive=' + isActive);
+    if (isActive) { console.warn('[Voice ENTER] Already active - ignoring'); return; }
     isActive = true;
 
     var overlay = document.getElementById('voiceOverlay');
@@ -284,6 +300,7 @@ const VoiceSystem = (() => {
   // ── EXIT VOICE MODE ───────────────────────────────────────────────
   // Guaranteed clean exit — no refresh ever needed
   function exitVoiceMode() {
+    console.log('[Voice EXIT] exitVoiceMode called. currentState=' + currentState);
     isActive = false;
 
     // Stop everything immediately
@@ -307,7 +324,7 @@ const VoiceSystem = (() => {
     var btn = document.getElementById('voiceModeBtn');
     if (btn) btn.classList.remove('active');
 
-    console.log('[Voice] Exited cleanly. Ready for next session.');
+    console.log('[Voice EXIT] Exited cleanly. State=' + currentState + '. Ready for next session.');
   }
 
   // ── PUBLIC ────────────────────────────────────────────────────────
