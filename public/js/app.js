@@ -8,7 +8,7 @@ let state = {
   currentPage: "chat",
   sending: false,
   voiceUsedToday: 0,
-  VOICE_FREE_LIMIT: 3,
+  VOICE_FREE_LIMIT: 20,
 };
 
 window.addEventListener("DOMContentLoaded", async () => {
@@ -21,6 +21,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     const today = new Date().toISOString().slice(0, 10);
     const stored = JSON.parse(localStorage.getItem("serene_voice_usage") || "{}");
     state.voiceUsedToday = stored.date === today ? (stored.count || 0) : 0;
+    // Reset if date changed
+    if (stored.date !== today) {
+      localStorage.setItem("serene_voice_usage", JSON.stringify({ date: today, count: 0 }));
+    }
     showApp();
   } else {
     api.clearToken();
@@ -144,15 +148,21 @@ function canUseVoice() {
 }
 
 function handleVoiceBtnClick() {
+  console.log("[Voice] Button clicked. canUseVoice:", canUseVoice(), "used today:", state.voiceUsedToday, "limit:", state.VOICE_FREE_LIMIT);
+  console.log("[Voice] VoiceSystem defined:", typeof VoiceSystem !== "undefined");
+
   if (canUseVoice()) {
     if (typeof VoiceSystem !== "undefined") {
       VoiceSystem.toggleVoiceMode();
       state.voiceUsedToday++;
-      const today = new Date().toISOString().slice(0, 10);
+      var today = new Date().toISOString().slice(0, 10);
       localStorage.setItem("serene_voice_usage", JSON.stringify({ date: today, count: state.voiceUsedToday }));
       updateVoiceBtn();
+    } else {
+      console.error("[Voice] VoiceSystem is not defined. Check voice.js is loaded.");
     }
   } else {
+    console.warn("[Voice] Limit reached:", state.voiceUsedToday, "/", state.VOICE_FREE_LIMIT);
     showVoiceLimitModal();
   }
 }
