@@ -1,133 +1,165 @@
-// Serene — Voice Conversation Mode (Improved)
-const Voice = (() => {
-  const synth = window.speechSynthesis;
+// Serene — Voice Interaction System (Final Rebuild)
+// Flow: Listen → Transcribe → Send to AI → Speak once → Stop
+// NEVER talks to itself. NEVER loops. ONLY responds to user input.
+
+const VoiceSystem = (() => {
+
+  // ── STATE MACHINE ─────────────────────────────────────────────────
+  // Four states: idle | listening | processing | speaking
+  let state        = 'idle';
   let recognition  = null;
-  let isListening  = false;
-  let isSpeaking   = false;
-  let voiceMode    = false;
-  let silenceTimer = null;
-  let transcript   = '';
+  let synth        = window.speechSynthesis;
   let bestVoice    = null;
-  let voicesLoaded = false;
+  let transcript   = '';
+  let silenceTimer = null;
+  const SILENCE_MS = 2000; // 2s silence = user done speaking
 
   // ── VOICE SELECTION ───────────────────────────────────────────────
-  // Priority list — these sound most natural in Chrome/Edge
   const PREFERRED_VOICES = [
     'Google UK English Female',
     'Google US English Female',
     'Microsoft Aria Online (Natural)',
     'Microsoft Jenny Online (Natural)',
-    'Microsoft Natasha Online (Natural)',
-    'Samantha',
-    'Karen',
-    'Moira',
-    'Google UK English Male',
+    'Samantha', 'Karen', 'Moira',
     'Google US English',
   ];
 
-  function pickBestVoice() {
+  function pickVoice() {
     const voices = synth.getVoices();
-    if (!voices || voices.length === 0) return null;
-
-    // Try preferred voices in order
     for (const name of PREFERRED_VOICES) {
-      const found = voices.find(v => v.name === name);
-      if (found) return found;
+      const v = voices.find(v => v.name === name);
+      if (v) return v;
     }
-
-    // Fallback — prefer online/natural voices over local ones
-    const online = voices.filter(v =>
-      v.lang.startsWith('en') &&
-      (v.name.toLowerCase().includes('online') ||
-       v.name.toLowerCase().includes('natural') ||
-       v.name.toLowerCase().includes('google') ||
-       v.name.toLowerCase().includes('microsoft'))
-    );
-    if (online.length > 0) return online[0];
-
-    // Last fallback — any English voice
-    return voices.find(v => v.lang.startsWith('en')) || voices[0];
+    return voices.find(v => v.lang && v.lang.startsWith('en')) || null;
   }
 
-  function loadVoices() {
-    if (voicesLoaded) return;
-    const voices = synth.getVoices();
-    if (voices.length > 0) {
-      bestVoice   = pickBestVoice();
-      voicesLoaded = true;
-    }
-  }
-
-  // Voices load asynchronously in some browsers
   if (synth.onvoiceschanged !== undefined) {
-    synth.onvoiceschanged = () => {
-      bestVoice    = pickBestVoice();
-      voicesLoaded = true;
-    };
+    synth.onvoiceschanged = () => { bestVoice = pickVoice(); };
   }
-  setTimeout(loadVoices, 500);
+  setTimeout(() => { bestVoice = pickVoice(); }, 600);
+
+  // ── STATE MANAGER ─────────────────────────────────────────────────
+  function setState(newState) {
+    state = newState;
+    var orb    = document.getElementById('voiceOrb');
+    var status = document.getElementById('voiceStatus');
+    var live   = document.getElementById('voiceLiveText');
+    var labels = {
+      idle:       { cls: '',          text: 'Tap the orb to speak' },
+      listening:  { cls: 'listening', text: 'Listening… speak now' },
+      processing: { cls: 'thinking',  text: 'Serene is thinking…' },
+      speaking:   { cls: 'speaking',  text: 'Serene is speaking…' },
+    };
+    var s = labels[newState] || labels.idle;
+    if (orb)    orb.className      = 'voice-orb ' + s.cls;
+    if (status) status.textContent = s.text;
+    if (live && newState !== 'listening') live.textContent = '';
+  }
+
+  // ── SPEAK ─────────────────────────────────────────────────────────
+  // Speaks text ONCE. When done, goes to IDLE.
+  // NEVER restarts listening automatically.
+  // NEVER generates new content.
+  function speak(text, onDone) {
+    if (!synth) { if (onDone) onDone(); return; }
+    synth.cancel();
+
+    var clean = text
+      .replace(/<[^>]+>/g, '')
+      .replace(/[*_#`~]/g, '')
+      .replace(/\n+/g, '. ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!clean) { setState('idle'); if (onDone) onDone(); return; }
+    if (!bestVoice) bestVoice = pickVoice();
+
+    // Split into sentences to prevent Chrome 15s cutoff bug
+    var sentences = clean.match(/[^.!?]+[.!?]*/g) || [clean];
+    var idx = 0;
+
+    setState('speaking');
+
+    function next() {
+      if (idx >= sentences.length) {
+        // Finished all sentences — go IDLE, wait for user
+        setState('idle');
+        if (onDone) onDone();
+        return;
+      }
+      var u    = new SpeechSynthesisUtterance(sentences[idx].trim());
+      u.voice  = bestVoice;
+      u.lang   = 'en-US';
+      u.rate   = 0.88;
+      u.pitch  = 1.05;
+      u.volume = 1.0;
+      u.onend  = function() { idx++; next(); };
+      u.onerror = function(e) {
+        if (e.error !== 'interrupted') { idx++; next(); }
+      };
+      synth.speak(u);
+    }
+
+    next();
+  }
+
+  function stopSpeaking() {
+    synth.cancel();
+    setState('idle');
+  }
 
   // ── SPEECH RECOGNITION ────────────────────────────────────────────
-  function setupRecognition() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  function buildRecognition() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return null;
 
-    const r        = new SR();
-    r.continuous   = true;
+    var r           = new SR();
+    r.continuous    = true;
     r.interimResults = true;
-    r.lang         = 'en-US';
-    r.maxAlternatives = 1;
+    r.lang          = 'en-US';
 
-    r.onstart = () => {
-      isListening = true;
-      updateUI('listening');
-    };
+    r.onstart = function() { setState('listening'); };
 
-    r.onresult = (e) => {
-      let final = '';
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const text = e.results[i][0].transcript;
-        if (e.results[i].isFinal) final += text;
-        else interim += text;
+    r.onresult = function(e) {
+      var final   = '';
+      var interim = '';
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        var t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) final += t;
+        else interim += t;
       }
 
-      const liveEl = document.getElementById('voiceLiveText');
-      if (liveEl) liveEl.textContent = final || interim;
+      var live = document.getElementById('voiceLiveText');
+      if (live) live.textContent = final || interim;
 
       if (final) {
-        transcript += final;
+        transcript += ' ' + final;
         clearTimeout(silenceTimer);
-        // Send after 1.8s of silence — feels natural
-        silenceTimer = setTimeout(() => {
-          const msg = transcript.trim();
+        silenceTimer = setTimeout(function() {
+          var msg = transcript.trim();
           transcript = '';
-          if (liveEl) liveEl.textContent = '';
           if (msg && msg.length > 1) {
             stopListening();
-            handleVoiceMessage(msg);
+            sendVoiceMessage(msg);
           }
-        }, 1800);
+        }, SILENCE_MS);
       }
     };
 
-    r.onerror = (e) => {
+    r.onerror = function(e) {
       if (e.error === 'no-speech') return;
       if (e.error === 'not-allowed') {
-        showError('Microphone access denied. Please allow microphone in your browser settings.');
+        showError('Microphone access denied. Please allow it in browser settings.');
         exitVoiceMode();
         return;
       }
-      console.warn('Speech recognition error:', e.error);
     };
 
-    r.onend = () => {
-      isListening = false;
-      // Restart if still in voice mode and not speaking
-      if (voiceMode && !isSpeaking) {
-        setTimeout(() => {
-          if (voiceMode && !isSpeaking) startListening();
-        }, 400);
+    r.onend = function() {
+      // Only auto-restart if still in listening state
+      // Do NOT restart if processing or speaking
+      if (state === 'listening') {
+        try { r.start(); } catch(e) {}
       }
     };
 
@@ -135,206 +167,118 @@ const Voice = (() => {
   }
 
   function startListening() {
-    if (!recognition) recognition = setupRecognition();
-    if (!recognition) {
-      showError('Speech recognition requires Chrome or Edge browser.');
-      return;
-    }
-    if (isListening) return;
-    try {
-      recognition.start();
-    } catch(e) {
-      console.warn('Recognition start error:', e.message);
-    }
+    if (state === 'processing' || state === 'speaking') return;
+    if (!recognition) recognition = buildRecognition();
+    if (!recognition) { showError('Voice requires Chrome or Edge.'); return; }
+    transcript = '';
+    try { recognition.start(); } catch(e) {}
   }
 
   function stopListening() {
     clearTimeout(silenceTimer);
-    if (recognition && isListening) {
+    if (recognition) {
       try { recognition.stop(); } catch(e) {}
     }
-    isListening = false;
   }
 
-  // ── IMPROVED TTS ──────────────────────────────────────────────────
-  function speak(text) {
-    if (!synth) return;
+  // ── SEND TO AI ────────────────────────────────────────────────────
+  // ONLY called after user finishes speaking.
+  // NEVER called automatically.
+  async function sendVoiceMessage(text) {
+    setState('processing');
 
-    // Cancel any current speech
-    synth.cancel();
-
-    // Clean text for natural speech
-    const clean = text
-      .replace(/<[^>]+>/g, '')
-      .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
-      .replace(/[*_#`~]/g, '')
-      .replace(/\n+/g, '. ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    if (!clean) return;
-
-    // Load voices if not yet loaded
-    if (!voicesLoaded) bestVoice = pickBestVoice();
-
-    const u       = new SpeechSynthesisUtterance(clean);
-    u.voice       = bestVoice;
-    u.lang        = 'en-US';
-    u.rate        = 0.88;   // Slightly slower = more natural, less robotic
-    u.pitch       = 1.05;   // Very slightly higher = warmer tone
-    u.volume      = 1.0;
-
-    u.onstart = () => {
-      isSpeaking = true;
-      stopListening();
-      updateUI('speaking');
-    };
-
-    u.onend = () => {
-      isSpeaking = false;
-      if (voiceMode) {
-        updateUI('listening');
-        setTimeout(startListening, 600);
-      } else {
-        updateUI('idle');
-      }
-    };
-
-    u.onerror = (e) => {
-      if (e.error === 'interrupted') return;
-      isSpeaking = false;
-      if (voiceMode) startListening();
-    };
-
-    // Chrome bug fix — long utterances get cut off
-    // Break into sentences and queue them
-    const sentences = splitSentences(clean);
-    if (sentences.length <= 1) {
-      synth.speak(u);
-    } else {
-      speakSentences(sentences, 0);
-    }
-  }
-
-  function splitSentences(text) {
-    // Split on sentence boundaries
-    return text.match(/[^.!?]+[.!?]+/g) || [text];
-  }
-
-  function speakSentences(sentences, index) {
-    if (index >= sentences.length || !voiceMode) {
-      isSpeaking = false;
-      if (voiceMode) { updateUI('listening'); setTimeout(startListening, 600); }
-      else updateUI('idle');
-      return;
-    }
-
-    const u   = new SpeechSynthesisUtterance(sentences[index].trim());
-    u.voice   = bestVoice;
-    u.lang    = 'en-US';
-    u.rate    = 0.88;
-    u.pitch   = 1.05;
-    u.volume  = 1.0;
-
-    u.onstart = () => {
-      if (index === 0) { isSpeaking = true; updateUI('speaking'); }
-    };
-
-    u.onend = () => {
-      speakSentences(sentences, index + 1);
-    };
-
-    u.onerror = (e) => {
-      if (e.error !== 'interrupted') speakSentences(sentences, index + 1);
-    };
-
-    synth.speak(u);
-  }
-
-  // ── MESSAGE HANDLING ──────────────────────────────────────────────
-  async function handleVoiceMessage(text) {
-    updateUI('thinking');
-
-    // Put text in chat input and trigger send
-    const input = document.getElementById('chatInput');
+    var input = document.getElementById('chatInput');
     if (input) input.value = text;
 
-    // Watch for AI response then speak it
-    const area = document.getElementById('chatMessages');
-    if (!area) return;
+    var area        = document.getElementById('chatMessages');
+    var countBefore = area ? area.querySelectorAll('.msg.ai').length : 0;
 
-    const messageCount = area.querySelectorAll('.msg.ai').length;
+    // Use existing sendMessage from app.js
+    if (typeof sendMessage === 'function') {
+      await sendMessage();
+    }
 
-    await sendMessage();
-
-    // Wait for new AI message to appear
-    let attempts = 0;
-    const checkReply = setInterval(() => {
+    // Wait for AI response in DOM then speak it ONCE
+    var attempts = 0;
+    var check = setInterval(function() {
       attempts++;
-      const aiMessages = area.querySelectorAll('.msg.ai');
-      if (aiMessages.length > messageCount) {
-        clearInterval(checkReply);
-        const latest = aiMessages[aiMessages.length - 1];
-        const bubble = latest.querySelector('.bubble');
-        if (bubble) {
-          setTimeout(() => speak(bubble.innerText || bubble.textContent), 200);
+      var aiMsgs = area ? area.querySelectorAll('.msg.ai') : [];
+      if (aiMsgs.length > countBefore) {
+        clearInterval(check);
+        var latest  = aiMsgs[aiMsgs.length - 1];
+        var bubble  = latest.querySelector('.bubble');
+        var replyText = bubble ? (bubble.innerText || bubble.textContent || '').trim() : '';
+        if (replyText) {
+          speak(replyText, function() {
+            // After speaking — go IDLE
+            // User must tap orb again to continue
+            setState('idle');
+          });
+        } else {
+          setState('idle');
         }
       }
-      if (attempts > 60) clearInterval(checkReply); // 6s timeout
+      if (attempts > 80) { clearInterval(check); setState('idle'); }
     }, 100);
   }
 
   // ── ENTER / EXIT ──────────────────────────────────────────────────
   function enterVoiceMode() {
-    voiceMode  = true;
-    transcript = '';
-    document.getElementById('voiceOverlay').style.display = 'flex';
-    document.getElementById('voiceModeBtn')?.classList.add('active');
-    startListening();
-    // Warm greeting
-    setTimeout(() => speak("Voice mode activated. I am listening. Go ahead and speak."), 500);
+    var overlay = document.getElementById('voiceOverlay');
+    if (overlay) overlay.style.display = 'flex';
+    var btn = document.getElementById('voiceModeBtn');
+    if (btn) btn.classList.add('active');
+
+    // Say greeting ONCE then start listening — wait for user
+    speak("I am listening. Take your time.", function() {
+      startListening();
+    });
   }
 
   function exitVoiceMode() {
-    voiceMode = false;
     stopListening();
-    synth?.cancel();
+    stopSpeaking();
     clearTimeout(silenceTimer);
-    isSpeaking = false;
     transcript = '';
-    document.getElementById('voiceOverlay').style.display = 'none';
-    document.getElementById('voiceModeBtn')?.classList.remove('active');
-    updateUI('idle');
+    var overlay = document.getElementById('voiceOverlay');
+    if (overlay) overlay.style.display = 'none';
+    var btn = document.getElementById('voiceModeBtn');
+    if (btn) btn.classList.remove('active');
+    setState('idle');
   }
 
   function toggleVoiceMode() {
-    if (voiceMode) exitVoiceMode();
+    var overlay = document.getElementById('voiceOverlay');
+    var isOpen  = overlay && overlay.style.display === 'flex';
+    if (isOpen) exitVoiceMode();
     else enterVoiceMode();
   }
 
-  // ── UI ────────────────────────────────────────────────────────────
-  function updateUI(state) {
-    const orb    = document.getElementById('voiceOrb');
-    const status = document.getElementById('voiceStatus');
-    const states = {
-      listening: { cls:'listening', text:'Listening…' },
-      speaking:  { cls:'speaking',  text:'Serene is speaking…' },
-      thinking:  { cls:'thinking',  text:'Thinking…' },
-      idle:      { cls:'',          text:'Tap the orb to speak' },
-    };
-    const s = states[state] || states.idle;
-    if (orb)    orb.className    = 'voice-orb ' + s.cls;
-    if (status) status.textContent = s.text;
-  }
-
-  function showError(msg) {
-    const el = document.getElementById('voiceError');
-    if (el) {
-      el.textContent    = msg;
-      el.style.display  = 'block';
-      setTimeout(() => el.style.display = 'none', 5000);
+  // Tapping the orb:
+  // idle      → start listening
+  // listening → force send what was captured
+  // speaking  → stop speaking
+  function orbTapped() {
+    if (state === 'speaking') {
+      stopSpeaking();
+    } else if (state === 'listening') {
+      clearTimeout(silenceTimer);
+      var msg = transcript.trim();
+      transcript = '';
+      if (msg) { stopListening(); sendVoiceMessage(msg); }
+    } else if (state === 'idle') {
+      startListening();
     }
   }
 
-  return { toggleVoiceMode, exitVoiceMode, speak, enterVoiceMode };
+  function showError(msg) {
+    var el = document.getElementById('voiceError');
+    if (el) {
+      el.textContent   = msg;
+      el.style.display = 'block';
+      setTimeout(function() { el.style.display = 'none'; }, 5000);
+    }
+  }
+
+  return { toggleVoiceMode, exitVoiceMode, orbTapped, speak };
 })();
