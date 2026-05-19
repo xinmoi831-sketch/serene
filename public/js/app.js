@@ -145,8 +145,8 @@ function canUseVoice() {
 
 function handleVoiceBtnClick() {
   if (canUseVoice()) {
-    if (typeof Voice !== "undefined") {
-      Voice.toggleVoiceMode();
+    if (typeof VoiceSystem !== "undefined") {
+      VoiceSystem.toggleVoiceMode();
       state.voiceUsedToday++;
       const today = new Date().toISOString().slice(0, 10);
       localStorage.setItem("serene_voice_usage", JSON.stringify({ date: today, count: state.voiceUsedToday }));
