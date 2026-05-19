@@ -148,11 +148,22 @@ const VoiceSystem = (() => {
       console.warn('[Voice] Recognition error:', e.error);
     };
 
+    var lastRestart = 0;
     r.onend = function() {
       console.log('[Voice RECO] onend fired. state=' + currentState + ' isActive=' + isActive);
       if (currentState === 'LISTENING' && isActive) {
+        var now = Date.now();
+        if (now - lastRestart < 500) {
+          console.warn('[Voice RECO] Restart throttled - too fast');
+          return;
+        }
+        lastRestart = now;
         console.log('[Voice RECO] Auto-restarting recognition');
-        try { recognition.start(); } catch(e) { console.error('[Voice RECO] Restart failed:', e.message); }
+        setTimeout(function() {
+          if (currentState === 'LISTENING' && isActive) {
+            try { recognition.start(); } catch(e) { console.error('[Voice RECO] Restart failed:', e.message); }
+          }
+        }, 300);
       }
     };
 
