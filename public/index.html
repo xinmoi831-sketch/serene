@@ -176,6 +176,44 @@
   </div>
 </div>
 
+<!-- LOGIN VERIFICATION -->
+<div class="auth-wrap" id="page-login-verify">
+  <div class="auth-left">
+    <div class="auth-photo active" style="background-image:url('https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80')"></div>
+    <div class="auth-quote">
+      <div class="auth-quote-text">"Security is not a product, but a process."</div>
+      <div class="auth-quote-author">— Bruce Schneier</div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-inner">
+      <div style="text-align:center;margin-bottom:2rem">
+        <div style="font-size:48px;margin-bottom:12px">🔐</div>
+        <h1 style="font-size:28px;font-weight:700;color:#f0f4ff">Check your email</h1>
+        <p style="font-size:14px;color:var(--text2);margin-top:6px">We sent a 6-digit code to your email address</p>
+      </div>
+      <div class="glass-strong" style="padding:1.75rem">
+        <div id="loginVerifyAlert" class="alert"></div>
+        <p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:16px">Enter the code to continue</p>
+        <div class="code-row" style="margin-bottom:20px">
+          <input class="code-box" id="lvd0" maxlength="1" oninput="codeInput(this,0,'lv')" onkeydown="codeBack(event,0,'lv')"/>
+          <input class="code-box" id="lvd1" maxlength="1" oninput="codeInput(this,1,'lv')" onkeydown="codeBack(event,1,'lv')"/>
+          <input class="code-box" id="lvd2" maxlength="1" oninput="codeInput(this,2,'lv')" onkeydown="codeBack(event,2,'lv')"/>
+          <input class="code-box" id="lvd3" maxlength="1" oninput="codeInput(this,3,'lv')" onkeydown="codeBack(event,3,'lv')"/>
+          <input class="code-box" id="lvd4" maxlength="1" oninput="codeInput(this,4,'lv')" onkeydown="codeBack(event,4,'lv')"/>
+          <input class="code-box" id="lvd5" maxlength="1" oninput="codeInput(this,5,'lv')" onkeydown="codeBack(event,5,'lv')"/>
+        </div>
+        <button class="btn btn-primary" id="loginVerifyBtn" onclick="doVerifyLoginCode()">
+          <i class="ti ti-check"></i> Verify and sign in
+        </button>
+        <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)">
+          <a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">← Back to login</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- FORGOT PASSWORD -->
 <div class="auth-wrap" id="page-forgot">
   <div class="auth-left">

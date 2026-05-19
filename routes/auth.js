@@ -97,3 +97,78 @@ router.delete("/account", authenticate, async (req, res) => {
 });
 
 module.exports = router;
+
+// POST /api/auth/send-login-code
+// Called after password verification — sends OTP to email
+router.post("/send-login-code", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: "Email and password required." });
+
+    const user = await findOne(collections.users, { email: email.toLowerCase().trim() });
+    if (!user) return res.status(401).json({ error: "Incorrect email or password." });
+    if (!user.password) return res.status(401).json({ error: "This account uses Google Sign-In.", googleOnly: true });
+
+    const bcrypt = require("bcryptjs");
+    const valid  = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(401).json({ error: "Incorrect email or password." });
+
+    // Generate 6-digit login code
+    const code   = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    // Store code in memory (reuse verification codes map)
+    const { codes, sendEmail } = require("./verification");
+    codes.set("login_" + user.id, { code, expiry });
+
+    await sendEmail(
+      user.email,
+      "Your Serene login code",
+      "Your login verification code is: " + code + ". This code expires in 10 minutes."
+    );
+
+    res.json({
+      message: "Verification code sent to your email.",
+      userId: user.id,
+      ...((!process.env.BREVO_API_KEY || process.env.BREVO_API_KEY.includes("REPLACE")) && { devCode: code }),
+    });
+  } catch (err) {
+    console.error("Send login code error:", err.message);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
+  }
+});
+
+// POST /api/auth/verify-login-code
+// Verifies the login OTP and returns JWT token
+router.post("/verify-login-code", async (req, res) => {
+  try {
+    const { userId, code } = req.body;
+    if (!userId || !code) return res.status(400).json({ error: "userId and code required." });
+
+    const { codes } = require("./verification");
+    const stored    = codes.get("login_" + userId);
+
+    if (!stored) return res.status(400).json({ error: "No login code found. Please log in again." });
+    if (Date.now() > stored.expiry) {
+      codes.delete("login_" + userId);
+      return res.status(400).json({ error: "Code expired. Please log in again." });
+    }
+    if (stored.code !== code.trim()) return res.status(400).json({ error: "Incorrect code. Please try again." });
+
+    codes.delete("login_" + userId);
+
+    const user = await findOne(collections.users, { id: userId });
+    if (!user) return res.status(404).json({ error: "User not found." });
+
+    const jwt   = require("jsonwebtoken");
+    const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+    res.json({
+      token,
+      user: { id: user.id, email: user.email, name: user.name, plan: user.plan || "free" },
+    });
+  } catch (err) {
+    console.error("Verify login code error:", err.message);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
+  }
+});
