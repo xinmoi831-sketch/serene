@@ -223,16 +223,33 @@ const VoiceSystem = (() => {
   }
 
   // ── ENTER / EXIT ──────────────────────────────────────────────────
+  // Soft activation beep using Web Audio API — non-verbal, immediate
+  function playActivationBeep() {
+    try {
+      var ctx  = new (window.AudioContext || window.webkitAudioContext)();
+      var osc  = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type      = 'sine';
+      osc.frequency.setValueAtTime(620, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.25);
+    } catch(e) {}
+  }
+
   function enterVoiceMode() {
     var overlay = document.getElementById('voiceOverlay');
     if (overlay) overlay.style.display = 'flex';
     var btn = document.getElementById('voiceModeBtn');
     if (btn) btn.classList.add('active');
 
-    // Say greeting ONCE then start listening — wait for user
-    speak("I am listening. Take your time.", function() {
-      startListening();
-    });
+    // Play soft beep — then immediately start listening silently
+    playActivationBeep();
+    setTimeout(startListening, 200);
   }
 
   function exitVoiceMode() {
