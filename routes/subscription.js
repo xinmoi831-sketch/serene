@@ -29,8 +29,8 @@ router.get("/plans", (req, res) => {
       {
         id: "pro_monthly",
         name: "Pro Monthly",
-        price: "K120",
-        priceUSD: "~$4.50",
+        price: "K250",
+        priceUSD: "~$9",
         interval: "per month",
         stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
         trial: "7-day free trial",
