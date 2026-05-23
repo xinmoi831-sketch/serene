@@ -493,7 +493,7 @@ async function showPlans() {
       '<div style="margin-bottom:12px"><span class="pricing-price">' + plan.price + '</span><span class="pricing-interval"> ' + plan.interval + "</span></div>" +
       (plan.trial ? '<div style="font-size:12px;color:var(--accent2);margin-bottom:10px">✓ ' + plan.trial + "</div>" : "") +
       '<ul class="feature-list">' + plan.features.map(function(f) { return "<li>" + f + "</li>"; }).join("") + "</ul>" +
-      '<button class="btn btn-primary" style="margin-top:14px" onclick="startCheckout(\'' + (plan.stripePriceId || "") + '\')">Start 7-day free trial</button></div>';
+      '<button class="btn btn-primary" style="margin-top:14px" onclick="startCheckout(\'' + plan.id + '\')">Start 7-day free trial</button></div>';
   }).join("");
 }
 
