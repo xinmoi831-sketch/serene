@@ -100,10 +100,40 @@ async function doRegister() {
 }
 
 function doLogout() {
+  // 1. Clear auth state
   api.clearToken();
-  state.user = null;
+  state.user        = null;
   state.chatMessages = [];
+
+  // 2. Close drawer/sidebar
+  var drawer = document.getElementById("appDrawer");
+  var overlay = document.getElementById("drawerOverlay");
+  if (drawer)  { drawer.classList.remove("open"); }
+  if (overlay) { overlay.classList.remove("open"); overlay.style.display = "none"; }
+
+  // 3. Close all modals and overlays
+  var modals = document.querySelectorAll(".modal, .overlay, .bottom-sheet, [id$='Modal']");
+  modals.forEach(function(m) { m.style.display = "none"; });
+
+  // 4. Close voice mode if active
+  if (typeof VoiceSystem !== "undefined") VoiceSystem.exitVoiceMode();
+
+  // 5. Close crisis banner
+  var crisis = document.getElementById("crisisBanner");
+  if (crisis) crisis.style.display = "none";
+
+  // 6. Clear chat input
+  var input = document.getElementById("chatInput");
+  if (input) input.value = "";
+
+  // 7. Clear chat messages area
+  var chatArea = document.getElementById("chatMessages");
+  if (chatArea) chatArea.innerHTML = '<div class="scroll-anchor" id="scrollAnchor"></div>';
+
+  // 8. Navigate to login — clean state
   showPage("login");
+
+  console.log("[Logout] Full system reset complete");
 }
 
 // ── User UI ───────────────────────────────────────────────────────

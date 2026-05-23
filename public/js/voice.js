@@ -151,20 +151,22 @@ const VoiceSystem = (() => {
     var lastRestart = 0;
     r.onend = function() {
       console.log('[Voice RECO] onend fired. state=' + currentState + ' isActive=' + isActive);
-      if (currentState === 'LISTENING' && isActive) {
-        var now = Date.now();
-        if (now - lastRestart < 500) {
-          console.warn('[Voice RECO] Restart throttled - too fast');
-          return;
-        }
-        lastRestart = now;
-        console.log('[Voice RECO] Auto-restarting recognition');
+      if (currentState !== 'LISTENING' || !isActive) return;
+      var now = Date.now();
+      var gap = now - lastRestart;
+      if (gap < 1000) {
+        console.warn('[Voice RECO] Throttled (' + gap + 'ms) - waiting 1s');
         setTimeout(function() {
           if (currentState === 'LISTENING' && isActive) {
-            try { recognition.start(); } catch(e) { console.error('[Voice RECO] Restart failed:', e.message); }
+            lastRestart = Date.now();
+            try { recognition.start(); } catch(e) {}
           }
-        }, 300);
+        }, 1000);
+        return;
       }
+      lastRestart = now;
+      console.log('[Voice RECO] Restarting recognition');
+      try { recognition.start(); } catch(e) { console.error('[Voice RECO] Restart failed:', e.message); }
     };
 
     return r;
@@ -372,3 +374,6 @@ const VoiceSystem = (() => {
 
   return { toggleVoiceMode, exitVoiceMode, orbTapped };
 })();
+
+// Backward compatibility alias — supports old cached HTML calling Voice.xxx
+var Voice = VoiceSystem;
