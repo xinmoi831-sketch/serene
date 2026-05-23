@@ -148,25 +148,32 @@ const VoiceSystem = (() => {
       console.warn('[Voice] Recognition error:', e.error);
     };
 
-    var lastRestart = 0;
+    var restartCount = 0;
+    var lastSpeech   = Date.now();
+
+    r.onspeechstart = function() {
+      lastSpeech   = Date.now();
+      restartCount = 0; // reset on real speech
+    };
+
     r.onend = function() {
-      console.log('[Voice RECO] onend fired. state=' + currentState + ' isActive=' + isActive);
+      console.log('[Voice RECO] onend. state=' + currentState + ' isActive=' + isActive + ' restarts=' + restartCount);
       if (currentState !== 'LISTENING' || !isActive) return;
-      var now = Date.now();
-      var gap = now - lastRestart;
-      if (gap < 1000) {
-        console.warn('[Voice RECO] Throttled (' + gap + 'ms) - waiting 1s');
-        setTimeout(function() {
-          if (currentState === 'LISTENING' && isActive) {
-            lastRestart = Date.now();
-            try { recognition.start(); } catch(e) {}
-          }
-        }, 1000);
+
+      // If no real speech for 8 seconds stop restarting
+      var silentMs = Date.now() - lastSpeech;
+      if (restartCount > 5 && silentMs > 8000) {
+        console.warn('[Voice RECO] Too many restarts with no speech — stopping loop');
         return;
       }
-      lastRestart = now;
-      console.log('[Voice RECO] Restarting recognition');
-      try { recognition.start(); } catch(e) { console.error('[Voice RECO] Restart failed:', e.message); }
+
+      restartCount++;
+      var delay = Math.min(300 * restartCount, 2000); // back off up to 2s
+      setTimeout(function() {
+        if (currentState === 'LISTENING' && isActive) {
+          try { recognition.start(); } catch(e) {}
+        }
+      }, delay);
     };
 
     return r;
