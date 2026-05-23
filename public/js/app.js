@@ -499,83 +499,65 @@ async function showPlans() {
 
 function hidePlans() { document.getElementById("plansModal").style.display = "none"; }
 
-async function startCheckout(planId, mode) {
-  // Use new modular payment system — no Stripe
-  const token = api.getToken();
+async function startCheckout(planId) {
+  var token = api.getToken();
   if (!token) { alert("Please log in first."); return; }
-
-  // Show payment method selection
   showPaymentMethodModal(planId);
 }
 
-async function initiatePayment(planId, method) {
+async function initiatePayment(planId, provider) {
   hidePaymentMethodModal();
-  const token = api.getToken();
+  var token = api.getToken();
 
-  // Get user country from browser
-  var country = "ZM"; // default Zambia
-  try {
-    var lang = navigator.language || "";
-    var region = lang.split("-")[1];
-    if (region) country = region.toUpperCase();
-  } catch(e) {}
-
-  setLoading("upgradeBtn", true);
-  const res = await fetch("/api/payments/initiate", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + token,
-      "X-Country": country,
-    },
-    body: JSON.stringify({ planId: planId, method: method }),
+  var res = await fetch("/api/payments/" + provider, {
+    method:  "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+    body:    JSON.stringify({ planId: planId }),
   });
-  setLoading("upgradeBtn", false);
 
-  const data = await res.json();
-  if (res.ok && data.paymentUrl && data.paymentUrl !== "#mobile-money-sandbox") {
+  var data = await res.json();
+  if (res.ok && data.paymentUrl) {
     window.location.href = data.paymentUrl;
-  } else if (data.paymentUrl === "#mobile-money-sandbox") {
-    alert("Mobile Money payment\n\nTo activate live Mobile Money payments:\n1. Sign up at developers.mtn.com (MTN MoMo) or developer.airtel.africa (Airtel Money)\n2. Add MTN_MOMO_API_KEY or AIRTEL_MONEY_API_KEY to Railway variables\n\nCurrent status: Sandbox mode");
   } else {
-    alert(data.error || "Payment could not be started. Please try again.");
+    alert(data.error || "Could not start payment. Please try again.");
   }
 }
 
 function showPaymentMethodModal(planId) {
   var existing = document.getElementById("paymentMethodModal");
   if (existing) existing.remove();
+
   var modal = document.createElement("div");
   modal.id = "paymentMethodModal";
-  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:700;display:flex;align-items:flex-end;justify-content:center;padding:1rem";
+  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);z-index:700;display:flex;align-items:flex-end;justify-content:center;padding:1rem";
 
   var wrap = document.createElement("div");
   wrap.style.cssText = "background:#0d1428;border:0.5px solid rgba(255,255,255,0.15);border-radius:24px 24px 0 0;padding:2rem;width:100%;max-width:480px";
 
   var title = document.createElement("h3");
-  title.style.cssText = "color:#f0f4ff;font-size:18px;margin-bottom:8px;text-align:center";
-  title.textContent = "Choose payment method";
+  title.style.cssText = "color:#f0f4ff;font-size:18px;margin-bottom:6px;text-align:center";
+  title.textContent = "How do you want to pay?";
   wrap.appendChild(title);
 
   var sub = document.createElement("p");
   sub.style.cssText = "color:#8b9dc3;font-size:13px;text-align:center;margin-bottom:1.5rem";
-  sub.textContent = "Select how you want to pay";
+  sub.textContent = "K250 per month — cancel anytime";
   wrap.appendChild(sub);
 
-  function makeBtn(emoji, label, method, bg, borderColor, textColor) {
-    var btn = document.createElement("button");
-    btn.style.cssText = "width:100%;padding:14px;background:" + bg + ";border:0.5px solid " + borderColor + ";border-radius:12px;color:" + textColor + ";font-size:15px;font-weight:500;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px";
-    btn.textContent = emoji + " " + label;
-    btn.onclick = function() { initiatePayment(planId, method); };
-    return btn;
+  function btn(emoji, label, provider, bg, border, color) {
+    var b = document.createElement("button");
+    b.style.cssText = "width:100%;padding:14px;background:" + bg + ";border:0.5px solid " + border + ";border-radius:12px;color:" + color + ";font-size:15px;font-weight:500;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px";
+    b.innerHTML = emoji + " " + label;
+    b.onclick = function() { initiatePayment(planId, provider); };
+    return b;
   }
 
-  wrap.appendChild(makeBtn("💳", "Card Payment (Visa / Mastercard)", "dpo",        "rgba(99,102,241,0.15)",  "rgba(99,102,241,0.3)",  "#a5b4fc"));
-  wrap.appendChild(makeBtn("🅿️", "PayPal",                           "paypal",      "rgba(0,112,243,0.1)",    "rgba(0,112,243,0.3)",   "#60a5fa"));
-  wrap.appendChild(makeBtn("📱", "Mobile Money (MTN / Airtel)",      "mobilemoney", "rgba(255,196,0,0.1)",    "rgba(255,196,0,0.3)",   "#fbbf24"));
+  wrap.appendChild(btn("🅿️", "PayPal",                      "paypal",  "rgba(0,112,243,0.12)", "rgba(0,112,243,0.35)",   "#60a5fa"));
+  wrap.appendChild(btn("📱", "Mobile Money (MTN / Airtel)", "pesapal", "rgba(255,196,0,0.1)",  "rgba(255,196,0,0.35)",   "#fbbf24"));
+  wrap.appendChild(btn("💳", "Visa / Mastercard",           "pesapal", "rgba(99,102,241,0.12)","rgba(99,102,241,0.35)",  "#a5b4fc"));
 
   var cancel = document.createElement("button");
-  cancel.style.cssText = "width:100%;padding:12px;background:transparent;border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;color:#8b9dc3;font-size:14px;cursor:pointer;margin-top:6px";
+  cancel.style.cssText = "width:100%;padding:12px;background:transparent;border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;color:#8b9dc3;font-size:14px;cursor:pointer;margin-top:4px";
   cancel.textContent = "Cancel";
   cancel.onclick = hidePaymentMethodModal;
   wrap.appendChild(cancel);
