@@ -1,41 +1,40 @@
 // Serene — ElevenLabs TTS Route
-// POST /api/tts → returns audio stream
-
 const express = require("express");
 const router  = express.Router();
 
-// ElevenLabs voice IDs — soft male voices
 const VOICES = {
-  adam:    "pNInz6obpgDQGcFmaJgB", // Adam — calm, warm, gentle
-  daniel:  "onwK4e9ZLuTAKqWW03F9", // Daniel — soft, supportive
-  charlie: "IKne3meq5aSn9XLyUdCD", // Charlie — natural, calm
+  adam:    "pNInz6obpgDQGcFmaJgB",
+  daniel:  "onwK4e9ZLuTAKqWW03F9",
+  charlie: "IKne3meq5aSn9XLyUdCD",
 };
 
 const VOICE_ID = process.env.ELEVENLABS_VOICE_ID || VOICES.adam;
 
+// POST /api/tts/speak
 router.post("/speak", async (req, res) => {
   try {
     const apiKey = (process.env.ELEVENLABS_API_KEY || "").trim();
     if (!apiKey) {
-      return res.status(503).json({ error: "ElevenLabs not configured. Add ELEVENLABS_API_KEY to Railway variables." });
+      console.error("[TTS] No ELEVENLABS_API_KEY set");
+      return res.status(503).json({ error: "ElevenLabs not configured." });
     }
 
     const { text } = req.body;
-    if (!text || !text.trim()) return res.status(400).json({ error: "Text is required." });
+    if (!text || !text.trim()) return res.status(400).json({ error: "Text required." });
 
-    // Clean text for TTS
     const clean = text
       .replace(/<[^>]+>/g, "")
       .replace(/[*_#`~]/g, "")
       .replace(/\n+/g, " ")
       .replace(/\s+/g, " ")
       .trim()
-      .slice(0, 500); // limit to 500 chars per request
+      .slice(0, 500);
 
-    console.log("[TTS] Requesting ElevenLabs, chars:", clean.length);
+    console.log("[TTS] Calling ElevenLabs, chars:", clean.length, "voice:", VOICE_ID);
 
+    // Use non-streaming endpoint — more reliable on Railway
     const response = await fetch(
-      "https://api.elevenlabs.io/v1/text-to-speech/" + VOICE_ID + "/stream",
+      "https://api.elevenlabs.io/v1/text-to-speech/" + VOICE_ID,
       {
         method: "POST",
         headers: {
@@ -56,37 +55,44 @@ router.post("/speak", async (req, res) => {
       }
     );
 
+    console.log("[TTS] ElevenLabs response status:", response.status);
+
     if (!response.ok) {
-      const err = await response.text();
-      console.error("[TTS] ElevenLabs error:", response.status, err);
-      return res.status(response.status).json({ error: "TTS failed: " + response.status });
+      const errText = await response.text();
+      console.error("[TTS] ElevenLabs error:", response.status, errText);
+      return res.status(response.status).json({ error: "ElevenLabs failed: " + response.status });
     }
 
-    // Stream audio back to client
+    // Get complete audio buffer — no streaming
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer      = Buffer.from(arrayBuffer);
+
+    console.log("[TTS] Audio buffer size:", buffer.length, "bytes");
+
+    if (buffer.length === 0) {
+      console.error("[TTS] Empty audio buffer received");
+      return res.status(500).json({ error: "Empty audio from ElevenLabs" });
+    }
+
     res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Content-Length", buffer.length);
     res.setHeader("Cache-Control", "no-cache");
-
-    const reader = response.body.getReader();
-    async function pump() {
-      const { done, value } = await reader.read();
-      if (done) { res.end(); return; }
-      res.write(Buffer.from(value));
-      pump();
-    }
-    pump();
+    res.send(buffer);
+    console.log("[TTS] Audio sent successfully");
 
   } catch (err) {
-    console.error("[TTS] Error:", err.message);
-    res.status(500).json({ error: "TTS service error." });
+    console.error("[TTS] Unexpected error:", err.message);
+    res.status(500).json({ error: "TTS error: " + err.message });
   }
 });
 
-// GET /api/tts/voices — list available voices
-router.get("/voices", (req, res) => {
+// GET /api/tts/test — test endpoint
+router.get("/test", async (req, res) => {
+  const apiKey = (process.env.ELEVENLABS_API_KEY || "").trim();
   res.json({
-    current: VOICE_ID,
-    available: VOICES,
-    note: "Set ELEVENLABS_VOICE_ID in Railway to change voice"
+    configured: !!apiKey,
+    keyPrefix:  apiKey ? apiKey.substring(0, 8) + "..." : "NOT SET",
+    voiceId:    VOICE_ID,
   });
 });
 
