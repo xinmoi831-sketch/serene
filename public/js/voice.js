@@ -221,7 +221,9 @@ const VoiceSystem = (() => {
     var area        = document.getElementById('chatMessages');
     var countBefore = area ? area.querySelectorAll('.msg.ai').length : 0;
 
+    console.log('[Voice PROCESS] Sending message to AI. countBefore=' + countBefore);
     if (typeof sendMessage === 'function') await sendMessage();
+    console.log('[Voice PROCESS] sendMessage done, polling for AI reply...');
 
     // Wait for AI reply in DOM
     var attempts = 0;
@@ -229,16 +231,29 @@ const VoiceSystem = (() => {
       if (!isActive) { clearInterval(poll); clearTimeout(processTimer); return; }
       attempts++;
       var aiMsgs = area ? area.querySelectorAll('.msg.ai') : [];
+      console.log('[Voice POLL] attempt=' + attempts + ' aiMsgs=' + aiMsgs.length + ' countBefore=' + countBefore);
       if (aiMsgs.length > countBefore) {
         clearInterval(poll);
         clearTimeout(processTimer);
         var latest   = aiMsgs[aiMsgs.length - 1];
-        var bubble   = latest.querySelector('.bubble');
-        var replyTxt = bubble ? (bubble.innerText || bubble.textContent || '').trim() : '';
+        // Try multiple selectors for the bubble text
+        var bubble   = latest.querySelector('.bubble') ||
+                       latest.querySelector('.msg-bubble') ||
+                       latest.querySelector('.msg-content') ||
+                       latest;
+        var replyTxt = (bubble.innerText || bubble.textContent || '').trim();
+        // Remove "Serene" sender label from text
+        replyTxt = replyTxt.replace(/^Serene\s*/i, '').trim();
+        console.log('[Voice POLL] Got reply, length=' + replyTxt.length + ' text=' + replyTxt.slice(0,50));
         if (replyTxt) speakResponse(replyTxt);
-        else startListening(); // no text — go back to listening
+        else { console.warn('[Voice POLL] Empty reply — returning to listening'); startListening(); }
       }
-      if (attempts > 100) { clearInterval(poll); clearTimeout(processTimer); if (isActive) startListening(); }
+      if (attempts > 100) {
+        clearInterval(poll);
+        clearTimeout(processTimer);
+        console.warn('[Voice POLL] Timeout after 100 attempts');
+        if (isActive) startListening();
+      }
     }, 150);
   }
 
