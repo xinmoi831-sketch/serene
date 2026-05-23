@@ -63,7 +63,7 @@ class PayPalProvider {
           brand_name:          'Serene Mental Health',
           landing_page:        'NO_PREFERENCE',
           user_action:         'PAY_NOW',
-          return_url:          baseUrl + '/payment-success?method=paypal&ref=' + reference,
+          return_url:          baseUrl + '/api/payments/callback/paypal?ref=' + reference,
           cancel_url:          baseUrl + '/payment-cancel',
           shipping_preference: 'NO_SHIPPING',
         },
