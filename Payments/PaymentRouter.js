@@ -45,14 +45,14 @@ const PLANS = {
     id:            'premium',
     name:          'Premium',
     messagesPerDay: 1000,
-    priceUSD:       19,
+    priceUSD:       4.50,
     features:       ['1000 messages/day','Unlimited journal','AI reflections','Voice mode unlimited','Priority support'],
   },
   live_session: {
     id:            'live_session',
     name:          'Live Session',
     messagesPerDay: null, // one-time, not recurring
-    priceUSD:       25,
+    priceUSD:       4.50,
     features:       ['60 min dedicated AI session','Session summary','Follow-up resources','Priority response'],
   },
 };

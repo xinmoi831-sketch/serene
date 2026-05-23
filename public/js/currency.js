@@ -34,7 +34,7 @@ const CurrencySystem = (() => {
     INR:83.5, CAD:1.37, AUD:1.52, BRL:5.1, JPY:154,
   };
 
-  var currency = localStorage.getItem('serene_currency') || 'USD';
+  var currency = localStorage.getItem('serene_currency') || 'ZMW';
   var rates    = JSON.parse(localStorage.getItem('serene_rates') || '{}');
   var ratesTs  = parseInt(localStorage.getItem('serene_rates_ts') || '0');
 
