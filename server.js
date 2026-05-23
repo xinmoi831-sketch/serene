@@ -76,6 +76,7 @@ try {
   const journalRoutes      = require("./routes/journal");
   const subscriptionRoutes = require("./routes/subscription");
   const ttsRoutes          = require("./routes/tts");
+  const paymentRoutes      = require("./routes/payments");
 
   app.use("/api/auth",         authRoutes);
   app.use("/api/auth",         googleAuthRoutes);
@@ -84,6 +85,7 @@ try {
   app.use("/api/journal",      journalRoutes);
   app.use("/api/subscription", subscriptionRoutes);
   app.use("/api/tts",          ttsRoutes);
+  app.use("/api/payments",     paymentRoutes);
 
   console.log("All routes loaded successfully");
 } catch (err) {
