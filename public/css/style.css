@@ -1241,3 +1241,94 @@ h3 { font-size: 16px; font-weight: 500; }
   color: var(--accent2);
   font-weight: 500;
 }
+
+/* ── Breathing Widget ── */
+.breathing-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 800;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+.breathing-card {
+  width: 100%; max-width: 380px;
+  text-align: center;
+}
+.breath-title {
+  font-size: 22px; font-weight: 600;
+  color: var(--text); margin-bottom: 6px;
+}
+.breath-desc {
+  font-size: 13px; color: var(--text2);
+  margin-bottom: 2rem;
+}
+.breath-orb-wrap {
+  display: flex; align-items: center;
+  justify-content: center;
+  height: 220px; margin-bottom: 2rem;
+}
+.breath-orb {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #818cf8, #4f46e5);
+  box-shadow: 0 0 30px rgba(99,102,241,0.3);
+  transition: transform 0.5s ease-in-out, box-shadow 0.5s ease;
+  display: flex; align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.breath-label {
+  font-size: 28px; font-weight: 700;
+  color: var(--text); margin-bottom: 8px;
+  min-height: 40px;
+}
+.breath-count {
+  font-size: 48px; font-weight: 700;
+  color: var(--accent2); min-height: 60px;
+  line-height: 1;
+}
+.breath-cycles {
+  font-size: 13px; color: var(--text3);
+  margin-bottom: 1.5rem;
+}
+.breath-controls {
+  display: flex; gap: 10px;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+.breath-type-row {
+  display: flex; gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.breath-type-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 0.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.breath-type-btn:hover, .breath-type-btn.active {
+  background: rgba(99,102,241,0.2);
+  border-color: var(--accent);
+  color: var(--accent2);
+}
+.breath-close {
+  position: absolute; top: 20px; right: 20px;
+  background: var(--surface2);
+  border: 0.5px solid var(--border);
+  border-radius: 50%; width: 36px; height: 36px;
+  color: var(--text2); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}

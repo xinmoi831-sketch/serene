@@ -449,6 +449,7 @@
         <textarea class="chat-textarea" id="chatInput" rows="1" placeholder="Share what's on your mind…" onkeydown="handleChatKey(event)" oninput="autoResize(this)" style="background:transparent!important;border:0.5px solid rgba(255,255,255,0.2)!important;"></textarea>
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0">
           <div style="position:relative">
+            <button class="icon-btn" onclick="BreathingWidget.open('box')" title="Breathing exercises" style="margin-right:4px"><i class="ti ti-wind"></i></button>
             <button class="voice-mode-btn" id="voiceModeBtn" onclick="handleVoiceBtnClick()" title="Voice mode">
               <i class="ti ti-microphone"></i>
             </button>
@@ -573,6 +574,7 @@
 </div>
 
 <script src="/js/scroll.js"></script>
+<script src="/js/breathing.js"></script>
 <script src="/js/emotion.js"></script>
 <script src="/js/currency.js"></script>
 <script src="/js/i18n.js"></script>
@@ -770,5 +772,33 @@ var tsX=0;
 document.getElementById("drawer").addEventListener("touchstart",function(e){tsX=e.touches[0].clientX;});
 document.getElementById("drawer").addEventListener("touchend",function(e){if(tsX-e.changedTouches[0].clientX>60)closeDrawer();});
 </script>
+<!-- BREATHING WIDGET -->
+<div class="breathing-overlay" id="breathingOverlay">
+  <button class="breath-close" onclick="BreathingWidget.close()">✕</button>
+  <div class="breathing-card">
+    <div class="breath-type-row">
+      <button class="breath-type-btn active" onclick="switchBreath('box',this)">Box</button>
+      <button class="breath-type-btn" onclick="switchBreath('four78',this)">4-7-8</button>
+      <button class="breath-type-btn" onclick="switchBreath('calm',this)">Calm</button>
+    </div>
+    <div class="breath-title" id="breathTitle">Box Breathing</div>
+    <div class="breath-desc" id="breathDescription">Calms the nervous system.</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:1rem" id="breathCycleInfo">4 cycles</div>
+    <div class="breath-orb-wrap">
+      <div class="breath-orb" id="breathOrb"></div>
+    </div>
+    <div class="breath-label" id="breathLabel">Ready</div>
+    <div class="breath-count" id="breathCount"></div>
+    <div class="breath-cycles" id="breathCycles">Cycle 0 / 4</div>
+    <div class="breath-controls">
+      <button class="btn btn-primary" id="breathStartBtn" onclick="BreathingWidget.startExercise()" style="min-width:140px">
+        Start
+      </button>
+      <button class="btn btn-outline" id="breathStopBtn" onclick="BreathingWidget.stopExercise()" style="display:none;min-width:140px">
+        Stop
+      </button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

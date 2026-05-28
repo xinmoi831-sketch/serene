@@ -20,7 +20,8 @@ const BASE_URL = process.env.FRONTEND_URL || 'https://serene-production-9b12.up.
 async function getPayPalToken() {
   const id     = (process.env.PAYPAL_CLIENT_ID     || '').trim();
   const secret = (process.env.PAYPAL_CLIENT_SECRET || '').trim();
-  if (!id || !secret) throw new Error('PayPal not configured');
+  if (!id   || id.includes('REPLACE'))     throw new Error('PAYPAL_CLIENT_ID is not set in your .env file.');
+  if (!secret || secret.includes('REPLACE')) throw new Error('PAYPAL_CLIENT_SECRET is not set in your .env file.');
 
   const base = process.env.NODE_ENV === 'production'
     ? 'https://api-m.paypal.com'
@@ -123,7 +124,8 @@ router.get('/paypal/callback', async (req, res) => {
 async function getPesapalToken() {
   const key    = (process.env.PESAPAL_CONSUMER_KEY    || '').trim();
   const secret = (process.env.PESAPAL_CONSUMER_SECRET || '').trim();
-  if (!key || !secret) throw new Error('Pesapal not configured');
+  if (!key   || key.includes('REPLACE'))    throw new Error('PESAPAL_CONSUMER_KEY is not set in your .env file.');
+  if (!secret || secret.includes('REPLACE')) throw new Error('PESAPAL_CONSUMER_SECRET is not set in your .env file.');
 
   const base = process.env.PESAPAL_ENV === 'live'
     ? 'https://pay.pesapal.com/v3'
@@ -233,16 +235,57 @@ router.post('/pesapal/ipn', async (req, res) => {
 });
 
 // ── ACTIVATE SUBSCRIPTION ─────────────────────────────────────────
-async function activateSubscription(userId, _planId, provider, _transactionId) {
+async function activateSubscription(userId, planId, provider, transactionId) {
+  // Idempotency: skip if this transaction was already processed
+  if (transactionId) {
+    const existing = await findOne(collections.payments, { reference: transactionId });
+    if (existing) {
+      console.log('[Payment] Duplicate callback ignored for transaction:', transactionId);
+      return;
+    }
+  }
+
   const expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
   await update(collections.users, { id: userId }, {
     plan:               'pro',
     subscriptionStatus: 'active',
     subscriptionEnd:    expiry,
     messagesPerDay:     1000,
   });
-  console.log('[Payment] Activated pro for user:', userId, 'via', provider);
+
+  // Record payment for audit trail
+  await insert(collections.payments, {
+    id:        uuidv4(),
+    userId,
+    planId:    planId || 'pro_monthly',
+    reference: transactionId || ('manual-' + Date.now()),
+    provider,
+    status:    'completed',
+    createdAt: new Date().toISOString(),
+    expiresAt: expiry,
+  });
+
+  console.log('[Payment] Activated pro for user:', userId, 'via', provider, '| tx:', transactionId);
 }
+
+// GET /api/payments/config — tells the frontend which providers are ready
+router.get('/config', (req, res) => {
+  const ppId     = (process.env.PAYPAL_CLIENT_ID     || '').trim();
+  const ppSecret = (process.env.PAYPAL_CLIENT_SECRET || '').trim();
+  const ppReady  = !!(ppId && !ppId.includes('REPLACE') && ppSecret && !ppSecret.includes('REPLACE'));
+
+  const pesKey    = (process.env.PESAPAL_CONSUMER_KEY    || '').trim();
+  const pesSecret = (process.env.PESAPAL_CONSUMER_SECRET || '').trim();
+  const pesReady  = !!(pesKey && !pesKey.includes('REPLACE') && pesSecret && !pesSecret.includes('REPLACE'));
+
+  res.json({
+    paypal:  ppReady,
+    pesapal: pesReady,
+    paypalClientId: ppReady ? ppId : null,
+    mode: process.env.NODE_ENV === 'production' ? 'live' : 'sandbox',
+  });
+});
 
 // GET /api/payments/status
 router.get('/status', authenticate, async (req, res) => {
