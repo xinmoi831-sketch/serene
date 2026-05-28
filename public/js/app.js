@@ -43,6 +43,7 @@ function showApp() {
 }
 
 function navigateTo(tab) {
+  if (tab === "therapists") loadTherapists();
   state.currentPage = tab;
   document.querySelectorAll(".bnav-item").forEach(b => b.classList.remove("active"));
   const btn = document.querySelector('[data-tab="' + tab + '"]');

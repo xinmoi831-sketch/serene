@@ -74,6 +74,9 @@
     </button>
     <div class="drawer-divider"></div>
     <div class="drawer-section-label">Account</div>
+    <button class="drawer-nav-item" data-tab="therapists" onclick="navigateTo('therapists');closeDrawer()">
+      <i class="ti ti-stethoscope"></i> Therapists
+    </button>
     <button class="drawer-nav-item" data-tab="settings" onclick="navigateTo('settings');closeDrawer()">
       <i class="ti ti-settings drawer-nav-icon"></i>
       <span class="drawer-nav-label">Settings</span>
@@ -772,6 +775,94 @@ var tsX=0;
 document.getElementById("drawer").addEventListener("touchstart",function(e){tsX=e.touches[0].clientX;});
 document.getElementById("drawer").addEventListener("touchend",function(e){if(tsX-e.changedTouches[0].clientX>60)closeDrawer();});
 </script>
+<!-- THERAPIST APPLY MODAL -->
+<div class="modal-overlay" id="therapistApplyModal" style="display:none">
+  <div class="modal-card" style="max-height:90vh;overflow-y:auto">
+    <div class="modal-header">
+      <h3>Apply as a Therapist</h3>
+      <button onclick="document.getElementById('therapistApplyModal').style.display='none'"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="padding:1.5rem">
+      <div style="background:rgba(99,102,241,0.1);border:0.5px solid rgba(99,102,241,0.3);border-radius:12px;padding:12px;margin-bottom:1.5rem">
+        <p style="font-size:13px;color:#a5b4fc">Requirements: 3+ years experience, valid license, 2 traceable references, Zambia-based.</p>
+      </div>
+      <div id="therapistApplyAlert" class="alert"></div>
+      <div class="input-group">
+        <label>Full Name *</label>
+        <input id="tFullName" type="text" placeholder="Your full legal name"/>
+      </div>
+      <div class="input-group">
+        <label>Email Address *</label>
+        <input id="tEmail" type="email" placeholder="your@email.com"/>
+      </div>
+      <div class="input-group">
+        <label>Phone Number *</label>
+        <input id="tPhone" type="tel" placeholder="+260 xxx xxx xxx"/>
+      </div>
+      <div class="input-group">
+        <label>Location (City) *</label>
+        <input id="tLocation" type="text" placeholder="e.g. Lusaka, Zambia"/>
+      </div>
+      <div class="input-group">
+        <label>License / Registration Number *</label>
+        <input id="tLicense" type="text" placeholder="Professional license number"/>
+      </div>
+      <div class="input-group">
+        <label>NRC Number *</label>
+        <input id="tNRC" type="text" placeholder="National Registration Card number"/>
+      </div>
+      <div class="input-group">
+        <label>Years of Experience *</label>
+        <input id="tYears" type="number" placeholder="Minimum 3 years" min="3"/>
+      </div>
+      <div class="input-group">
+        <label>Specializations</label>
+        <input id="tSpec" type="text" placeholder="e.g. Anxiety, Depression, Trauma"/>
+      </div>
+      <div class="input-group">
+        <label>Session Price (ZMW) *</label>
+        <input id="tPrice" type="number" placeholder="e.g. 300" min="100"/>
+      </div>
+      <div class="input-group">
+        <label>Professional Bio</label>
+        <textarea id="tBio" rows="3" placeholder="Brief description of your experience and approach..." style="width:100%;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:10px;color:var(--text);font-family:inherit;font-size:14px;resize:none"></textarea>
+      </div>
+      <div class="input-group">
+        <label>Reference 1 (Name & Phone) *</label>
+        <input id="tRef1" type="text" placeholder="Full name and contact number"/>
+      </div>
+      <div class="input-group">
+        <label>Reference 2 (Name & Phone) *</label>
+        <input id="tRef2" type="text" placeholder="Full name and contact number"/>
+      </div>
+      <button class="btn btn-primary" onclick="submitTherapistApplication()" id="therapistApplyBtn">
+        Submit Application
+      </button>
+      <p style="font-size:12px;color:var(--text3);margin-top:12px;text-align:center">
+        Serene takes 20% of each session to maintain the platform. You keep 80%.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- THERAPIST VIDEO SESSION -->
+<div class="modal-overlay" id="therapistSessionModal" style="display:none">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="sessionTitle">Live Session</h3>
+      <button onclick="document.getElementById('therapistSessionModal').style.display='none'"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="padding:1.5rem;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">🎥</div>
+      <p style="color:var(--text2);margin-bottom:20px" id="sessionInfo">Your session is ready</p>
+      <button class="btn btn-primary" id="joinSessionBtn" onclick="joinSession()" style="width:100%;margin-bottom:10px">
+        <i class="ti ti-video"></i> Join Video Session
+      </button>
+      <p style="font-size:12px;color:var(--text3)">Session opens in a new tab using Jitsi Meet — free, secure, no download needed</p>
+    </div>
+  </div>
+</div>
+
 <!-- BREATHING WIDGET -->
 <div class="breathing-overlay" id="breathingOverlay">
   <button class="breath-close" onclick="BreathingWidget.close()">✕</button>
