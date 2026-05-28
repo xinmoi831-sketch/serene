@@ -60,9 +60,6 @@ const TTS = (() => {
   function resetBubble(msgId) {
     const bubble = document.querySelector(`[data-msg-id="${msgId}"] .bubble`);
     if (!bubble) return;
-    const text = Array.from(bubble.querySelectorAll('.tts-word'))
-      .map(w => w.textContent).join(' ');
-    // Only restore if wrapped
     if (bubble.querySelector('.tts-word')) {
       bubble.innerHTML = bubble.innerText;
     }
@@ -122,7 +119,6 @@ const TTS = (() => {
     if (voice) utterance.voice = voice;
 
     // Word boundary highlighting
-    let wordIndex = 0;
     utterance.onboundary = (e) => {
       if (e.name !== 'word') return;
       // Clear previous
@@ -136,7 +132,6 @@ const TTS = (() => {
           words[i]?.classList.add('tts-active');
           // Scroll word into view smoothly
           words[i]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          wordIndex = i;
           break;
         }
       }

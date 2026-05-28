@@ -134,5 +134,30 @@ const EmotionTracker = (() => {
     return 'stable';
   }
 
-  return { init, track, reset, getTrend, getState };
+  // ── Server-sync: called when server returns emotional state data ──────
+  // valence: 0.0–1.0 (server scale) → mapped to STATES 0–10 scale
+  // mode: 'VALIDATION' | 'STABILIZATION' | 'ESCALATION_READY'
+  // trend: 'improving' | 'stable' | 'declining' | 'rapidly_declining'
+  function syncFromServer(valence, mode, trend) {
+    // Map 0.0–1.0 valence to 0–10 score, with mode adjustments
+    var baseScore = valence * 10;
+
+    // Mode overrides — ensure the visual indicator matches the emotional mode
+    if (mode === 'ESCALATION_READY') {
+      baseScore = Math.min(baseScore, 2);   // Always show crisis state
+    } else if (mode === 'STABILIZATION') {
+      baseScore = Math.min(baseScore, 4);   // Cap at low/worried
+    }
+
+    // Trend modifier
+    if (trend === 'rapidly_declining') baseScore = Math.max(0, baseScore - 1.5);
+    if (trend === 'improving')         baseScore = Math.min(10, baseScore + 0.5);
+
+    currentScore = Math.max(0, Math.min(10, baseScore));
+    scoreHistory.push({ score: currentScore, time: Date.now() });
+    if (scoreHistory.length > 20) scoreHistory.shift();
+    updateUI(currentScore, true);
+  }
+
+  return { init, track, reset, getTrend, getState, syncFromServer };
 })();

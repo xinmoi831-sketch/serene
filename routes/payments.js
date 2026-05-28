@@ -233,7 +233,7 @@ router.post('/pesapal/ipn', async (req, res) => {
 });
 
 // ── ACTIVATE SUBSCRIPTION ─────────────────────────────────────────
-async function activateSubscription(userId, planId, provider, transactionId) {
+async function activateSubscription(userId, _planId, provider, _transactionId) {
   const expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
   await update(collections.users, { id: userId }, {
     plan:               'pro',

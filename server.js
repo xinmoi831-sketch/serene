@@ -77,6 +77,7 @@ try {
   const subscriptionRoutes = require("./routes/subscription");
   const ttsRoutes          = require("./routes/tts");
   const paymentRoutes      = require("./routes/payments");
+  const userRoutes         = require("./routes/user");
 
   app.use("/api/auth",         authRoutes);
   app.use("/api/auth",         googleAuthRoutes);
@@ -86,6 +87,7 @@ try {
   app.use("/api/subscription", subscriptionRoutes);
   app.use("/api/tts",          ttsRoutes);
   app.use("/api/payments",     paymentRoutes);
+  app.use("/api/user",         userRoutes);
 
   console.log("All routes loaded successfully");
 } catch (err) {
@@ -102,7 +104,7 @@ app.get("*", (req, res) => {
   else res.json({ status: "running", app: "Serene Mental Health API v3" });
 });
 
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error("Error:", err.message);
   res.status(500).json({ error: "Something went wrong." });
 });

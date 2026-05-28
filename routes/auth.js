@@ -2,7 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
-const { collections, findOne, insert } = require("../lib/db");
+const { collections, findOne, insert, remove } = require("../lib/db");
 const { authenticate, PLANS } = require("../middleware/auth");
 
 const router = express.Router();
@@ -28,13 +28,18 @@ router.post("/register", async (req, res) => {
       plan: "free", stripeCustomerId: null,
       stripeSubscriptionId: null, subscriptionStatus: "inactive",
       subscriptionEnd: null, createdAt: now,
+      // Onboarding — new users start here
+      onboardingCompleted: false, mainConcern: null, wellnessGoal: null,
     });
 
     const token = jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
     res.status(201).json({
       message: "Account created successfully.",
       token,
-      user: { id, email: email.toLowerCase().trim(), name: name || null, plan: "free" },
+      user: {
+        id, email: email.toLowerCase().trim(), name: name || null, plan: "free",
+        onboardingCompleted: false, mainConcern: null, wellnessGoal: null,
+      },
     });
   } catch (err) {
     console.error("Register error:", err.message);
@@ -64,6 +69,10 @@ router.post("/login", async (req, res) => {
         id: user.id, email: user.email, name: user.name,
         plan: user.plan, subscriptionStatus: user.subscriptionStatus,
         limits: PLANS[user.plan] || PLANS.free,
+        // Onboarding: undefined field (old user) → treat as completed
+        onboardingCompleted: user.onboardingCompleted !== false,
+        mainConcern:  user.mainConcern  || null,
+        wellnessGoal: user.wellnessGoal || null,
       },
     });
   } catch (err) {
@@ -81,22 +90,23 @@ router.get("/me", authenticate, (req, res) => {
       subscriptionStatus: u.subscriptionStatus,
       subscriptionEnd: u.subscriptionEnd,
       limits: PLANS[u.plan] || PLANS.free,
+      // Onboarding: undefined (old user) → treat as completed
+      onboardingCompleted: u.onboardingCompleted !== false,
+      mainConcern:  u.mainConcern  || null,
+      wellnessGoal: u.wellnessGoal || null,
     },
   });
 });
 
 // DELETE /api/auth/account
 router.delete("/account", authenticate, async (req, res) => {
-  const { collections: c, remove } = require("../lib/db");
-  await remove(c.users,    { id: req.user.id }, { multi: true });
-  await remove(c.messages, { userId: req.user.id }, { multi: true });
-  await remove(c.moods,    { userId: req.user.id }, { multi: true });
-  await remove(c.journal,  { userId: req.user.id }, { multi: true });
-  await remove(c.usage,    { userId: req.user.id }, { multi: true });
+  await remove(collections.users,    { id: req.user.id }, { multi: true });
+  await remove(collections.messages, { userId: req.user.id }, { multi: true });
+  await remove(collections.moods,    { userId: req.user.id }, { multi: true });
+  await remove(collections.journal,  { userId: req.user.id }, { multi: true });
+  await remove(collections.usage,    { userId: req.user.id }, { multi: true });
   res.json({ message: "Account and all data permanently deleted." });
 });
-
-module.exports = router;
 
 // POST /api/auth/send-login-code
 // Called after password verification — sends OTP to email
@@ -109,7 +119,6 @@ router.post("/send-login-code", async (req, res) => {
     if (!user) return res.status(401).json({ error: "Incorrect email or password." });
     if (!user.password) return res.status(401).json({ error: "This account uses Google Sign-In.", googleOnly: true });
 
-    const bcrypt = require("bcryptjs");
     const valid  = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ error: "Incorrect email or password." });
 
@@ -160,7 +169,6 @@ router.post("/verify-login-code", async (req, res) => {
     const user = await findOne(collections.users, { id: userId });
     if (!user) return res.status(404).json({ error: "User not found." });
 
-    const jwt   = require("jsonwebtoken");
     const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
     res.json({
@@ -172,3 +180,5 @@ router.post("/verify-login-code", async (req, res) => {
     res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });
+
+module.exports = router;

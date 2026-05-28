@@ -1,39 +1,66 @@
-// Serene — Scroll Engine (Final)
-// ONE anchor. ONE function. Nothing else.
-
+// Serene — Scroll Engine
 const ScrollEngine = (() => {
-  var anchor    = null;
-  var paused    = false;
   var container = null;
-  var THRESHOLD = 150;
+  var userScrolledUp = false;
+  var listenerAttached = false;
+  var rafOuter = null;
+  var rafInner = null;
+  var THRESHOLD = 120;
 
-  function scroll(smooth) {
-    if (!anchor) return;
-    requestAnimationFrame(function() {
-      anchor.scrollIntoView({
-        behavior: smooth ? "smooth" : "auto",
-        block:    "end"
+  function getContainer() {
+    if (!container) container = document.getElementById("chatMessages");
+    return container;
+  }
+
+  function isNearBottom() {
+    var c = getContainer();
+    if (!c) return true;
+    return (c.scrollHeight - c.scrollTop - c.clientHeight) <= THRESHOLD;
+  }
+
+  function scrollToBottom() {
+    // Cancel any previously queued scroll — always use the freshest scrollHeight
+    if (rafInner !== null) { cancelAnimationFrame(rafInner); rafInner = null; }
+    if (rafOuter !== null) { cancelAnimationFrame(rafOuter); rafOuter = null; }
+
+    // Double rAF: first queues layout flush, second fires after layout is committed
+    rafOuter = requestAnimationFrame(function() {
+      rafOuter = null;
+      rafInner = requestAnimationFrame(function() {
+        rafInner = null;
+        var c = getContainer();
+        if (!c) return;
+        // scrollTop assignment is synchronous and reliable — avoids Chrome smooth-scroll interruption bugs
+        c.scrollTop = c.scrollHeight;
       });
     });
   }
 
   function onScroll() {
-    if (!container) return;
-    var distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-    paused = distFromBottom > THRESHOLD;
+    userScrolledUp = !isNearBottom();
   }
 
   function init() {
-    anchor    = document.getElementById("scrollAnchor");
-    container = document.getElementById("chatMessages");
-    if (!container) return;
-    container.addEventListener("scroll", onScroll, { passive: true });
-    scroll(false);
+    var c = getContainer();
+    if (!c || listenerAttached) return;
+    listenerAttached = true;
+    c.addEventListener("scroll", onScroll, { passive: true });
+    scrollToBottom();
   }
 
-  function onUserMessage()  { paused = false; scroll(false); }
-  function onAIMessage()    { paused = false; scroll(true);  }
-  function onLoad()         { scroll(false); }
+  function onUserMessage() {
+    userScrolledUp = false;
+    scrollToBottom();
+  }
+
+  function onAIMessage() {
+    if (!userScrolledUp) scrollToBottom();
+  }
+
+  function onLoad() {
+    userScrolledUp = false;
+    scrollToBottom();
+  }
 
   return { init, onUserMessage, onAIMessage, onLoad };
 })();

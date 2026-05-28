@@ -65,7 +65,7 @@ router.post("/google", async (req, res) => {
         });
       }
     } else {
-      // New user — create account automatically
+      // New Google user — create account automatically
       const id = uuidv4();
       await insert(collections.users, {
         id,
@@ -80,6 +80,8 @@ router.post("/google", async (req, res) => {
         subscriptionStatus: "inactive",
         subscriptionEnd: null,
         createdAt: new Date().toISOString(),
+        // Onboarding — new users start here
+        onboardingCompleted: false, mainConcern: null, wellnessGoal: null,
       });
       user = await findOne(collections.users, { id });
     }
@@ -90,12 +92,16 @@ router.post("/google", async (req, res) => {
       message: "Google sign-in successful.",
       token,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
+        id:      user.id,
+        email:   user.email,
+        name:    user.name,
         picture: user.picture,
-        plan: user.plan,
-        limits: PLANS[user.plan] || PLANS.free,
+        plan:    user.plan,
+        limits:  PLANS[user.plan] || PLANS.free,
+        // Onboarding: undefined (old Google user) → treat as completed
+        onboardingCompleted: user.onboardingCompleted !== false,
+        mainConcern:  user.mainConcern  || null,
+        wellnessGoal: user.wellnessGoal || null,
       },
     });
   } catch (err) {

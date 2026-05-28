@@ -1,242 +1,142 @@
-const express = require("express");
+// routes/chat.js
+// SERENE Emotional Chat Pipeline v5
+//
+// Architecture: Validate first. Stabilize second. Guide third.
+//
+// Flow per message:
+//   1. Extract linguistic signals from message
+//   2. Update emotional state (blend with session history)
+//   3. Classify safety level (5-tier: green/yellow/orange/red/critical)
+//   4. Route behavioral mode (VALIDATION / STABILIZATION / GUIDED_ESCALATION / CRITICAL_ESCALATION)
+//   5. Build mode-aware system prompt
+//   6. Apply pacing constraints (token limit, temperature, tone, grounding)
+//   7. Inject grounding hint if pacing enables it
+//   8. Inject escalation guidance if applicable
+//   9. Call Groq LLM
+//  10. Save message + updated emotional state
+//  11. Return response + state metadata
+
+"use strict";
+
+const express    = require("express");
 const { v4: uuidv4 } = require("uuid");
+
 const { collections, find, insert, remove, findOne, update } = require("../lib/db");
 const { authenticate, checkDailyLimit } = require("../middleware/auth");
 
+const { updateEmotionalState, createDefaultState } = require("../lib/emotionalEngine");
+const { buildSystemPrompt }                         = require("../lib/promptConstructor");
+const { getPacingParams }                           = require("../lib/pacingEngine");
+const { getGroundingHint }                          = require("../lib/deescalation");
+const { getEscalationGuide, getEscalationInject }   = require("../lib/escalationTemplates");
+
 const router = express.Router();
 
-// ── SERENE RESPONSE ENGINE v3 ─────────────────────────────────────
-// Mode-based emotional support state machine
-
-const SYSTEM_PROMPT = `You are SERENE — a mental health support assistant operating on a structured response engine.
-
-SYSTEM PURPOSE:
-Provide emotional stabilization, reflective conversation, crisis detection, and safe connection to real-world help.
-You are NOT a therapist, medical provider, crisis substitute, or replacement for human care.
-
-GLOBAL RULES — ALWAYS:
-- Validate emotion first before anything else
-- Stay calm, human, and non-judgmental
-- Reflect user meaning accurately — no added assumptions
-- Keep responses structured and intentional
-- Encourage real-world support when appropriate
-
-GLOBAL RULES — NEVER:
-- Diagnose mental illness
-- Say "I love you", "I will never leave you", "I care deeply about you"
-- Add financial, relationship, or emotional details not stated by user
-- Write overly long emotional paragraphs in distress or crisis states
-- Replace human care or discourage external help
-
-RESPONSE LENGTH CONTROL — STRICTLY ENFORCE:
-
-CRISIS MODE (suicide ideation, self-harm, want to die, severe hopelessness):
-- 3 to 5 short lines MAXIMUM
-- No paragraphs, no long explanations
-- Immediate stabilization focus
-- MUST include real-world help — call or text 988
-- MUST NOT rely only on emotional support
-- MUST repeat escalation even if user ignores it
-- Structure:
-  1. Immediate validation
-  2. Safety acknowledgment
-  3. Short grounding sentence
-  4. Strong but calm escalation with 988
-  5. One gentle question: "Are you safe right now?"
-
-DISTRESS MODE (depression, anxiety, sadness, overwhelm, exhaustion):
-- 4 to 8 lines MAXIMUM
-- Simple sentences, gentle pacing
-- NO long emotional essays
-- MUST include grounding step
-- Avoid over-reassurance loops
-- Structure:
-  1. Emotional validation (deeper than surface)
-  2. Normalization (brief)
-  3. Grounding sentence
-  4. Gentle open-ended question
-  5. Optional support suggestion
-
-BREAKUP MODE (heartbreak, cheating, betrayal, rejection, relationship loss):
-- 4 to 8 lines MAXIMUM
-- DO NOT assume financial or emotional details not stated
-- DO NOT over-analyze the relationship
-- Keep tone grounded, not dramatic
-- Structure:
-  1. Validate emotional pain clearly
-  2. Reflect situation without adding assumptions
-  3. Normalize emotional reaction
-  4. Support emotional processing
-  5. One gentle exploration question
-
-NORMAL MODE (general conversation, curiosity, non-emotional):
-- Flexible length, conversational tone
-- Light reflection when needed
-- No mandatory escalation
-- Human and warm, not clinical
-
-EMOTIONAL PACING SYSTEM:
-- Highly emotional user → slow them down with grounding first
-- Moderately emotional → explore gently
-- Stable → normal natural conversation
-
-ESCALATION SYSTEM — NON-OPTIONAL:
-When risk or distress detected, ALWAYS mention real-world support.
-Repeat it even if user ignores. Options: 988 crisis line, trusted person, emergency services, mental health professional.
-
-CASUAL MESSAGES:
-For Hi, Hey, Hello, Thank you, Thanks, OK, Bye, Good morning — respond warmly in 1 to 2 sentences. Never launch into support mode unprompted.
-
-CORE PRIORITIES:
-1. Safety over engagement
-2. Clarity over emotional overload
-3. Structure over free-form in crisis
-4. Grounding over conversation depth in distress
-5. Human connection over AI dependency`;
-
-// ── MODE DETECTION ENGINE ─────────────────────────────────────────
-const MODES = {
-  crisis: {
-    keywords: [
-      "suicide", "suicidal", "kill myself", "end my life", "want to die",
-      "take my life", "not worth living", "better off dead", "end it all",
-      "self-harm", "hurt myself", "cutting myself", "no reason to live",
-      "don't want to be here", "want to end it", "committing suicide"
-    ],
-    maxTokens: 150,
-    temperature: 0.3,
-  },
-  distress: {
-    keywords: [
-      "depressed", "depression", "anxiety", "anxious", "panic attack",
-      "hopeless", "worthless", "lonely", "alone", "scared", "terrified",
-      "crying", "broken", "lost", "overwhelmed", "helpless", "exhausted",
-      "miserable", "suffering", "can't cope", "falling apart", "numb",
-      "empty inside", "mental breakdown", "losing my mind"
-    ],
-    maxTokens: 250,
-    temperature: 0.7,
-  },
-  breakup: {
-    keywords: [
-      "breakup", "broke up", "cheated", "cheating", "betrayed", "betrayal",
-      "heartbroken", "heartbreak", "left me", "dumped", "rejected",
-      "relationship ended", "divorce", "separated", "he left", "she left",
-      "they left", "affair", "unfaithful"
-    ],
-    maxTokens: 250,
-    temperature: 0.72,
-  },
-  normal: {
-    keywords: [],
-    maxTokens: 600,
-    temperature: 0.8,
-  },
+// ── CASUAL / GREETING SHORTCUTS ──────────────────────────────────────────
+// Only used when the FULL message matches and the emotional state is green.
+const CASUAL_RESPONSES = {
+  "hi":              ["Hey — really glad you stopped by. How are you doing today?", "Hi there. How are you feeling right now?"],
+  "hey":             ["Hey! Good to see you. What is on your mind?"],
+  "hello":           ["Hello. I am glad you are here. How are you feeling today?"],
+  "how are you":     ["I am doing well, thank you. More importantly — how are you doing?"],
+  "thank you":       ["You are so welcome. Is there anything else on your mind?"],
+  "thanks":          ["Of course. Anything else you want to talk through?"],
+  "ok":              ["Good to hear. Is there something on your mind today?"],
+  "okay":            ["Okay — how has your day been?"],
+  "good morning":    ["Good morning. Hope the start of your day has been gentle. How are you feeling?"],
+  "good afternoon":  ["Good afternoon. How has your day been so far?"],
+  "good evening":    ["Good evening. How are you feeling tonight?"],
+  "good night":      ["Good night. Take care of yourself. I am here whenever you need to talk."],
+  "bye":             ["Take care of yourself. Come back anytime."],
+  "goodbye":         ["Take care. I am always here when you need someone to talk to."],
+  "great":           ["That is really good to hear. What has been making things feel good?"],
+  "fine":            ["Glad to hear it. How has your day been overall?"],
+  "not bad":         ["Good. Is there anything on your mind you would like to talk about?"],
+  "i'm good":        ["Glad to hear it. Anything on your mind today?"],
+  "im good":         ["Glad to hear it. Anything on your mind today?"],
+  "i am good":       ["Glad to hear it. Anything on your mind today?"],
+  "lol":             ["Always good to have a moment of lightness. How are you really doing though?"],
 };
-
-function detectMode(message) {
-  const lower = message.toLowerCase();
-  // Priority order: crisis > distress > breakup > normal
-  for (const [mode, config] of Object.entries(MODES)) {
-    if (mode === "normal") continue;
-    if (config.keywords.some(k => lower.includes(k))) return mode;
-  }
-  return "normal";
-}
-
-// ── INSTANT CASUAL RESPONSES ──────────────────────────────────────
-const CASUAL = {
-  "hi":            ["Hey! Really glad you stopped by. How are you doing today?", "Hi there! How are you feeling?", "Hey! What is on your mind?"],
-  "hey":           ["Hey! Great to see you. How are you doing?", "Hey! What is on your mind today?"],
-  "hello":         ["Hello! So glad you are here. How are you feeling today?"],
-  "how are you":   ["I am doing well, thank you! More importantly — how are YOU doing?", "I am good! But I am much more interested in how you are feeling. What is going on?"],
-  "thank you":     ["You are so welcome! How are you feeling today?", "Anytime! Is there anything else on your mind?"],
-  "thanks":        ["Happy to help! How are you doing?", "Of course! Anything else on your mind?"],
-  "ok":            ["Good to hear. Is there anything on your mind you would like to talk through?"],
-  "okay":          ["Good to hear. How has your day been?"],
-  "good morning":  ["Good morning! Hope your day is off to a great start. How are you feeling?"],
-  "good afternoon":["Good afternoon! How has your day been so far?"],
-  "good evening":  ["Good evening! How are you feeling tonight?"],
-  "good night":    ["Good night! Take good care of yourself. Come back anytime."],
-  "bye":           ["Take care of yourself! I am always here when you need to talk."],
-  "goodbye":       ["Take care! Come back anytime you need someone to talk to."],
-  "lol":           ["Ha! Always good to have a moment of lightness. How are you really doing though?"],
-  "haha":          ["Good to hear some lightness! What is on your mind?"],
-  "great":         ["That is wonderful! What has been making things great?"],
-  "fine":          ["Glad to hear it. How has your day been overall?"],
-  "not bad":       ["Good! Is there anything on your mind you would like to talk about?"],
-  "i'm good":      ["Glad to hear it! Anything on your mind today?"],
-  "im good":       ["Glad to hear it! Anything on your mind today?"],
-  "i am good":     ["Glad to hear it! Anything on your mind today?"],
-};
-
-// Hard topic filter — catches non-emotional requests BEFORE calling AI
-const OFF_TOPIC_PATTERNS = [
-  /(algebra|calculus|equation|math|mathematics|geometry|trigonometry|solve|calculate|formula|integral|derivative)/i,
-  /(crypto|cryptocurrency|bitcoin|ethereum|dogecoin|trade|trading|invest|investment|stocks|shares|forex)/i,
-  /(code|coding|program|programming|javascript|python|html|css|sql|algorithm|debug|function|variable)/i,
-  /(recipe|cook|cooking|ingredient|calories|diet|nutrition|protein|carbs|workout|gym|exercise|fitness)/i,
-  /(legal|lawyer|law|lawsuit|contract|sue|court|attorney)/i,
-  /(medical|diagnosis|symptom|medicine|drug|prescription|dosage|disease|illness|treatment)/i,
-];
-
-const OFF_TOPIC_REPLY = "I am sorry, I cannot help with that. I am only here as an emotional companion. 💙 But if something about this is stressing or worrying you, I am here to listen.";
-
-function isOffTopic(message) {
-  const lower = message.toLowerCase();
-  // Allow if it's clearly about feelings related to the topic
-  const emotionalContext = /(feel|feeling|stress|worried|anxious|sad|scared|overwhelmed|struggling|cope|help me|i am|i'm)/i.test(lower);
-  if (emotionalContext) return false;
-  return OFF_TOPIC_PATTERNS.some(pattern => pattern.test(lower));
-}
 
 function getCasualResponse(message) {
-  const lower = message.toLowerCase().trim().replace(/[!?.,']/g, "");
-  for (const [key, responses] of Object.entries(CASUAL)) {
-    if (lower === key || lower === key + " " || lower.startsWith(key + " ") && lower.length < key.length + 6) {
-      return responses[Math.floor(Math.random() * responses.length)];
-    }
-  }
-  return null;
+  const key = message.toLowerCase().trim().replace(/[!?.,']+$/, "").trim();
+  const responses = CASUAL_RESPONSES[key];
+  if (!responses) return null;
+  return responses[Math.floor(Math.random() * responses.length)];
 }
 
-// ── GROQ API CALL ─────────────────────────────────────────────────
-async function callGroq(messages, mode) {
+// ── OFF-TOPIC FILTER ─────────────────────────────────────────────────────
+// Catches non-emotional requests — but only if there is no emotional context
+const OFF_TOPIC_PATTERNS = [
+  /(algebra|calculus|solve this|integral|derivative|geometry|trigonometry)/i,
+  /(crypto|bitcoin|ethereum|trading|forex|stock market|invest)/i,
+  /(code|program(ming)?|javascript|python|html|css|sql|algorithm|debug)/i,
+  /(recipe|calories|protein|workout|gym|exercise|fitness)/i,
+];
+
+const EMOTIONAL_OVERRIDE = /(feel|feeling|stress|stressed|worried|anxious|sad|scared|overwhelmed|struggling|cope|hurt|hard|difficult|depressed|lonely)/i;
+
+function isOffTopic(message) {
+  if (EMOTIONAL_OVERRIDE.test(message)) return false;
+  return OFF_TOPIC_PATTERNS.some(p => p.test(message));
+}
+
+const OFF_TOPIC_REPLY = "I am not really able to help with that — I am only here as an emotional support companion. 💙 But if something about this is stressing or worrying you, I am absolutely here to listen.";
+
+// ── LOAD / SAVE SESSION EMOTIONAL STATE ─────────────────────────────────
+// We store the emotional state in the sessions collection.
+// One session = one login. State persists across the session.
+
+async function loadEmotionalState(userId) {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const session = await findOne(collections.sessions, { userId, date: today });
+    if (session && session.emotionalState) return session.emotionalState;
+    return createDefaultState(uuidv4());
+  } catch {
+    return createDefaultState(uuidv4());
+  }
+}
+
+async function saveEmotionalState(userId, state) {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const session = await findOne(collections.sessions, { userId, date: today });
+    if (session) {
+      await update(collections.sessions, { userId, date: today }, { emotionalState: state, updatedAt: new Date().toISOString() });
+    } else {
+      await insert(collections.sessions, {
+        id: uuidv4(), userId, date: today,
+        emotionalState: state,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  } catch (err) {
+    console.error("[SERENE] Could not save emotional state:", err.message);
+  }
+}
+
+// ── GROQ API CALL ─────────────────────────────────────────────────────────
+async function callGroq(messages, maxTokens, temperature) {
   const apiKey = (process.env.GROQ_API_KEY || "").trim();
   if (!apiKey) throw new Error("GROQ_API_KEY is missing");
 
-  const modeConfig = MODES[mode] || MODES.normal;
-
-  const modeTag = mode === "crisis"
-    ? "\n\n[MODE: CRISIS — respond in 3-5 short lines only. Include 988 crisis line. Prioritize safety.]"
-    : mode === "distress"
-    ? "\n\n[MODE: DISTRESS — respond in 4-8 lines. Validate, ground, ask one gentle question.]"
-    : mode === "breakup"
-    ? "\n\n[MODE: BREAKUP — respond in 4-8 lines. Validate pain, normalize reaction, ask one exploration question.]"
-    : "";
-
-  const augmentedMessages = messages.map((m, i) => {
-    if (i === messages.length - 1 && m.role === "user" && modeTag) {
-      return { ...m, content: m.content + modeTag };
-    }
-    return m;
-  });
-
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25000);
+  const timeout    = setTimeout(() => controller.abort(), 28000);
 
   try {
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type":  "application/json",
         "Authorization": "Bearer " + apiKey,
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: augmentedMessages,
-        max_tokens: modeConfig.maxTokens,
-        temperature: modeConfig.temperature,
+        model:       "llama-3.3-70b-versatile",
+        messages,
+        max_tokens:  maxTokens,
+        temperature: temperature,
       }),
       signal: controller.signal,
     });
@@ -245,11 +145,11 @@ async function callGroq(messages, mode) {
 
     if (!res.ok) {
       const err = await res.text();
-      console.error("Groq error:", res.status, err);
+      console.error("[SERENE] Groq error:", res.status, err);
       throw new Error("Groq API error: " + res.status);
     }
 
-    const data = await res.json();
+    const data  = await res.json();
     const reply = data.choices?.[0]?.message?.content;
     if (!reply) throw new Error("Empty response from Groq");
     return reply;
@@ -261,18 +161,37 @@ async function callGroq(messages, mode) {
   }
 }
 
-// ── SAFE FALLBACK RESPONSES ───────────────────────────────────────
-function getFallback(mode) {
-  if (mode === "crisis") {
-    return "I hear you and I am here with you right now. Please reach out to a crisis line — call or text 988. You do not have to face this alone. Are you safe right now?";
+// ── SAFE FALLBACKS ────────────────────────────────────────────────────────
+function getFallback(emotionalState) {
+  if (!emotionalState) {
+    return "I am here and I am listening. Could you try sending that again? I genuinely want to hear what you have to say.";
   }
-  if (mode === "distress" || mode === "breakup") {
-    return "I am here and I am listening. It sounds like you are going through something really difficult. Can you tell me a little more about what is happening?";
+
+  switch (emotionalState.mode) {
+    case "CRITICAL_ESCALATION":
+      return "I hear you, and I am right here with you. Please reach out to 988 right now — call or text, free and available 24/7. Are you safe right now?";
+    case "GUIDED_ESCALATION":
+    case "ESCALATION_READY": // backward compat
+      return "I hear you, and I am right here with you. What you are going through sounds incredibly difficult. Please know you do not have to carry this alone — the 988 line has real people available right now if you need more support. I am still here with you.";
+    case "STABILIZATION":
+      return "I am here with you. It sounds like you are going through something really difficult. Can you tell me a little more about what is happening?";
+    default:
+      return "I am here and I am listening. Could you try sending that again? I genuinely want to hear what you have to say.";
   }
-  return "I am here for you. Could you try sending that again? I genuinely want to hear what you have to say.";
 }
 
-// ── POST /api/chat/message ────────────────────────────────────────
+// ── INCREMENT USAGE ───────────────────────────────────────────────────────
+async function incrementUsage(userId, date) {
+  try {
+    const usage = await findOne(collections.usage, { userId, date });
+    if (usage) await update(collections.usage, { userId, date }, { count: (usage.count || 0) + 1 });
+    else await insert(collections.usage, { id: uuidv4(), userId, date, count: 1 });
+  } catch (err) {
+    console.error("[SERENE] Usage increment failed:", err.message);
+  }
+}
+
+// ── POST /api/chat/message ────────────────────────────────────────────────
 router.post("/message", authenticate, checkDailyLimit, async (req, res) => {
   try {
     const { message, mood } = req.body;
@@ -281,91 +200,181 @@ router.post("/message", authenticate, checkDailyLimit, async (req, res) => {
     }
 
     if (!process.env.GROQ_API_KEY) {
-      return res.status(503).json({ error: "AI not configured. Add GROQ_API_KEY to Railway variables." });
+      return res.status(503).json({ error: "AI service not configured. Add GROQ_API_KEY to environment variables." });
     }
 
-    const userId = req.user.id;
-    const mode = detectMode(message.trim());
-    const isCrisis = mode === "crisis";
-    console.log("[CHAT] user:", userId, "mode:", mode, "message length:", message.length);
+    const userId  = req.user.id;
+    const msgText = message.trim();
+    const now     = new Date().toISOString();
+    const today   = now.slice(0, 10);
 
-    // Handle casual messages instantly
-    const casualReply = getCasualResponse(message);
-    if (casualReply && mode === "normal") {
-      const now = new Date().toISOString();
-      await insert(collections.messages, { id: uuidv4(), userId, role: "user", content: message.trim(), createdAt: now });
+    // ── 1. Off-topic guard ──────────────────────────────────────────────
+    if (isOffTopic(msgText)) {
+      await insert(collections.messages, { id: uuidv4(), userId, role: "user",      content: msgText,      createdAt: now });
+      await insert(collections.messages, { id: uuidv4(), userId, role: "assistant", content: OFF_TOPIC_REPLY, createdAt: now });
+      await incrementUsage(userId, today);
+      return res.json({ reply: OFF_TOPIC_REPLY, mode: "off_topic", safetyLevel: "green", escalationLevel: 0, isCrisis: false, crisisResource: null, dailyUsed: req.dailyUsed + 1, dailyLimit: req.plan.messagesPerDay });
+    }
+
+    // ── 2. Load prior emotional state for this session ──────────────────
+    const priorState = await loadEmotionalState(userId);
+
+    // ── 3. Casual shortcut — only when state is green and message is a greeting ──
+    const casualReply = getCasualResponse(msgText);
+    if (casualReply && priorState.safetyLevel === "green" && priorState.mode === "VALIDATION") {
+      await insert(collections.messages, { id: uuidv4(), userId, role: "user",      content: msgText,    createdAt: now });
       await insert(collections.messages, { id: uuidv4(), userId, role: "assistant", content: casualReply, createdAt: now });
-      const today = now.slice(0, 10);
-      const usage = await findOne(collections.usage, { userId, date: today });
-      if (usage) await update(collections.usage, { userId, date: today }, { count: (usage.count || 0) + 1 });
-      else await insert(collections.usage, { id: uuidv4(), userId, date: today, count: 1 });
-      return res.json({ reply: casualReply, isCrisis: false, crisisResource: null, dailyUsed: req.dailyUsed + 1, dailyLimit: req.plan.messagesPerDay, mode: "normal" });
+      await incrementUsage(userId, today);
+      return res.json({ reply: casualReply, mode: "casual", safetyLevel: "green", escalationLevel: 0, isCrisis: false, crisisResource: null, dailyUsed: req.dailyUsed + 1, dailyLimit: req.plan.messagesPerDay });
     }
 
-    // Load conversation history
-    const history = await find(collections.messages, { userId }, { sort: { createdAt: -1 }, limit: 10 });
+    // ── 4. Load conversation history ────────────────────────────────────
+    const history = await find(
+      collections.messages,
+      { userId },
+      { sort: { createdAt: -1 }, limit: 12 }
+    );
     history.reverse();
 
-    let systemPrompt = SYSTEM_PROMPT;
-    if (mood) systemPrompt += "\n\nContext: User current mood reported as '" + mood + "'.";
+    // ── 5. Update emotional state ────────────────────────────────────────
+    const emotionalState = updateEmotionalState(msgText, history, priorState, priorState.sessionId);
 
+    console.log(`[SERENE] user:${userId} mode:${emotionalState.mode} safety:${emotionalState.safetyLevel} escalation:${emotionalState.escalationLevel} ideation:${emotionalState.lastIdeation} trend:${emotionalState.trend}`);
+
+    // ── 6. Build system prompt ───────────────────────────────────────────
+    // Pass onboarding profile for personalized tone (name, concern, goal)
+    const userProfile = {
+      name:         req.user.name         || null,
+      mainConcern:  req.user.mainConcern  || null,
+      wellnessGoal: req.user.wellnessGoal || null,
+    };
+    let systemPrompt = buildSystemPrompt(emotionalState.mode, emotionalState, mood, userProfile);
+
+    // ── 7. Inject grounding hint ─────────────────────────────────────────
+    const groundingHint = getGroundingHint(emotionalState);
+    if (groundingHint) systemPrompt += groundingHint;
+
+    // ── 8. Inject escalation guidance ────────────────────────────────────
+    const escalationInject = getEscalationInject(emotionalState.escalationLevel);
+    if (escalationInject) systemPrompt += escalationInject;
+
+    // ── 9. Get pacing parameters ─────────────────────────────────────────
+    const pacing = getPacingParams(emotionalState);
+    const { maxTokens, temperature, groundingEnabled } = pacing;
+
+    // Suppress grounding hint if pacing says it's not appropriate for this state
+    if (!groundingEnabled) systemPrompt = systemPrompt.replace(/\n\n\[GROUNDING TECHNIQUE[^\]]*\][^\n]*/g, "");
+
+    // ── 10. Build Groq message array ─────────────────────────────────────
     const groqMessages = [
       { role: "system", content: systemPrompt },
       ...history.map(m => ({ role: m.role, content: m.content })),
-      { role: "user", content: message.trim() },
+      { role: "user", content: msgText },
     ];
 
+    // ── 11. Call Groq ─────────────────────────────────────────────────────
     let reply;
     try {
-      console.log("[GROQ] calling API, mode:", mode);
-      reply = await callGroq(groqMessages, mode);
-      console.log("[GROQ] success, reply length:", reply.length);
+      reply = await callGroq(groqMessages, maxTokens, temperature);
     } catch (err) {
-      console.error("[GROQ] FAILED:", err.message);
-      reply = getFallback(mode);
+      console.error("[SERENE] Groq failed:", err.message);
+      reply = getFallback(emotionalState);
     }
 
-    const now = new Date().toISOString();
-    await insert(collections.messages, { id: uuidv4(), userId, role: "user", content: message.trim(), createdAt: now });
-    await insert(collections.messages, { id: uuidv4(), userId, role: "assistant", content: reply, createdAt: now });
+    // ── 12. Persist messages ──────────────────────────────────────────────
+    await insert(collections.messages, {
+      id: uuidv4(), userId, role: "user", content: msgText,
+      emotionalMode: emotionalState.mode,
+      safetyLevel: emotionalState.safetyLevel,
+      createdAt: now,
+    });
+    await insert(collections.messages, {
+      id: uuidv4(), userId, role: "assistant", content: reply,
+      emotionalMode: emotionalState.mode,
+      safetyLevel: emotionalState.safetyLevel,
+      createdAt: now,
+    });
 
-    const today = now.slice(0, 10);
-    const usage = await findOne(collections.usage, { userId, date: today });
-    if (usage) await update(collections.usage, { userId, date: today }, { count: (usage.count || 0) + 1 });
-    else await insert(collections.usage, { id: uuidv4(), userId, date: today, count: 1 });
+    // ── 13. Save updated emotional state ─────────────────────────────────
+    await saveEmotionalState(userId, emotionalState);
+
+    // ── 14. Increment usage ───────────────────────────────────────────────
+    await incrementUsage(userId, today);
+
+    // ── 15. Build response ────────────────────────────────────────────────
+    const guide    = getEscalationGuide(emotionalState.escalationLevel);
+    const isCrisis = emotionalState.safetyLevel === "red" ||
+                     emotionalState.safetyLevel === "critical";
 
     res.json({
-      reply, isCrisis, mode,
-      crisisResource: isCrisis ? {
-        name: "988 Suicide and Crisis Lifeline",
-        contact: "Call or text 988",
-        available: "24/7, free and confidential",
-      } : null,
-      dailyUsed: req.dailyUsed + 1,
-      dailyLimit: req.plan.messagesPerDay,
+      reply,
+      mode:                 emotionalState.mode,
+      safetyLevel:          emotionalState.safetyLevel,
+      escalationLevel:      emotionalState.escalationLevel,
+      isCrisis,
+      showCrisisBanner:     guide.uiBanner,
+      crisisResource:       guide.crisisResource || null,
+      emotionalTrend:       emotionalState.trend,
+      // Full emotional state data for client-side indicators
+      valence:              emotionalState.valence,
+      arousal:              emotionalState.arousal,
+      coherence:            emotionalState.coherence,
+      escalationReadiness:  emotionalState.escalationReadiness,
+      dailyUsed:            req.dailyUsed + 1,
+      dailyLimit:           req.plan.messagesPerDay,
     });
 
   } catch (err) {
-    console.error("[CHAT ERROR]", err.message, err.stack);
+    console.error("[SERENE CHAT ERROR]", err.message, err.stack);
     res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });
 
-// ── GET /api/chat/history ─────────────────────────────────────────
+// ── GET /api/chat/history ─────────────────────────────────────────────────
 router.get("/history", authenticate, async (req, res) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
-    const messages = await find(collections.messages, { userId: req.user.id }, { sort: { createdAt: 1 }, limit });
+    const limit    = Math.min(parseInt(req.query.limit) || 50, 200);
+    const messages = await find(
+      collections.messages,
+      { userId: req.user.id },
+      { sort: { createdAt: 1 }, limit }
+    );
     res.json({ messages, total: messages.length });
   } catch (err) {
     res.status(500).json({ error: "Could not load chat history." });
   }
 });
 
-// ── DELETE /api/chat/history ──────────────────────────────────────
+// ── DELETE /api/chat/history ──────────────────────────────────────────────
 router.delete("/history", authenticate, async (req, res) => {
-  await remove(collections.messages, { userId: req.user.id }, { multi: true });
-  res.json({ message: "Chat history cleared." });
+  try {
+    await remove(collections.messages, { userId: req.user.id }, { multi: true });
+    // Also clear the session emotional state so the next conversation starts fresh
+    const today = new Date().toISOString().slice(0, 10);
+    await remove(collections.sessions, { userId: req.user.id, date: today }, { multi: false });
+    res.json({ message: "Chat history cleared." });
+  } catch (err) {
+    res.status(500).json({ error: "Could not clear chat history." });
+  }
+});
+
+// ── GET /api/chat/emotional-state ────────────────────────────────────────
+// Returns current session emotional state (for UI indicators)
+router.get("/emotional-state", authenticate, async (req, res) => {
+  try {
+    const state = await loadEmotionalState(req.user.id);
+    res.json({
+      mode:            state.mode,
+      safetyLevel:     state.safetyLevel,
+      trend:           state.trend,
+      escalationLevel: state.escalationLevel,
+      valence:         state.valence,
+      arousal:         state.arousal,
+      stability:       state.stability,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Could not load emotional state." });
+  }
 });
 
 module.exports = router;

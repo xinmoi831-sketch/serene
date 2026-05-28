@@ -1,6 +1,6 @@
 const express = require("express");
-const { v4: uuidv4 } = require("uuid");
-const { collections, findOne, update, insert } = require("../lib/db");
+const bcrypt = require("bcryptjs");
+const { collections, findOne, update } = require("../lib/db");
 const { authenticate } = require("../middleware/auth");
 
 const router = express.Router();
@@ -189,7 +189,7 @@ router.post("/forgot-password", async (req, res) => {
   const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
   codes.set("reset_" + user.id, { code, expiry });
 
-  var resetBody = "You requested a password reset. Your reset code is: " + code + ". This code expires in 10 minutes. If you did not request this, please ignore it.";
+  const resetBody = "You requested a password reset. Your reset code is: " + code + ". This code expires in 10 minutes. If you did not request this, please ignore it.";
   await sendEmail(user.email, "Reset your Serene password", resetBody);
 
   res.json({
@@ -223,8 +223,7 @@ router.post("/reset-password", async (req, res) => {
   codes.delete("reset_" + userId);
 
   // Hash new password
-  const bcrypt     = require("bcryptjs");
-  const hashed     = await bcrypt.hash(newPassword, 12);
+  const hashed = await bcrypt.hash(newPassword, 12);
   await update(collections.users, { id: userId }, { password: hashed });
 
   res.json({ message: "Password reset successfully. You can now log in.", success: true });

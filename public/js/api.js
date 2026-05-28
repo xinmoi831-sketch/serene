@@ -43,7 +43,10 @@ var api = {
   logMood:        function(mood, note, token) { return this.post("/api/journal/mood", { mood: mood, note: note }, token); },
   getMoodHistory: function(token) { return this.get("/api/journal/mood/history", token); },
 
-  getPlans:       function() { return this.get("/api/subscription/plans"); },
-  checkout:       function(priceId, mode, token) { return this.post("/api/subscription/checkout", { priceId: priceId, mode: mode || "subscription" }, token); },
-  openPortal:     function(token) { return this.post("/api/subscription/portal", {}, token); },
+  getPlans:        function() { return this.get("/api/subscription/plans"); },
+  checkout:        function(priceId, mode, token) { return this.post("/api/subscription/checkout", { priceId: priceId, mode: mode || "subscription" }, token); },
+  openPortal:      function(token) { return this.post("/api/subscription/portal", {}, token); },
+
+  saveOnboarding:  function(data, token) { return this.post("/api/user/onboarding", data, token); },
+  getProfile:      function(token) { return this.get("/api/user/profile", token); },
 };
