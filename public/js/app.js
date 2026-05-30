@@ -51,7 +51,7 @@ function navigateTo(tab) {
   document.querySelectorAll(".tab-content").forEach(el => el.style.display = "none");
   const tabEl = document.getElementById("tab-" + tab);
   if (tabEl) tabEl.style.display = "flex";
-  const labels = { chat: "Chat", journal: "Journal", insights: "Insights", settings: "Settings" };
+  const labels = { chat: "Chat", journal: "Journal", insights: "Insights", settings: "Settings", therapists: "Therapists" };
   const lbl = document.getElementById("currentTabLabel");
   if (lbl) lbl.textContent = labels[tab] || tab;
   document.querySelectorAll(".drawer-nav-item[data-tab]").forEach(b => b.classList.remove("active"));
@@ -606,4 +606,115 @@ function escHtml(str) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/\n/g, "<br>");
+}
+
+// ── Therapists ────────────────────────────────────────────────────
+async function loadTherapists() {
+  const list = document.getElementById("therapistList");
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:36px;margin-bottom:12px">👨‍⚕️</div><div style="font-size:14px">Loading therapists...</div></div>';
+  const res = await api.getTherapists();
+  if (!res.ok) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">Could not load therapists. Please try again.</div>';
+    return;
+  }
+  const therapists = res.data.therapists || [];
+  if (!therapists.length) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:36px;margin-bottom:12px">👨‍⚕️</div><div style="font-size:14px">No verified therapists yet. Check back soon.</div></div>';
+    return;
+  }
+  list.innerHTML = therapists.map(function(t) {
+    var stars = t.rating ? "⭐ " + t.rating.toFixed(1) + " (" + t.reviewCount + ")" : "New";
+    var specs = (t.specializations || []).join(", ") || "General";
+    return '<div class="glass" style="padding:1.25rem;margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
+        '<div><div style="font-weight:600;font-size:15px;color:var(--text)">' + escHtml(t.fullName) + '</div>' +
+        '<div style="font-size:12px;color:var(--text3);margin-top:2px">' + escHtml(t.location) + " · " + t.yearsExperience + " yrs exp</div></div>" +
+        '<div style="font-size:12px;color:var(--text3)">' + stars + "</div>" +
+      "</div>" +
+      '<div style="font-size:13px;color:var(--text2);margin-bottom:8px">' + escHtml(specs) + "</div>" +
+      (t.bio ? '<div style="font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.5">' + escHtml(t.bio) + "</div>" : "") +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<span style="font-size:14px;font-weight:600;color:var(--accent2)">ZMW ' + t.sessionPrice + "</span>" +
+        '<button class="btn btn-primary btn-sm" onclick="bookTherapistSession(\'' + t.id + "','" + escHtml(t.fullName) + '\')">Book Session</button>' +
+      "</div>" +
+    "</div>";
+  }).join("");
+}
+
+function showTherapistApply() {
+  document.getElementById("therapistApplyModal").style.display = "flex";
+}
+
+async function submitTherapistApplication() {
+  var alrt     = document.getElementById("therapistApplyAlert");
+  var fullName = document.getElementById("tFullName").value.trim();
+  var email    = document.getElementById("tEmail").value.trim();
+  var phone    = document.getElementById("tPhone").value.trim();
+  var location = document.getElementById("tLocation").value.trim();
+  var license  = document.getElementById("tLicense").value.trim();
+  var nrc      = document.getElementById("tNRC").value.trim();
+  var years    = document.getElementById("tYears").value.trim();
+  var spec     = document.getElementById("tSpec").value.trim();
+  var price    = document.getElementById("tPrice").value.trim();
+  var bio      = document.getElementById("tBio").value.trim();
+  var ref1     = document.getElementById("tRef1").value.trim();
+  var ref2     = document.getElementById("tRef2").value.trim();
+  if (!fullName || !email || !phone || !license || !nrc || !years || !price) {
+    return showAlert(alrt, "Please fill in all required fields.", "error");
+  }
+  if (parseInt(years) < 3) {
+    return showAlert(alrt, "Minimum 3 years of experience required.", "error");
+  }
+  if (!ref1 || !ref2) {
+    return showAlert(alrt, "Please provide 2 references.", "error");
+  }
+  setLoading("therapistApplyBtn", true);
+  var res = await api.applyTherapist({
+    fullName:        fullName,
+    email:           email,
+    phone:           phone,
+    location:        location,
+    licenseNumber:   license,
+    nrcNumber:       nrc,
+    yearsExperience: parseInt(years),
+    specializations: spec ? spec.split(",").map(function(s) { return s.trim(); }) : [],
+    sessionPriceMW:  parseFloat(price),
+    bio:             bio,
+    references:      [ref1, ref2],
+  });
+  setLoading("therapistApplyBtn", false);
+  if (res.ok) {
+    showAlert(alrt, res.data.message || "Application submitted!", "success");
+    setTimeout(function() { document.getElementById("therapistApplyModal").style.display = "none"; }, 2500);
+  } else {
+    showAlert(alrt, res.data.error || "Could not submit application.", "error");
+  }
+}
+
+function bookTherapistSession(therapistId, therapistName) {
+  var dt = prompt("Schedule your session with " + therapistName + ".\n\nEnter date and time (YYYY-MM-DD HH:MM):");
+  if (!dt) return;
+  var parsed = new Date(dt);
+  if (isNaN(parsed.getTime())) { alert("Invalid date. Please use the format: 2026-06-01 10:00"); return; }
+  api.bookTherapist({ therapistId: therapistId, scheduledAt: parsed.toISOString() }, api.getToken()).then(function(res) {
+    if (res.ok) {
+      var d = res.data;
+      var titleEl = document.getElementById("sessionTitle");
+      var infoEl  = document.getElementById("sessionInfo");
+      var joinBtn = document.getElementById("joinSessionBtn");
+      if (titleEl) titleEl.textContent = "Session with " + d.therapistName;
+      if (infoEl)  infoEl.textContent  = "Scheduled: " + new Date(d.scheduledAt).toLocaleString();
+      if (joinBtn) joinBtn.setAttribute("data-jitsi", d.jitsiUrl);
+      document.getElementById("therapistSessionModal").style.display = "flex";
+    } else {
+      alert(res.data.error || "Could not book session. Please try again.");
+    }
+  });
+}
+
+function joinSession() {
+  var btn = document.getElementById("joinSessionBtn");
+  var url = btn ? btn.getAttribute("data-jitsi") : null;
+  if (url) window.open(url, "_blank");
 }

@@ -49,4 +49,9 @@ var api = {
 
   saveOnboarding:  function(data, token) { return this.post("/api/user/onboarding", data, token); },
   getProfile:      function(token) { return this.get("/api/user/profile", token); },
+
+  getTherapists:   function() { return this.get("/api/therapist/list"); },
+  applyTherapist:  function(data) { return this.post("/api/therapist/apply", data); },
+  bookTherapist:   function(data, token) { return this.post("/api/therapist/book", data, token); },
+  getSession:      function(bookingId, token) { return this.get("/api/therapist/session/" + bookingId, token); },
 };
