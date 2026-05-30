@@ -31,4 +31,3 @@
 {"$$indexCreated":{"fieldName":"userId","unique":false,"sparse":false}}
 {"$$indexCreated":{"fieldName":"createdAt","unique":false,"sparse":false}}
 {"$$indexCreated":{"fieldName":"userId"}}
-{"$$indexCreated":{"fieldName":"createdAt"}}

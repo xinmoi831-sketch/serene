@@ -229,4 +229,4 @@ router.post("/reset-password", async (req, res) => {
   res.json({ message: "Password reset successfully. You can now log in.", success: true });
 });
 
-module.exports = { router, sendEmail };
+module.exports = { router, sendEmail, codes };

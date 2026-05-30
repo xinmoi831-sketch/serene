@@ -1,4 +1,2 @@
 {"$$indexCreated":{"fieldName":"userId","unique":false,"sparse":false}}
 {"$$indexCreated":{"fieldName":"date","unique":false,"sparse":false}}
-{"$$indexCreated":{"fieldName":"userId"}}
-{"$$indexCreated":{"fieldName":"date"}}

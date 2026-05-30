@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const router  = express.Router();
 
 // ── DB helper — works with your existing NeDB setup ───────────────
-const Datastore = require('nedb');
+const Datastore = require('@seald-io/nedb');
 const path      = require('path');
 const dataDir   = path.join(__dirname, '..', 'data');
 
