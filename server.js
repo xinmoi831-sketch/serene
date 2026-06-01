@@ -78,6 +78,7 @@ try {
   const ttsRoutes          = require("./routes/tts");
   const paymentRoutes      = require("./routes/payments");
   const userRoutes         = require("./routes/user");
+  const therapistRoutes    = require("./routes/therapist");
 
   app.use("/api/auth",         authRoutes);
   app.use("/api/auth",         googleAuthRoutes);
@@ -88,6 +89,7 @@ try {
   app.use("/api/tts",          ttsRoutes);
   app.use("/api/payments",     paymentRoutes);
   app.use("/api/user",         userRoutes);
+  app.use("/api/therapist",    therapistRoutes);
 
   console.log("All routes loaded successfully");
 } catch (err) {
