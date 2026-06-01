@@ -36,6 +36,7 @@ function showApp() {
   showPage("app");
   updateUserUI();
   navigateTo("chat");
+  SessionTimeout.init();
   setTimeout(function() {
     if (typeof EmotionTracker !== "undefined") EmotionTracker.init();
     if (typeof ScrollEngine !== "undefined") ScrollEngine.init();
@@ -137,7 +138,10 @@ function doLogout() {
   // 8. Also call closeDrawer if it exists
   if (typeof closeDrawer === "function") closeDrawer();
 
-  // 9. Go to login
+  // 9. Stop session timeout
+  SessionTimeout.stop();
+
+  // 10. Go to login
   showPage("login");
 
   console.log("[Logout] Full reset complete");

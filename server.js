@@ -98,8 +98,12 @@ try {
   process.exit(1);
 }
 
+const { startReminderService } = require("./lib/sessionReminder");
+startReminderService();
+
 app.get("/payment-success", (req, res) => res.sendFile(path.join(__dirname, "public", "payment-success.html")));
 app.get("/payment-cancel",  (req, res) => res.sendFile(path.join(__dirname, "public", "payment-cancel.html")));
+app.get("/session",         (req, res) => res.sendFile(path.join(__dirname, "public", "session.html")));
 
 app.get("*", (req, res) => {
   const indexPath = path.join(__dirname, "public", "index.html");

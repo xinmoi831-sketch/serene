@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Serene — Live Session</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css"/>
+<script src="https://meet.jit.si/external_api.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#080d1a;color:#f0f4ff;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* Top bar */
+.session-bar{background:#0d1428;border-bottom:0.5px solid rgba(255,255,255,0.1);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:10}
+.session-info{display:flex;align-items:center;gap:12px}
+.session-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.session-title{font-size:15px;font-weight:600;color:#f0f4ff}
+.session-sub{font-size:12px;color:#8b9dc3;margin-top:1px}
+.session-timer{font-size:14px;font-weight:600;color:#a5b4fc;font-variant-numeric:tabular-nums}
+.end-btn{background:rgba(244,63,94,0.15);border:0.5px solid rgba(244,63,94,0.3);color:#f43f5e;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}
+.end-btn:hover{background:rgba(244,63,94,0.25)}
+
+/* Video container */
+#jitsiContainer{flex:1;width:100%;background:#000}
+
+/* Chat panel */
+.chat-panel{width:300px;background:#0d1428;border-left:0.5px solid rgba(255,255,255,0.1);display:flex;flex-direction:column;flex-shrink:0}
+.chat-panel-header{padding:12px 16px;border-bottom:0.5px solid rgba(255,255,255,0.1);font-size:13px;font-weight:500;color:#8b9dc3}
+.chat-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.chat-msg{padding:8px 12px;border-radius:10px;font-size:13px;line-height:1.5;max-width:90%}
+.chat-msg.me{background:#6366f1;color:#fff;align-self:flex-end}
+.chat-msg.other{background:rgba(255,255,255,0.08);color:#f0f4ff;align-self:flex-start}
+.chat-msg-name{font-size:11px;opacity:0.7;margin-bottom:3px}
+.chat-input-row{padding:10px;border-top:0.5px solid rgba(255,255,255,0.1);display:flex;gap:8px}
+.chat-input-row input{flex:1;padding:8px 12px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;color:#f0f4ff;font-size:13px;font-family:inherit}
+.chat-input-row input:focus{outline:none;border-color:#6366f1}
+.chat-send{background:#6366f1;border:none;border-radius:8px;color:#fff;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* Main layout */
+.session-main{display:flex;flex:1;overflow:hidden}
+
+/* End modal */
+.end-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center}
+.end-card{background:#0d1428;border:0.5px solid rgba(255,255,255,0.12);border-radius:20px;padding:2rem;max-width:360px;width:90%;text-align:center}
+.end-icon{font-size:48px;margin-bottom:14px}
+.end-title{font-size:20px;font-weight:600;color:#f0f4ff;margin-bottom:8px}
+.end-sub{font-size:13px;color:#8b9dc3;margin-bottom:24px;line-height:1.6}
+.btn-primary{width:100%;padding:13px;background:#6366f1;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:10px}
+.btn-outline{width:100%;padding:12px;background:transparent;border:0.5px solid rgba(255,255,255,0.15);border-radius:12px;color:#8b9dc3;font-size:14px;cursor:pointer;font-family:inherit}
+
+/* Loading screen */
+#loadingScreen{position:fixed;inset:0;background:#080d1a;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.loading-spinner{width:40px;height:40px;border:3px solid rgba(99,102,241,0.2);border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:768px){
+  .chat-panel{display:none}
+  .chat-panel.show{display:flex;position:fixed;right:0;top:0;bottom:0;z-index:20;width:280px}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loadingScreen">
+  <div class="loading-spinner"></div>
+  <div style="font-size:15px;color:#8b9dc3">Setting up your session...</div>
+</div>
+
+<!-- Session bar -->
+<div class="session-bar">
+  <div class="session-info">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="session-dot"></div>
+        <div class="session-title" id="sessionTitle">Live Session</div>
+      </div>
+      <div class="session-sub" id="sessionSub">Connecting...</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="session-timer" id="sessionTimer">00:00</div>
+    <button class="end-btn" onclick="confirmEnd()"><i class="ti ti-phone-off"></i> End Session</button>
+    <button onclick="toggleChat()" style="background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.1);color:#8b9dc3;padding:9px 12px;border-radius:10px;cursor:pointer;font-size:13px;display:none" id="chatToggleBtn"><i class="ti ti-message"></i></button>
+  </div>
+</div>
+
+<!-- Main area -->
+<div class="session-main">
+  <div id="jitsiContainer"></div>
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-panel-header"><i class="ti ti-message-circle"></i> Session Chat</div>
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <div class="chat-input-row">
+      <input id="chatInput" type="text" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()"/>
+      <button class="chat-send" onclick="sendChat()"><i class="ti ti-send"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- End session modal -->
+<div class="end-modal" id="endModal">
+  <div class="end-card">
+    <div class="end-icon">👋</div>
+    <div class="end-title">End Session?</div>
+    <div class="end-sub">Are you sure you want to end this session? This action cannot be undone.</div>
+    <button class="btn-primary" onclick="endSession()">Yes, end session</button>
+    <button class="btn-outline" onclick="document.getElementById('endModal').style.display='none'">Continue session</button>
+  </div>
+</div>
+
+<!-- Session ended modal -->
+<div class="end-modal" id="doneModal">
+  <div class="end-card">
+    <div class="end-icon">✅</div>
+    <div class="end-title">Session Complete</div>
+    <div class="end-sub" id="doneSubText">Your session has ended. Duration: <strong id="finalDuration">00:00</strong></div>
+    <button class="btn-primary" onclick="window.location.href='/'">Return to Serene</button>
+  </div>
+</div>
+
+<script>
+// ── GET SESSION PARAMS FROM URL ───────────────────────────────────
+var params       = new URLSearchParams(window.location.search);
+var roomName     = params.get("room")      || "serene-" + Math.random().toString(36).slice(2,10);
+var therapistName = params.get("therapist") || "Therapist";
+var userName     = params.get("user")      || "User";
+var isTherapist  = params.get("role")      === "therapist";
+var displayName  = isTherapist ? therapistName : userName;
+
+// ── TIMER ─────────────────────────────────────────────────────────
+var startTime   = null;
+var timerInterval = null;
+
+function startTimer() {
+  startTime = Date.now();
+  timerInterval = setInterval(function() {
+    var elapsed = Math.floor((Date.now() - startTime) / 1000);
+    var mins = Math.floor(elapsed / 60).toString().padStart(2,"0");
+    var secs = (elapsed % 60).toString().padStart(2,"0");
+    document.getElementById("sessionTimer").textContent = mins + ":" + secs;
+  }, 1000);
+}
+
+function getElapsed() {
+  if (!startTime) return "00:00";
+  var elapsed = Math.floor((Date.now() - startTime) / 1000);
+  var mins = Math.floor(elapsed / 60).toString().padStart(2,"0");
+  var secs = (elapsed % 60).toString().padStart(2,"0");
+  return mins + ":" + secs;
+}
+
+// ── JITSI SETUP ───────────────────────────────────────────────────
+var api = null;
+
+function initJitsi() {
+  document.getElementById("sessionTitle").textContent = isTherapist ? "Session with " + userName : "Session with " + therapistName;
+  document.getElementById("sessionSub").textContent   = "Room: " + roomName;
+
+  var domain  = "meet.jit.si";
+  var options = {
+    roomName:    roomName,
+    width:       "100%",
+    height:      "100%",
+    parentNode:  document.getElementById("jitsiContainer"),
+    userInfo:    { displayName: displayName },
+    configOverwrite: {
+      startWithAudioMuted:  false,
+      startWithVideoMuted:  false,
+      disableDeepLinking:   true,
+      enableWelcomePage:    false,
+      prejoinPageEnabled:   false,
+      disableInviteFunctions: true,
+      toolbarButtons: [
+        "microphone","camera","closedcaptions","desktop",
+        "fullscreen","fodeviceselection","hangup",
+        "profile","settings","raisehand","videoquality","tileview",
+      ],
+    },
+    interfaceConfigOverwrite: {
+      SHOW_JITSI_WATERMARK:        false,
+      SHOW_WATERMARK_FOR_GUESTS:   false,
+      SHOW_BRAND_WATERMARK:        false,
+      DEFAULT_BACKGROUND:          "#080d1a",
+      TOOLBAR_ALWAYS_VISIBLE:      false,
+      HIDE_INVITE_MORE_HEADER:     true,
+    },
+  };
+
+  api = new JitsiMeetExternalAPI(domain, options);
+
+  api.addEventListener("videoConferenceJoined", function() {
+    document.getElementById("loadingScreen").style.display = "none";
+    document.getElementById("sessionSub").textContent = "🟢 Connected";
+    document.getElementById("chatToggleBtn").style.display = "flex";
+    startTimer();
+    addChatMsg("system", "Session started. You are connected securely.");
+  });
+
+  api.addEventListener("videoConferenceLeft", function() {
+    endSession();
+  });
+
+  api.addEventListener("participantJoined", function(e) {
+    addChatMsg("system", (e.displayName || "Someone") + " joined the session.");
+  });
+
+  api.addEventListener("participantLeft", function(e) {
+    addChatMsg("system", "Participant left the session.");
+  });
+
+  api.addEventListener("incomingMessage", function(e) {
+    addChatMsg("other", e.message, e.from || "Other");
+  });
+}
+
+// ── CHAT ──────────────────────────────────────────────────────────
+function addChatMsg(type, text, name) {
+  var msgs = document.getElementById("chatMsgs");
+  var div  = document.createElement("div");
+
+  if (type === "system") {
+    div.style.cssText = "text-align:center;font-size:11px;color:#4a5568;padding:4px 0";
+    div.textContent = text;
+  } else {
+    div.className = "chat-msg " + (type === "me" ? "me" : "other");
+    if (name && type !== "me") {
+      var nameDiv = document.createElement("div");
+      nameDiv.className = "chat-msg-name";
+      nameDiv.textContent = name;
+      div.appendChild(nameDiv);
+    }
+    var textDiv = document.createElement("div");
+    textDiv.textContent = text;
+    div.appendChild(textDiv);
+  }
+
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function sendChat() {
+  var input = document.getElementById("chatInput");
+  var msg   = input.value.trim();
+  if (!msg) return;
+  if (api) api.executeCommand("sendChatMessage", msg, "");
+  addChatMsg("me", msg);
+  input.value = "";
+}
+
+function toggleChat() {
+  var panel = document.getElementById("chatPanel");
+  panel.classList.toggle("show");
+}
+
+// ── END SESSION ───────────────────────────────────────────────────
+function confirmEnd() {
+  document.getElementById("endModal").style.display = "flex";
+}
+
+function endSession() {
+  clearInterval(timerInterval);
+  var duration = getElapsed();
+  if (api) { try { api.dispose(); } catch(e) {} }
+  document.getElementById("endModal").style.display  = "none";
+  document.getElementById("finalDuration").textContent = duration;
+  document.getElementById("doneModal").style.display = "flex";
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+window.addEventListener("load", function() {
+  if (typeof JitsiMeetExternalAPI === "undefined") {
+    setTimeout(initJitsi, 1000);
+  } else {
+    initJitsi();
+  }
+});
+
+// Prevent accidental page close during session
+window.addEventListener("beforeunload", function(e) {
+  if (startTime) {
+    e.preventDefault();
+    e.returnValue = "Are you sure you want to leave the session?";
+  }
+});
+</script>
+</body>
+</html>
