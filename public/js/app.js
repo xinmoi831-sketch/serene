@@ -60,6 +60,7 @@ function navigateTo(tab) {
   if (tab === "insights") loadInsights();
   if (tab === "settings") loadSettings();
   if (tab === "chat") loadChat();
+  if (tab === "therapists") tLoadList();
 }
 
 // ── Auth ──────────────────────────────────────────────────────────

@@ -36,16 +36,28 @@
 .code-row{display:flex;gap:8px;justify-content:center;margin:16px 0}
 .code-box{width:46px;height:54px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius);font-size:22px;font-weight:600;color:var(--text);text-align:center;font-family:Inter,sans-serif}
 .code-box:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+/* Therapist modal styles */
+.t-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:600;align-items:center;justify-content:center;padding:1rem;overflow-y:auto}
+.t-card{background:#0d1428;border:0.5px solid rgba(255,255,255,0.12);border-radius:20px;width:100%;max-width:480px;padding:1.75rem;box-shadow:0 24px 80px rgba(0,0,0,0.6);max-height:90vh;overflow-y:auto}
+.t-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.t-close{background:rgba(255,255,255,0.08);border:none;border-radius:50%;width:34px;height:34px;color:#8b9dc3;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
+.t-field{margin-bottom:13px}
+.t-field label{font-size:12px;color:#8b9dc3;display:block;margin-bottom:5px;font-weight:500}
+.t-field input,.t-field textarea,.t-field select{width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;color:#f0f4ff;font-size:14px;font-family:inherit;box-sizing:border-box}
+.t-field textarea{resize:none}
+.t-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.t-alert{display:none;padding:10px;border-radius:8px;margin-bottom:12px;font-size:13px}
+.t-section{font-size:11px;font-weight:600;color:#6366f1;text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px}
+.t-submit{width:100%;padding:14px;background:#6366f1;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px}
+.t-submit:disabled{opacity:0.6;cursor:not-allowed}
 </style>
 </head>
 <body>
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
 
-<!-- DRAWER OVERLAY -->
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 
-<!-- DRAWER -->
 <div class="drawer" id="drawer">
   <div class="drawer-header">
     <div class="drawer-logo serif">🌿 Serene</div>
@@ -61,26 +73,24 @@
   <nav class="drawer-nav">
     <div class="drawer-section-label">Menu</div>
     <button class="drawer-nav-item active" data-tab="chat" onclick="navigateTo('chat');closeDrawer()">
-      <i class="ti ti-message-circle drawer-nav-icon"></i>
-      <span class="drawer-nav-label">Chat</span>
+      <i class="ti ti-message-circle drawer-nav-icon"></i><span class="drawer-nav-label">Chat</span>
     </button>
     <button class="drawer-nav-item" data-tab="journal" onclick="navigateTo('journal');closeDrawer()">
-      <i class="ti ti-notebook drawer-nav-icon"></i>
-      <span class="drawer-nav-label">Journal</span>
+      <i class="ti ti-notebook drawer-nav-icon"></i><span class="drawer-nav-label">Journal</span>
     </button>
     <button class="drawer-nav-item" data-tab="insights" onclick="navigateTo('insights');closeDrawer()">
-      <i class="ti ti-chart-line drawer-nav-icon"></i>
-      <span class="drawer-nav-label">Insights</span>
+      <i class="ti ti-chart-line drawer-nav-icon"></i><span class="drawer-nav-label">Insights</span>
+    </button>
+    <button class="drawer-nav-item" data-tab="therapists" onclick="navigateTo('therapists');closeDrawer()">
+      <i class="ti ti-stethoscope drawer-nav-icon"></i><span class="drawer-nav-label">Therapists</span>
     </button>
     <div class="drawer-divider"></div>
     <div class="drawer-section-label">Account</div>
     <button class="drawer-nav-item" data-tab="settings" onclick="navigateTo('settings');closeDrawer()">
-      <i class="ti ti-settings drawer-nav-icon"></i>
-      <span class="drawer-nav-label">Settings</span>
+      <i class="ti ti-settings drawer-nav-icon"></i><span class="drawer-nav-label">Settings</span>
     </button>
     <button class="drawer-nav-item" onclick="showPlans();closeDrawer()">
-      <i class="ti ti-crown drawer-nav-icon"></i>
-      <span class="drawer-nav-label">Upgrade to Pro</span>
+      <i class="ti ti-crown drawer-nav-icon"></i><span class="drawer-nav-label">Upgrade to Pro</span>
       <span class="drawer-nav-badge">7 days free</span>
     </button>
   </nav>
@@ -139,38 +149,19 @@
       </div>
       <div class="glass-strong" style="padding:1.75rem">
         <div id="loginAlert" class="alert"></div>
-        <div class="input-group">
-          <label>Email address</label>
-          <input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com"/>
-        </div>
-        <div class="input-group">
-          <label>Password</label>
-          <input id="loginPass" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/>
-        </div>
-        <button class="btn btn-primary" id="loginBtn" onclick="doLogin()" style="margin-top:4px">
-          <i class="ti ti-login"></i> Log in
-        </button>
-        <p style="text-align:right;margin-top:8px">
-          <a href="#" onclick="showPage('forgot')" style="font-size:13px;color:var(--text2);text-decoration:none">Forgot password?</a>
-        </p>
+        <div class="input-group"><label>Email address</label><input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com"/></div>
+        <div class="input-group"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+        <button class="btn btn-primary" id="loginBtn" onclick="doLogin()" style="margin-top:4px"><i class="ti ti-login"></i> Log in</button>
+        <p style="text-align:right;margin-top:8px"><a href="#" onclick="showPage('forgot')" style="font-size:13px;color:var(--text2);text-decoration:none">Forgot password?</a></p>
         <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
-          <div style="flex:1;height:0.5px;background:var(--border)"></div>
-          <span style="font-size:12px;color:var(--text3)">or</span>
-          <div style="flex:1;height:0.5px;background:var(--border)"></div>
+          <div style="flex:1;height:0.5px;background:var(--border)"></div><span style="font-size:12px;color:var(--text3)">or</span><div style="flex:1;height:0.5px;background:var(--border)"></div>
         </div>
         <button class="btn btn-outline" onclick="signInWithGoogle()" style="gap:10px;margin-bottom:12px">
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
           Continue with Google
         </button>
-        <p style="text-align:center;font-size:13px;color:var(--text2)">
-          Don't have an account?
-          <a href="#" onclick="showPage('register')" style="color:var(--accent2);text-decoration:none;font-weight:500"> Create account</a>
-        </p>
-        <p style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">
-          By signing in you agree to our
-          <a href="/legal.html" style="color:var(--text2);text-decoration:none">Terms of Service</a> and
-          <a href="/legal.html" style="color:var(--text2);text-decoration:none">Privacy Policy</a>
-        </p>
+        <p style="text-align:center;font-size:13px;color:var(--text2)">Don't have an account? <a href="#" onclick="showPage('register')" style="color:var(--accent2);text-decoration:none;font-weight:500"> Create account</a></p>
+        <p style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">By signing in you agree to our <a href="/legal.html" style="color:var(--text2);text-decoration:none">Terms of Service</a> and <a href="/legal.html" style="color:var(--text2);text-decoration:none">Privacy Policy</a></p>
       </div>
     </div>
   </div>
@@ -180,10 +171,7 @@
 <div class="auth-wrap" id="page-login-verify">
   <div class="auth-left">
     <div class="auth-photo active" style="background-image:url('https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80')"></div>
-    <div class="auth-quote">
-      <div class="auth-quote-text">"Security is not a product, but a process."</div>
-      <div class="auth-quote-author">— Bruce Schneier</div>
-    </div>
+    <div class="auth-quote"><div class="auth-quote-text">"Security is not a product, but a process."</div><div class="auth-quote-author">— Bruce Schneier</div></div>
   </div>
   <div class="auth-right">
     <div class="auth-inner">
@@ -203,12 +191,8 @@
           <input class="code-box" id="lvd4" maxlength="1" oninput="codeInput(this,4,'lv')" onkeydown="codeBack(event,4,'lv')"/>
           <input class="code-box" id="lvd5" maxlength="1" oninput="codeInput(this,5,'lv')" onkeydown="codeBack(event,5,'lv')"/>
         </div>
-        <button class="btn btn-primary" id="loginVerifyBtn" onclick="doVerifyLoginCode()">
-          <i class="ti ti-check"></i> Verify and sign in
-        </button>
-        <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)">
-          <a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">← Back to login</a>
-        </p>
+        <button class="btn btn-primary" id="loginVerifyBtn" onclick="doVerifyLoginCode()"><i class="ti ti-check"></i> Verify and sign in</button>
+        <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)"><a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">← Back to login</a></p>
       </div>
     </div>
   </div>
@@ -218,10 +202,7 @@
 <div class="auth-wrap" id="page-forgot">
   <div class="auth-left">
     <div class="auth-photo active" style="background-image:url('https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&q=80')"></div>
-    <div class="auth-quote">
-      <div class="auth-quote-text">"Every day is a fresh start."</div>
-      <div class="auth-quote-author">— Unknown</div>
-    </div>
+    <div class="auth-quote"><div class="auth-quote-text">"Every day is a fresh start."</div><div class="auth-quote-author">— Unknown</div></div>
   </div>
   <div class="auth-right">
     <div class="auth-inner">
@@ -232,16 +213,9 @@
       </div>
       <div class="glass-strong" style="padding:1.75rem">
         <div id="forgotAlert" class="alert"></div>
-        <div class="input-group">
-          <label>Email address</label>
-          <input id="forgotEmail" type="email" placeholder="you@example.com" autocomplete="email"/>
-        </div>
-        <button class="btn btn-primary" id="forgotBtn" onclick="doForgotPassword()">
-          <i class="ti ti-send"></i> Send reset code
-        </button>
-        <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)">
-          <a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">Back to login</a>
-        </p>
+        <div class="input-group"><label>Email address</label><input id="forgotEmail" type="email" placeholder="you@example.com" autocomplete="email"/></div>
+        <button class="btn btn-primary" id="forgotBtn" onclick="doForgotPassword()"><i class="ti ti-send"></i> Send reset code</button>
+        <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)"><a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">Back to login</a></p>
       </div>
     </div>
   </div>
@@ -251,10 +225,7 @@
 <div class="auth-wrap" id="page-reset">
   <div class="auth-left">
     <div class="auth-photo active" style="background-image:url('https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&q=80')"></div>
-    <div class="auth-quote">
-      <div class="auth-quote-text">"A fresh start begins with a single step."</div>
-      <div class="auth-quote-author">— Unknown</div>
-    </div>
+    <div class="auth-quote"><div class="auth-quote-text">"A fresh start begins with a single step."</div><div class="auth-quote-author">— Unknown</div></div>
   </div>
   <div class="auth-right">
     <div class="auth-inner">
@@ -274,20 +245,10 @@
           <input class="code-box" id="rd4" maxlength="1" oninput="codeInput(this,4,'r')" onkeydown="codeBack(event,4,'r')"/>
           <input class="code-box" id="rd5" maxlength="1" oninput="codeInput(this,5,'r')" onkeydown="codeBack(event,5,'r')"/>
         </div>
-        <div class="input-group">
-          <label>New password</label>
-          <input id="newPassword" type="password" placeholder="Minimum 8 characters" autocomplete="new-password"/>
-        </div>
-        <div class="input-group">
-          <label>Confirm new password</label>
-          <input id="confirmPassword" type="password" placeholder="Repeat your new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doResetPassword()"/>
-        </div>
-        <button class="btn btn-primary" id="resetBtn" onclick="doResetPassword()">
-          <i class="ti ti-check"></i> Reset password
-        </button>
-        <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)">
-          <a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">Back to login</a>
-        </p>
+        <div class="input-group"><label>New password</label><input id="newPassword" type="password" placeholder="Minimum 8 characters" autocomplete="new-password"/></div>
+        <div class="input-group"><label>Confirm new password</label><input id="confirmPassword" type="password" placeholder="Repeat your new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doResetPassword()"/></div>
+        <button class="btn btn-primary" id="resetBtn" onclick="doResetPassword()"><i class="ti ti-check"></i> Reset password</button>
+        <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)"><a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">Back to login</a></p>
       </div>
     </div>
   </div>
@@ -297,20 +258,9 @@
 <div class="auth-wrap" id="page-register">
   <div class="auth-left">
     <div class="auth-photo active" style="background-image:url('https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=800&q=80')"></div>
-    <div class="float-card" style="bottom:18%;left:6%">
-      <div style="font-size:22px;margin-bottom:6px">🩺</div>
-      <div style="font-size:11px;color:#8b9dc3;text-transform:uppercase;letter-spacing:.07em">Professional guidance</div>
-      <div style="font-size:15px;font-weight:600;color:#a5b4fc;margin-top:2px">Evidence-based care</div>
-    </div>
-    <div class="float-card" style="top:20%;right:6%;animation-delay:2s">
-      <div style="font-size:22px;margin-bottom:6px">🔒</div>
-      <div style="font-size:11px;color:#8b9dc3;text-transform:uppercase;letter-spacing:.07em">Your data is safe</div>
-      <div style="font-size:15px;font-weight:600;color:#a5b4fc;margin-top:2px">End-to-end encrypted</div>
-    </div>
-    <div class="auth-quote">
-      <div class="auth-quote-text">"Taking care of your mental health is just as important as your physical health."</div>
-      <div class="auth-quote-author">— World Health Organization</div>
-    </div>
+    <div class="float-card" style="bottom:18%;left:6%"><div style="font-size:22px;margin-bottom:6px">🩺</div><div style="font-size:11px;color:#8b9dc3;text-transform:uppercase;letter-spacing:.07em">Professional guidance</div><div style="font-size:15px;font-weight:600;color:#a5b4fc;margin-top:2px">Evidence-based care</div></div>
+    <div class="float-card" style="top:20%;right:6%;animation-delay:2s"><div style="font-size:22px;margin-bottom:6px">🔒</div><div style="font-size:11px;color:#8b9dc3;text-transform:uppercase;letter-spacing:.07em">Your data is safe</div><div style="font-size:15px;font-weight:600;color:#a5b4fc;margin-top:2px">End-to-end encrypted</div></div>
+    <div class="auth-quote"><div class="auth-quote-text">"Taking care of your mental health is just as important as your physical health."</div><div class="auth-quote-author">— World Health Organization</div></div>
   </div>
   <div class="auth-right">
     <div class="auth-inner">
@@ -321,34 +271,16 @@
       </div>
       <div class="glass-strong" style="padding:1.75rem">
         <div id="regAlert" class="alert"></div>
-        <div class="input-group">
-          <label>Your name</label>
-          <input id="regName" type="text" autocomplete="name" placeholder="Your name"/>
-        </div>
-        <div class="input-group">
-          <label>Email address</label>
-          <input id="regEmail" type="email" autocomplete="email" placeholder="you@example.com"/>
-        </div>
-        <div class="input-group">
-          <label>Password</label>
-          <input id="regPass" type="password" autocomplete="new-password" placeholder="Minimum 8 characters" onkeydown="if(event.key==='Enter')doRegister()"/>
-        </div>
-        <button class="btn btn-primary" id="regBtn" onclick="doRegister()" style="margin-top:4px">
-          <i class="ti ti-user-plus"></i> Create account
-        </button>
-        <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
-          <div style="flex:1;height:0.5px;background:var(--border)"></div>
-          <span style="font-size:12px;color:var(--text3)">or</span>
-          <div style="flex:1;height:0.5px;background:var(--border)"></div>
-        </div>
+        <div class="input-group"><label>Your name</label><input id="regName" type="text" autocomplete="name" placeholder="Your name"/></div>
+        <div class="input-group"><label>Email address</label><input id="regEmail" type="email" autocomplete="email" placeholder="you@example.com"/></div>
+        <div class="input-group"><label>Password</label><input id="regPass" type="password" autocomplete="new-password" placeholder="Minimum 8 characters" onkeydown="if(event.key==='Enter')doRegister()"/></div>
+        <button class="btn btn-primary" id="regBtn" onclick="doRegister()" style="margin-top:4px"><i class="ti ti-user-plus"></i> Create account</button>
+        <div style="display:flex;align-items:center;gap:10px;margin:14px 0"><div style="flex:1;height:0.5px;background:var(--border)"></div><span style="font-size:12px;color:var(--text3)">or</span><div style="flex:1;height:0.5px;background:var(--border)"></div></div>
         <button class="btn btn-outline" onclick="signInWithGoogle()" style="gap:10px">
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
           Continue with Google
         </button>
-        <p style="text-align:center;font-size:13px;margin-top:12px;color:var(--text2)">
-          Already have an account?
-          <a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none;font-weight:500"> Log in</a>
-        </p>
+        <p style="text-align:center;font-size:13px;margin-top:12px;color:var(--text2)">Already have an account? <a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none;font-weight:500"> Log in</a></p>
       </div>
     </div>
   </div>
@@ -357,11 +289,7 @@
 <!-- VERIFY EMAIL -->
 <div class="page" id="page-verify" style="background:linear-gradient(160deg,#0a0f1e,#0d1428)">
   <div class="container" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:2rem 0">
-    <div style="text-align:center;margin-bottom:2rem">
-      <div style="font-size:48px;margin-bottom:12px">📧</div>
-      <h2>Verify your email</h2>
-      <p style="font-size:14px;color:var(--text2);margin-top:8px">We sent a 6-digit code to <strong id="verifyEmailDisplay" style="color:var(--accent2)">your email</strong></p>
-    </div>
+    <div style="text-align:center;margin-bottom:2rem"><div style="font-size:48px;margin-bottom:12px">📧</div><h2>Verify your email</h2><p style="font-size:14px;color:var(--text2);margin-top:8px">We sent a 6-digit code to <strong id="verifyEmailDisplay" style="color:var(--accent2)">your email</strong></p></div>
     <div class="glass-strong" style="padding:1.75rem">
       <div id="verifyAlert" class="alert"></div>
       <p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:4px">Enter verification code</p>
@@ -374,9 +302,7 @@
         <input class="code-box" id="vd5" maxlength="1" oninput="codeInput(this,5,'v')" onkeydown="codeBack(event,5,'v')"/>
       </div>
       <button class="btn btn-primary" id="verifyBtn" onclick="submitVerification()">Verify</button>
-      <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)">
-        Didn't get it? <a href="#" onclick="resendVerification()" style="color:var(--accent2);text-decoration:none">Resend code</a>
-      </p>
+      <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)">Didn't get it? <a href="#" onclick="resendVerification()" style="color:var(--accent2);text-decoration:none">Resend code</a></p>
     </div>
   </div>
 </div>
@@ -384,11 +310,7 @@
 <!-- 2FA -->
 <div class="page" id="page-2fa" style="background:linear-gradient(160deg,#0a0f1e,#0d1428)">
   <div class="container" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:2rem 0">
-    <div style="text-align:center;margin-bottom:2rem">
-      <div style="font-size:48px;margin-bottom:12px">🔐</div>
-      <h2>Two-factor authentication</h2>
-      <p style="font-size:14px;color:var(--text2);margin-top:8px">Enter the 6-digit code sent to your email</p>
-    </div>
+    <div style="text-align:center;margin-bottom:2rem"><div style="font-size:48px;margin-bottom:12px">🔐</div><h2>Two-factor authentication</h2><p style="font-size:14px;color:var(--text2);margin-top:8px">Enter the 6-digit code sent to your email</p></div>
     <div class="glass-strong" style="padding:1.75rem">
       <div id="twoFaAlert" class="alert"></div>
       <div class="code-row">
@@ -400,9 +322,7 @@
         <input class="code-box" id="td5" maxlength="1" oninput="codeInput(this,5,'t')" onkeydown="codeBack(event,5,'t')"/>
       </div>
       <button class="btn btn-primary" id="twoFaBtn" onclick="submit2FA()">Verify</button>
-      <p style="text-align:center;font-size:13px;margin-top:14px">
-        <a href="#" onclick="showPage('login')" style="color:var(--text3);text-decoration:none">Back to login</a>
-      </p>
+      <p style="text-align:center;font-size:13px;margin-top:14px"><a href="#" onclick="showPage('login')" style="color:var(--text3);text-decoration:none">Back to login</a></p>
     </div>
   </div>
 </div>
@@ -411,13 +331,8 @@
 <div class="page" id="page-app">
   <div class="navbar">
     <div style="display:flex;align-items:center;gap:12px">
-      <button class="hamburger" id="hamburgerBtn" onclick="toggleDrawer()">
-        <span></span><span></span><span></span>
-      </button>
-      <div>
-        <div class="navbar-brand serif">Serene</div>
-        <div class="navbar-sub" id="currentTabLabel">Chat</div>
-      </div>
+      <button class="hamburger" id="hamburgerBtn" onclick="toggleDrawer()"><span></span><span></span><span></span></button>
+      <div><div class="navbar-brand serif">Serene</div><div class="navbar-sub" id="currentTabLabel">Chat</div></div>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <span id="userPlan"></span>
@@ -450,15 +365,11 @@
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0">
           <div style="position:relative">
             <button class="icon-btn" onclick="BreathingWidget.open('box')" title="Breathing exercises" style="margin-right:4px"><i class="ti ti-wind"></i></button>
-            <button class="voice-mode-btn" id="voiceModeBtn" onclick="handleVoiceBtnClick()" title="Voice mode">
-              <i class="ti ti-microphone"></i>
-            </button>
+            <button class="voice-mode-btn" id="voiceModeBtn" onclick="handleVoiceBtnClick()" title="Voice mode"><i class="ti ti-microphone"></i></button>
             <span id="voiceBadge" style="position:absolute;top:-6px;right:-6px;background:var(--accent);color:#fff;font-size:9px;font-weight:600;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--bg)">3</span>
           </div>
           <button class="voice-mode-btn" id="summaryBtn" onclick="summarizeChat()" title="Summarise" style="font-size:15px">📋</button>
-          <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-            <i class="ti ti-arrow-up"></i>
-          </button>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()"><i class="ti ti-arrow-up"></i></button>
         </div>
       </div>
     </div>
@@ -472,9 +383,7 @@
         <button class="btn btn-outline btn-sm" onclick="showNewEntry()"><i class="ti ti-plus"></i> New entry</button>
       </div>
       <div id="newEntryForm" class="glass" style="display:none;margin-bottom:1.25rem;padding:1.25rem">
-        <div class="input-group">
-          <textarea id="journalContent" rows="5" placeholder="Write your thoughts…"></textarea>
-        </div>
+        <div class="input-group"><textarea id="journalContent" rows="5" placeholder="Write your thoughts…"></textarea></div>
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;font-size:13px;color:var(--text2)">
           <input type="checkbox" id="wantsReflection" style="width:auto;accent-color:var(--accent)"/>
           <label for="wantsReflection" style="cursor:pointer">AI reflection (Pro)</label>
@@ -496,6 +405,36 @@
     </div>
   </div>
 
+  <!-- THERAPISTS -->
+  <div class="tab-content" id="tab-therapists" style="display:none;flex-direction:column;flex:1;overflow-y:auto">
+    <div class="container" style="padding-top:1.25rem;padding-bottom:100px;flex:1">
+      <h2 style="margin-bottom:4px">Therapists</h2>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Verified professionals · 3+ years experience · Zambia based</p>
+      <button onclick="tOpenApply()" style="width:100%;padding:13px;background:rgba(99,102,241,0.12);border:0.5px solid rgba(99,102,241,0.3);border-radius:12px;color:#a5b4fc;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">
+        🩺 Are you a therapist? Apply here
+      </button>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input id="tSearchInput" type="text" placeholder="Search by name..." oninput="tLoadList()" style="flex:1;padding:10px 12px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;color:#f0f4ff;font-size:13px;font-family:inherit"/>
+        <select id="tFilterSpec" onchange="tLoadList()" style="padding:10px 12px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;color:#8b9dc3;font-size:13px;font-family:inherit">
+          <option value="">All specializations</option>
+          <option value="anxiety">Anxiety</option>
+          <option value="depression">Depression</option>
+          <option value="trauma">Trauma</option>
+          <option value="relationships">Relationships</option>
+          <option value="grief">Grief</option>
+          <option value="stress">Stress</option>
+        </select>
+      </div>
+      <div id="therapistList">
+        <div style="text-align:center;padding:48px 20px;color:#8b9dc3">
+          <div style="font-size:48px;margin-bottom:14px">👨‍⚕️</div>
+          <div style="font-size:15px;font-weight:500;color:#f0f4ff;margin-bottom:8px">No verified therapists yet</div>
+          <div style="font-size:13px">Our team is reviewing applications. Check back soon.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- SETTINGS -->
   <div class="tab-content" id="tab-settings" style="display:none;flex-direction:column;flex:1;overflow-y:auto">
     <div class="container" style="padding-top:1.25rem;padding-bottom:120px;flex:1">
@@ -503,13 +442,8 @@
       <div class="glass" style="padding:1.25rem;margin-bottom:1rem">
         <h3 style="margin-bottom:14px;color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:.08em">Account</h3>
         <div class="settings-row"><span class="settings-label">Email</span><span class="settings-value" id="settingsEmail"></span></div>
-        <div class="settings-row">
-          <span class="settings-label">Two-factor auth</span>
-          <button id="toggle2faBtn" class="btn btn-outline btn-sm" onclick="toggle2FA()">Enable 2FA</button>
-        </div>
-        <div style="margin-top:14px">
-          <button class="btn btn-outline btn-sm" onclick="doLogout()"><i class="ti ti-logout"></i> Log out</button>
-        </div>
+        <div class="settings-row"><span class="settings-label">Two-factor auth</span><button id="toggle2faBtn" class="btn btn-outline btn-sm" onclick="toggle2FA()">Enable 2FA</button></div>
+        <div style="margin-top:14px"><button class="btn btn-outline btn-sm" onclick="doLogout()"><i class="ti ti-logout"></i> Log out</button></div>
       </div>
       <div class="glass" style="padding:1.25rem;margin-bottom:1rem">
         <h3 style="margin-bottom:14px;color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:.08em">Subscription</h3>
@@ -527,7 +461,7 @@
       <div class="glass" style="padding:1.25rem;margin-bottom:1rem">
         <h3 style="margin-bottom:14px;color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:.08em">Legal</h3>
         <a href="/legal.html" style="display:block;padding:10px 0;color:var(--accent2);font-size:14px;text-decoration:none;border-bottom:0.5px solid var(--border)">Terms of Service →</a>
-        <a href="/legal.html" onclick="setTimeout(()=>{document.querySelector('[onclick=\'showDoc(\'privacy\')\']')?.click()},100)" style="display:block;padding:10px 0;color:var(--accent2);font-size:14px;text-decoration:none;border-bottom:0.5px solid var(--border)">Privacy Policy →</a>
+        <a href="/legal.html" style="display:block;padding:10px 0;color:var(--accent2);font-size:14px;text-decoration:none;border-bottom:0.5px solid var(--border)">Privacy Policy →</a>
         <a href="/legal.html" style="display:block;padding:10px 0;color:var(--accent2);font-size:14px;text-decoration:none">Medical Disclaimer →</a>
       </div>
       <div class="glass" style="padding:1.25rem;border-color:rgba(244,63,94,0.3)">
@@ -542,14 +476,14 @@
 </div>
 
 <!-- PLANS MODAL -->
-<div id="plansModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:400;align-items:flex-end;justify-content:center">
-  <div class="glass-strong" style="border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:1.75rem">
+<div id="plansModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:400;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#0d1428;border:0.5px solid rgba(255,255,255,0.12);border-radius:20px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;padding:1.75rem;box-shadow:0 24px 80px rgba(0,0,0,0.6)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
-      <h2>Choose a plan</h2>
-      <button onclick="hidePlans()" style="background:var(--surface2);border:0.5px solid var(--border);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button>
+      <h2 style="font-size:20px;font-weight:600;color:#f0f4ff">Choose a plan</h2>
+      <button onclick="hidePlans()" style="background:rgba(255,255,255,0.08);border:0.5px solid rgba(255,255,255,0.1);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#8b9dc3;font-size:16px">✕</button>
     </div>
     <div id="plansList"></div>
-    <p style="text-align:center;font-size:12px;color:var(--text3);margin-top:12px">Visa, Mastercard and PayPal accepted</p>
+    <p style="text-align:center;font-size:12px;color:var(--text3);margin-top:16px">Visa, Mastercard and PayPal accepted</p>
   </div>
 </div>
 
@@ -573,205 +507,89 @@
   </div>
 </div>
 
-<script src="/js/scroll.js"></script>
-<script src="/js/breathing.js"></script>
-<script src="/js/emotion.js"></script>
-<script src="/js/currency.js"></script>
-<script src="/js/i18n.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/app.js"></script>
-<script src="/js/voice.js"></script>
-<script src="/js/tts.js"></script>
-<script>
-// Page routing
-function showPage(id) {
-  document.querySelectorAll(".page,.auth-wrap").forEach(function(p){ p.classList.remove("active"); });
-  var el = document.getElementById("page-" + id);
-  if (el) el.classList.add("active");
-}
+<!-- THERAPIST: BOOK SESSION MODAL -->
+<div class="t-modal" id="tBookModal">
+  <div class="t-card">
+    <div class="t-header">
+      <div style="font-size:17px;font-weight:600;color:#f0f4ff" id="tBookName">Book Session</div>
+      <button class="t-close" onclick="document.getElementById('tBookModal').style.display='none'">✕</button>
+    </div>
+    <input type="hidden" id="tBookTherapistId"/>
+    <div class="t-alert" id="tBookAlert"></div>
+    <div id="tBookPrice" style="background:rgba(99,102,241,0.1);border-radius:10px;padding:10px;margin-bottom:16px;font-size:13px;color:#a5b4fc"></div>
+    <div class="t-field"><label>Select date and time *</label><input id="tBookDateTime" type="datetime-local"/></div>
+    <div class="t-field"><label>Notes for therapist (optional)</label><textarea id="tBookNotes" rows="3" placeholder="What would you like to discuss?"></textarea></div>
+    <button class="t-submit" id="tBookBtn" onclick="tSubmitBooking()">Confirm Booking</button>
+    <p style="font-size:11px;color:#4a5568;text-align:center;margin-top:10px">Serene takes 20% · Therapist keeps 80%</p>
+  </div>
+</div>
 
-// Photo slideshow
-var quotes = [
-  {text:'"The greatest wealth is health."', author:'— Virgil'},
-  {text:'"Mental health is not a destination, but a process."', author:'— Noam Shpancer'},
-  {text:'"You don\'t have to be positive all the time."', author:'— Lori Deschene'},
-];
-var currentPhoto = 0;
-function goToPhoto(n) {
-  var photos = [document.getElementById("photo0"), document.getElementById("photo1"), document.getElementById("photo2")];
-  photos.forEach(function(p,i){ if(p) p.classList.toggle("active", i===n); });
-  document.querySelectorAll(".photo-dot").forEach(function(d,i){ d.classList.toggle("active", i===n); });
-  currentPhoto = n;
-  var q = quotes[n] || quotes[0];
-  var qt = document.getElementById("quoteText");
-  var qa = document.getElementById("quoteAuthor");
-  if (qt) qt.textContent = q.text;
-  if (qa) qa.textContent = q.author;
-}
-setInterval(function(){ goToPhoto((currentPhoto+1)%3); }, 5000);
+<!-- THERAPIST: SESSION CONFIRMED MODAL -->
+<div class="t-modal" id="tSessionModal">
+  <div class="t-card" style="text-align:center">
+    <div style="font-size:52px;margin-bottom:12px">🎉</div>
+    <h3 style="font-size:20px;font-weight:700;color:#f0f4ff;margin-bottom:6px">Session Booked!</h3>
+    <p style="font-size:13px;color:#8b9dc3;margin-bottom:20px">Your session has been confirmed.</p>
+    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:14px;margin-bottom:20px;text-align:left">
+      <div style="font-size:13px;color:#8b9dc3;margin-bottom:8px">👨‍⚕️ <span id="tSessTherapist" style="color:#f0f4ff;font-weight:500"></span></div>
+      <div style="font-size:13px;color:#8b9dc3;margin-bottom:8px">📅 <span id="tSessTime" style="color:#f0f4ff;font-weight:500"></span></div>
+      <div style="font-size:13px;color:#8b9dc3;margin-bottom:8px">💰 <span id="tSessPrice" style="color:#a5b4fc;font-weight:500"></span></div>
+      <div style="font-size:13px;color:#8b9dc3">🔐 Room: <span id="tSessRoom" style="color:#4ade80;font-family:monospace;font-size:12px"></span></div>
+    </div>
+    <button onclick="tJoinSession()" style="width:100%;padding:14px;background:#6366f1;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:10px">🎥 Join Video Session</button>
+    <p style="font-size:11px;color:#4a5568;margin-bottom:12px">Opens in a new tab · Free · No download needed</p>
+    <button onclick="document.getElementById('tSessionModal').style.display='none'" style="width:100%;padding:12px;background:transparent;border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;color:#8b9dc3;font-size:14px;cursor:pointer">Close</button>
+  </div>
+</div>
 
-// Code inputs
-function codeInput(el, idx, prefix) {
-  el.value = el.value.replace(/[^0-9]/g,"").slice(-1);
-  if (el.value && idx < 5) { var n = document.getElementById(prefix+"d"+(idx+1)); if(n) n.focus(); }
-  var code = "";
-  for (var i=0;i<6;i++) { var d = document.getElementById(prefix+"d"+i); code += d ? (d.value||"") : ""; }
-  if (code.length === 6) {
-    if (prefix==="v") submitVerification();
-    else if (prefix==="t") submit2FA();
-    // r = reset password, handled by button
-  }
-}
-function codeBack(e, idx, prefix) {
-  if (e.key==="Backspace" && !e.target.value && idx>0) { var p = document.getElementById(prefix+"d"+(idx-1)); if(p) p.focus(); }
-}
-function getCode(prefix) {
-  var code = "";
-  for (var i=0;i<6;i++) { var d = document.getElementById(prefix+"d"+i); code += d ? (d.value||"") : ""; }
-  return code;
-}
+<!-- THERAPIST: APPLY MODAL -->
+<div class="t-modal" id="tApplyModal">
+  <div class="t-card">
+    <div class="t-header">
+      <div style="font-size:18px;font-weight:600;color:#f0f4ff">Apply as a Therapist</div>
+      <button class="t-close" onclick="document.getElementById('tApplyModal').style.display='none'">✕</button>
+    </div>
+    <div style="background:rgba(99,102,241,0.1);border:0.5px solid rgba(99,102,241,0.25);border-radius:10px;padding:12px;margin-bottom:16px;font-size:13px;color:#a5b4fc">
+      Requirements: 3+ years experience · Valid credentials · 2 traceable references · Zambia based
+    </div>
+    <div class="t-alert" id="tApplyAlert"></div>
+    <div class="t-section">Personal Information</div>
+    <div class="t-field"><label>Full Name *</label><input id="aFullName" type="text" placeholder="Your full legal name"/></div>
+    <div class="t-row2">
+      <div class="t-field"><label>Email *</label><input id="aEmail" type="email" placeholder="your@email.com"/></div>
+      <div class="t-field"><label>Phone *</label><input id="aPhone" type="tel" placeholder="+260 xxx xxx xxx"/></div>
+    </div>
+    <div class="t-row2">
+      <div class="t-field"><label>Country</label><input id="aCountry" type="text" placeholder="Zambia"/></div>
+      <div class="t-field"><label>City</label><input id="aCity" type="text" placeholder="Lusaka"/></div>
+    </div>
+    <div class="t-section">Professional Information</div>
+    <div class="t-field"><label>Profession *</label><input id="aProfession" type="text" placeholder="e.g. Clinical Psychologist, Counsellor"/></div>
+    <div class="t-field"><label>Specializations</label><input id="aSpec" type="text" placeholder="e.g. Anxiety, Depression, Trauma"/></div>
+    <div class="t-row2">
+      <div class="t-field"><label>Years of Experience *</label><input id="aYears" type="number" placeholder="Min. 3" min="3"/></div>
+      <div class="t-field"><label>Session Price (ZMW) *</label><input id="aPrice" type="number" placeholder="e.g. 300"/></div>
+    </div>
+    <div class="t-field"><label>Languages Spoken</label><input id="aLanguages" type="text" placeholder="e.g. English, Bemba, Nyanja"/></div>
+    <div class="t-field"><label>Professional Bio</label><textarea id="aBio" rows="3" placeholder="Describe your experience and approach..."></textarea></div>
+    <div class="t-section">Credentials</div>
+    <div class="t-field"><label>Degree(s)</label><input id="aDegrees" type="text" placeholder="e.g. BSc Psychology, MSc Counselling"/></div>
+    <div class="t-field"><label>Certification(s)</label><input id="aCerts" type="text" placeholder="e.g. CBT Certified"/></div>
+    <div class="t-field"><label>License Number (if applicable)</label><input id="aLicense" type="text" placeholder="Professional registration number"/></div>
+    <div class="t-section">References (2 required)</div>
+    <div class="t-row2">
+      <div class="t-field"><label>Reference 1 Name *</label><input id="aRef1Name" type="text" placeholder="Full name"/></div>
+      <div class="t-field"><label>Reference 1 Phone *</label><input id="aRef1Phone" type="tel" placeholder="Phone number"/></div>
+    </div>
+    <div class="t-row2">
+      <div class="t-field"><label>Reference 2 Name *</label><input id="aRef2Name" type="text" placeholder="Full name"/></div>
+      <div class="t-field"><label>Reference 2 Phone *</label><input id="aRef2Phone" type="tel" placeholder="Phone number"/></div>
+    </div>
+    <button class="t-submit" id="tApplyBtn" onclick="tSubmitApply()">Submit Application</button>
+    <p style="font-size:11px;color:#4a5568;text-align:center;margin-top:10px">Serene takes 20% per session. You keep 80%. Reviewed within 2-3 business days.</p>
+  </div>
+</div>
 
-// Email verification
-async function submitVerification() {
-  var code = getCode("v");
-  if (code.length < 6) return;
-  var token = api.getToken();
-  setLoading("verifyBtn", true);
-  var res = await fetch("/api/auth/verify-email", {method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({code:code})});
-  var data = await res.json();
-  setLoading("verifyBtn", false);
-  if (res.ok) { showApp(); }
-  else { showAlert(document.getElementById("verifyAlert"), data.error||"Incorrect code.", "error"); }
-}
-async function resendVerification() {
-  var token = api.getToken();
-  await fetch("/api/auth/send-verification",{method:"POST",headers:{"Authorization":"Bearer "+token}});
-  showAlert(document.getElementById("verifyAlert"),"Code resent! Check your email.","success");
-}
-
-// 2FA
-var pending2FAUserId = null;
-async function submit2FA() {
-  var code = getCode("t");
-  if (code.length < 6 || !pending2FAUserId) return;
-  setLoading("twoFaBtn", true);
-  var res = await fetch("/api/auth/verify-2fa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:pending2FAUserId,code:code})});
-  var data = await res.json();
-  setLoading("twoFaBtn", false);
-  if (res.ok) { showApp(); }
-  else { showAlert(document.getElementById("twoFaAlert"), data.error||"Incorrect code.", "error"); }
-}
-async function toggle2FA() {
-  var token = api.getToken();
-  var res = await fetch("/api/auth/toggle-2fa",{method:"POST",headers:{"Authorization":"Bearer "+token}});
-  var data = await res.json();
-  if (res.ok) { var btn = document.getElementById("toggle2faBtn"); if(btn) btn.textContent = data.twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"; }
-}
-
-// Google Sign-In
-var GOOGLE_CLIENT_ID = "376451848884-hcdi67fcdr3f1of4fefd7gqnvpka9m91.apps.googleusercontent.com";
-
-function signInWithGoogle() {
-  if (typeof google === "undefined") {
-    alert("Google script is loading. Please wait a moment and try again.");
-    return;
-  }
-  google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential, auto_select: false});
-  google.accounts.id.prompt(function(n) {
-    if (n.isNotDisplayed() || n.isSkippedMoment()) {
-      var wrap = document.createElement("div");
-      wrap.id = "gWrap";
-      wrap.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center";
-      wrap.innerHTML = "<div style='background:#fff;border-radius:16px;padding:2rem;text-align:center;min-width:280px'><p style='margin-bottom:1rem;color:#333;font-size:15px;font-weight:500'>Sign in with Google</p><div id='gBtn'></div><br><button onclick='document.getElementById(\"gWrap\").remove()' style='color:#999;border:none;background:none;cursor:pointer;font-size:13px'>Cancel</button></div>";
-      document.body.appendChild(wrap);
-      google.accounts.id.renderButton(document.getElementById("gBtn"),{theme:"outline",size:"large"});
-    }
-  });
-}
-
-async function handleGoogleCredential(response) {
-  var wrap = document.getElementById("gWrap");
-  if (wrap) wrap.remove();
-  if (!response || !response.credential) return;
-  var res = await fetch("/api/auth/google",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential:response.credential})});
-  var data = await res.json();
-  if (res.ok) { api.setToken(data.token); state.user = data.user; showApp(); }
-  else alert(data.error || "Google sign-in failed. Please try again.");
-}
-
-// Forgot password
-var forgotUserId = null;
-
-async function doForgotPassword() {
-  var email = document.getElementById("forgotEmail").value.trim();
-  var alrt  = document.getElementById("forgotAlert");
-  if (!email) return showAlert(alrt, "Please enter your email address.", "error");
-  setLoading("forgotBtn", true);
-  var res = await fetch("/api/auth/forgot-password", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: email }),
-  });
-  var data = await res.json();
-  setLoading("forgotBtn", false);
-  if (data.googleOnly) {
-    showAlert(alrt, "This account uses Google Sign-In. Please use the Continue with Google button.", "error");
-    return;
-  }
-  if (data.userId) {
-    forgotUserId = data.userId;
-    // Show dev code if in test mode
-    if (data.devCode) showAlert(alrt, "DEV MODE: Your code is " + data.devCode, "success");
-    else showAlert(alrt, "Code sent! Check your email.", "success");
-    setTimeout(function() { showPage("reset"); }, 1500);
-  } else {
-    showAlert(alrt, data.message || "Code sent! Check your email.", "success");
-    setTimeout(function() { showPage("reset"); }, 1500);
-  }
-}
-
-async function doResetPassword() {
-  var code     = getCode("r");
-  var newPass  = document.getElementById("newPassword").value;
-  var confirm  = document.getElementById("confirmPassword").value;
-  var alrt     = document.getElementById("resetAlert");
-  if (code.length < 6) return showAlert(alrt, "Please enter the full 6-digit code.", "error");
-  if (!newPass) return showAlert(alrt, "Please enter a new password.", "error");
-  if (newPass.length < 8) return showAlert(alrt, "Password must be at least 8 characters.", "error");
-  if (newPass !== confirm) return showAlert(alrt, "Passwords do not match.", "error");
-  if (!forgotUserId) return showAlert(alrt, "Session expired. Please start again.", "error");
-  setLoading("resetBtn", true);
-  var res = await fetch("/api/auth/reset-password", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId: forgotUserId, code: code, newPassword: newPass }),
-  });
-  var data = await res.json();
-  setLoading("resetBtn", false);
-  if (res.ok && data.success) {
-    showAlert(alrt, "Password reset! Redirecting to login...", "success");
-    forgotUserId = null;
-    setTimeout(function() { showPage("login"); }, 2000);
-  } else {
-    showAlert(alrt, data.error || "Could not reset password.", "error");
-  }
-}
-
-// Drawer
-function toggleDrawer() {
-  var d=document.getElementById("drawer"),o=document.getElementById("drawerOverlay"),b=document.getElementById("hamburgerBtn");
-  if(d.classList.contains("open")){closeDrawer();}
-  else{d.classList.add("open");o.classList.add("open");b.classList.add("open");}
-}
-function closeDrawer() {
-  document.getElementById("drawer").classList.remove("open");
-  document.getElementById("drawerOverlay").classList.remove("open");
-  document.getElementById("hamburgerBtn").classList.remove("open");
-}
-var tsX=0;
-document.getElementById("drawer").addEventListener("touchstart",function(e){tsX=e.touches[0].clientX;});
-document.getElementById("drawer").addEventListener("touchend",function(e){if(tsX-e.changedTouches[0].clientX>60)closeDrawer();});
-</script>
 <!-- BREATHING WIDGET -->
 <div class="breathing-overlay" id="breathingOverlay">
   <button class="breath-close" onclick="BreathingWidget.close()">✕</button>
@@ -784,21 +602,279 @@ document.getElementById("drawer").addEventListener("touchend",function(e){if(tsX
     <div class="breath-title" id="breathTitle">Box Breathing</div>
     <div class="breath-desc" id="breathDescription">Calms the nervous system.</div>
     <div style="font-size:12px;color:var(--text3);margin-bottom:1rem" id="breathCycleInfo">4 cycles</div>
-    <div class="breath-orb-wrap">
-      <div class="breath-orb" id="breathOrb"></div>
-    </div>
+    <div class="breath-orb-wrap"><div class="breath-orb" id="breathOrb"></div></div>
     <div class="breath-label" id="breathLabel">Ready</div>
     <div class="breath-count" id="breathCount"></div>
     <div class="breath-cycles" id="breathCycles">Cycle 0 / 4</div>
     <div class="breath-controls">
-      <button class="btn btn-primary" id="breathStartBtn" onclick="BreathingWidget.startExercise()" style="min-width:140px">
-        Start
-      </button>
-      <button class="btn btn-outline" id="breathStopBtn" onclick="BreathingWidget.stopExercise()" style="display:none;min-width:140px">
-        Stop
-      </button>
+      <button class="btn btn-primary" id="breathStartBtn" onclick="BreathingWidget.startExercise()" style="min-width:140px">Start</button>
+      <button class="btn btn-outline" id="breathStopBtn" onclick="BreathingWidget.stopExercise()" style="display:none;min-width:140px">Stop</button>
     </div>
   </div>
 </div>
+
+<script src="/js/scroll.js"></script>
+<script src="/js/breathing.js"></script>
+<script src="/js/emotion.js"></script>
+<script src="/js/currency.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/voice.js"></script>
+<script src="/js/tts.js"></script>
+<script>
+// ── PAGE ROUTING ──────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll(".page,.auth-wrap").forEach(function(p){ p.classList.remove("active"); });
+  var el = document.getElementById("page-" + id);
+  if (el) el.classList.add("active");
+}
+
+// ── PHOTO SLIDESHOW ───────────────────────────────────────────────
+var quotes = [
+  {text:'"The greatest wealth is health."', author:'— Virgil'},
+  {text:'"Mental health is not a destination, but a process."', author:'— Noam Shpancer'},
+  {text:'"You don\'t have to be positive all the time."', author:'— Lori Deschene'},
+];
+var currentPhoto = 0;
+function goToPhoto(n) {
+  var photos = [document.getElementById("photo0"), document.getElementById("photo1"), document.getElementById("photo2")];
+  photos.forEach(function(p,i){ if(p) p.classList.toggle("active", i===n); });
+  document.querySelectorAll(".photo-dot").forEach(function(d,i){ d.classList.toggle("active", i===n); });
+  currentPhoto = n;
+  var q = quotes[n]||quotes[0];
+  var qt=document.getElementById("quoteText"); var qa=document.getElementById("quoteAuthor");
+  if(qt) qt.textContent=q.text; if(qa) qa.textContent=q.author;
+}
+setInterval(function(){ goToPhoto((currentPhoto+1)%3); }, 5000);
+
+// ── CODE INPUTS ───────────────────────────────────────────────────
+function codeInput(el, idx, prefix) {
+  el.value = el.value.replace(/[^0-9]/g,"").slice(-1);
+  if (el.value && idx < 5) { var n=document.getElementById(prefix+"d"+(idx+1)); if(n) n.focus(); }
+  var code=""; for(var i=0;i<6;i++){var d=document.getElementById(prefix+"d"+i);code+=d?(d.value||""):"";}
+  if(code.length===6){
+    if(prefix==="v") submitVerification();
+    else if(prefix==="t") submit2FA();
+    else if(prefix==="lv") doVerifyLoginCode();
+  }
+}
+function codeBack(e,idx,prefix){ if(e.key==="Backspace"&&!e.target.value&&idx>0){var p=document.getElementById(prefix+"d"+(idx-1));if(p)p.focus();} }
+function getCode(prefix){ var c=""; for(var i=0;i<6;i++){var d=document.getElementById(prefix+"d"+i);c+=d?(d.value||""):"";}return c; }
+
+// ── EMAIL VERIFICATION ────────────────────────────────────────────
+async function submitVerification() {
+  var code=getCode("v"); if(code.length<6)return;
+  var token=api.getToken(); setLoading("verifyBtn",true);
+  var res=await fetch("/api/auth/verify-email",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({code:code})});
+  var data=await res.json(); setLoading("verifyBtn",false);
+  if(res.ok){showApp();}else{showAlert(document.getElementById("verifyAlert"),data.error||"Incorrect code.","error");}
+}
+async function resendVerification(){
+  var token=api.getToken();
+  await fetch("/api/auth/send-verification",{method:"POST",headers:{"Authorization":"Bearer "+token}});
+  showAlert(document.getElementById("verifyAlert"),"Code resent! Check your email.","success");
+}
+
+// ── 2FA ───────────────────────────────────────────────────────────
+var pending2FAUserId=null;
+async function submit2FA(){
+  var code=getCode("t"); if(code.length<6||!pending2FAUserId)return;
+  setLoading("twoFaBtn",true);
+  var res=await fetch("/api/auth/verify-2fa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:pending2FAUserId,code:code})});
+  var data=await res.json(); setLoading("twoFaBtn",false);
+  if(res.ok){showApp();}else{showAlert(document.getElementById("twoFaAlert"),data.error||"Incorrect code.","error");}
+}
+async function toggle2FA(){
+  var token=api.getToken();
+  var res=await fetch("/api/auth/toggle-2fa",{method:"POST",headers:{"Authorization":"Bearer "+token}});
+  var data=await res.json();
+  if(res.ok){var btn=document.getElementById("toggle2faBtn");if(btn)btn.textContent=data.twoFactorEnabled?"Disable 2FA":"Enable 2FA";}
+}
+
+// ── GOOGLE SIGN IN ────────────────────────────────────────────────
+var GOOGLE_CLIENT_ID="376451848884-hcdi67fcdr3f1of4fefd7gqnvpka9m91.apps.googleusercontent.com";
+function signInWithGoogle(){
+  if(typeof google==="undefined"){alert("Google script is loading. Please wait a moment and try again.");return;}
+  google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleGoogleCredential,auto_select:false});
+  google.accounts.id.prompt(function(n){
+    if(n.isNotDisplayed()||n.isSkippedMoment()){
+      var wrap=document.createElement("div"); wrap.id="gWrap";
+      wrap.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center";
+      wrap.innerHTML="<div style='background:#fff;border-radius:16px;padding:2rem;text-align:center;min-width:280px'><p style='margin-bottom:1rem;color:#333;font-size:15px;font-weight:500'>Sign in with Google</p><div id='gBtn'></div><br><button onclick='document.getElementById(\"gWrap\").remove()' style='color:#999;border:none;background:none;cursor:pointer;font-size:13px'>Cancel</button></div>";
+      document.body.appendChild(wrap);
+      google.accounts.id.renderButton(document.getElementById("gBtn"),{theme:"outline",size:"large"});
+    }
+  });
+}
+async function handleGoogleCredential(response){
+  var wrap=document.getElementById("gWrap"); if(wrap)wrap.remove();
+  if(!response||!response.credential)return;
+  var res=await fetch("/api/auth/google",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential:response.credential})});
+  var data=await res.json();
+  if(res.ok){api.setToken(data.token);state.user=data.user;showApp();}
+  else alert(data.error||"Google sign-in failed.");
+}
+
+// ── FORGOT / RESET PASSWORD ───────────────────────────────────────
+var forgotUserId=null;
+async function doForgotPassword(){
+  var email=document.getElementById("forgotEmail").value.trim();
+  var alrt=document.getElementById("forgotAlert");
+  if(!email)return showAlert(alrt,"Please enter your email address.","error");
+  setLoading("forgotBtn",true);
+  var res=await fetch("/api/auth/forgot-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email})});
+  var data=await res.json(); setLoading("forgotBtn",false);
+  if(data.googleOnly){showAlert(alrt,"This account uses Google Sign-In.","error");return;}
+  if(data.userId){forgotUserId=data.userId;if(data.devCode)showAlert(alrt,"DEV: Code is "+data.devCode,"success");else showAlert(alrt,"Code sent! Check your email.","success");setTimeout(function(){showPage("reset");},1500);}
+  else{showAlert(alrt,data.message||"Code sent!","success");setTimeout(function(){showPage("reset");},1500);}
+}
+async function doResetPassword(){
+  var code=getCode("r"); var newPass=document.getElementById("newPassword").value; var confirm=document.getElementById("confirmPassword").value;
+  var alrt=document.getElementById("resetAlert");
+  if(code.length<6)return showAlert(alrt,"Please enter the full 6-digit code.","error");
+  if(!newPass||newPass.length<8)return showAlert(alrt,"Password must be at least 8 characters.","error");
+  if(newPass!==confirm)return showAlert(alrt,"Passwords do not match.","error");
+  if(!forgotUserId)return showAlert(alrt,"Session expired. Please start again.","error");
+  setLoading("resetBtn",true);
+  var res=await fetch("/api/auth/reset-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:forgotUserId,code:code,newPassword:newPass})});
+  var data=await res.json(); setLoading("resetBtn",false);
+  if(res.ok&&data.success){showAlert(alrt,"Password reset! Redirecting...","success");forgotUserId=null;setTimeout(function(){showPage("login");},2000);}
+  else showAlert(alrt,data.error||"Could not reset password.","error");
+}
+
+// ── DRAWER ────────────────────────────────────────────────────────
+function toggleDrawer(){
+  var d=document.getElementById("drawer"),o=document.getElementById("drawerOverlay"),b=document.getElementById("hamburgerBtn");
+  if(d.classList.contains("open")){closeDrawer();}else{d.classList.add("open");o.classList.add("open");b.classList.add("open");}
+}
+function closeDrawer(){
+  document.getElementById("drawer").classList.remove("open");
+  document.getElementById("drawerOverlay").classList.remove("open");
+  document.getElementById("hamburgerBtn").classList.remove("open");
+}
+var tsX=0;
+document.getElementById("drawer").addEventListener("touchstart",function(e){tsX=e.touches[0].clientX;});
+document.getElementById("drawer").addEventListener("touchend",function(e){if(tsX-e.changedTouches[0].clientX>60)closeDrawer();});
+
+// ── THERAPIST SYSTEM ──────────────────────────────────────────────
+var tSessionUrl=null;
+
+async function tLoadList(){
+  var list=document.getElementById("therapistList"); if(!list)return;
+  list.innerHTML='<div style="text-align:center;padding:30px;color:#8b9dc3">Loading...</div>';
+  try{
+    var params=new URLSearchParams();
+    var s=document.getElementById("tSearchInput"); var f=document.getElementById("tFilterSpec");
+    if(s&&s.value) params.set("search",s.value);
+    if(f&&f.value) params.set("specialization",f.value);
+    var res=await fetch("/api/therapist/list?"+params.toString());
+    var data=await res.json();
+    if(!data.therapists||data.therapists.length===0){
+      list.innerHTML='<div style="text-align:center;padding:48px 20px;color:#8b9dc3"><div style="font-size:48px;margin-bottom:14px">👨‍⚕️</div><div style="font-size:15px;font-weight:500;color:#f0f4ff;margin-bottom:8px">No verified therapists yet</div><div style="font-size:13px">Our team is reviewing applications. Check back soon.</div></div>';
+      return;
+    }
+    list.innerHTML=data.therapists.map(function(t){
+      var specs=(t.specializations||[]).slice(0,3).join(" · ")||"General Wellness";
+      var initials=t.fullName.split(" ").map(function(n){return n[0];}).join("").slice(0,2).toUpperCase();
+      return '<div style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);border-radius:16px;padding:18px;margin-bottom:12px">'+
+        '<div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:12px">'+
+          '<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#818cf8);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0">'+initials+'</div>'+
+          '<div style="flex:1">'+
+            '<div style="font-weight:600;color:#f0f4ff;font-size:16px">'+t.fullName+'</div>'+
+            '<div style="font-size:12px;color:#8b9dc3;margin-top:2px">'+t.profession+'</div>'+
+            '<div style="font-size:12px;color:#8b9dc3;margin-top:2px">📍 '+t.city+', '+t.country+' · '+t.yearsExperience+' yrs exp</div>'+
+          '</div>'+
+          '<div style="text-align:right;flex-shrink:0">'+
+            '<div style="font-weight:700;color:#a5b4fc;font-size:20px">K'+t.sessionPrice+'</div>'+
+            '<div style="font-size:11px;color:#8b9dc3">per session</div>'+
+          '</div>'+
+        '</div>'+
+        '<div style="font-size:12px;color:#818cf8;margin-bottom:8px">'+specs+'</div>'+
+        (t.bio?'<div style="font-size:13px;color:#8b9dc3;line-height:1.6;margin-bottom:12px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">'+t.bio+'</div>':'')+
+        '<div style="display:flex;justify-content:space-between;align-items:center">'+
+          '<div style="font-size:12px;color:#f59e0b">'+(t.rating>0?'★ '+t.rating+' ('+t.reviewCount+')':'⭐ New therapist')+'</div>'+
+          '<button onclick="tOpenBook(\''+t.id+'\',\''+t.fullName.replace(/'/g,"")+'\',\''+t.sessionPrice+'\')" style="background:#6366f1;border:none;border-radius:10px;color:#fff;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer">Book</button>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  }catch(e){list.innerHTML='<div style="text-align:center;padding:20px;color:#f43f5e">Could not load therapists.</div>';}
+}
+
+function tOpenBook(id,name,price){
+  if(!api.getToken()){alert("Please log in to book a session.");return;}
+  document.getElementById("tBookTherapistId").value=id;
+  document.getElementById("tBookName").textContent="Book with "+name;
+  document.getElementById("tBookPrice").textContent="K"+price+" per session";
+  document.getElementById("tBookAlert").style.display="none";
+  document.getElementById("tBookDateTime").value="";
+  document.getElementById("tBookNotes").value="";
+  document.getElementById("tBookBtn").textContent="Confirm Booking";
+  document.getElementById("tBookBtn").disabled=false;
+  document.getElementById("tBookModal").style.display="flex";
+}
+
+async function tSubmitBooking(){
+  var id=document.getElementById("tBookTherapistId").value;
+  var dt=document.getElementById("tBookDateTime").value;
+  var notes=document.getElementById("tBookNotes").value;
+  var alrt=document.getElementById("tBookAlert");
+  var btn=document.getElementById("tBookBtn");
+  if(!dt){alrt.textContent="Please select a date and time.";alrt.style.display="block";alrt.style.color="#f43f5e";return;}
+  btn.textContent="Booking..."; btn.disabled=true;
+  var res=await fetch("/api/therapist/book",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+api.getToken()},body:JSON.stringify({therapistId:id,scheduledAt:dt,notes:notes})});
+  var data=await res.json();
+  btn.textContent="Confirm Booking"; btn.disabled=false;
+  if(res.ok){
+    tSessionUrl=data.jitsiUrl;
+    document.getElementById("tBookModal").style.display="none";
+    document.getElementById("tSessTherapist").textContent=data.therapistName;
+    document.getElementById("tSessTime").textContent=new Date(data.scheduledAt).toLocaleString();
+    document.getElementById("tSessPrice").textContent="K"+data.sessionPrice;
+    document.getElementById("tSessRoom").textContent=data.roomName;
+    document.getElementById("tSessionModal").style.display="flex";
+  }else{alrt.textContent=data.error||"Could not book session.";alrt.style.display="block";alrt.style.color="#f43f5e";}
+}
+
+function tJoinSession(){ if(tSessionUrl) window.open(tSessionUrl,"_blank"); }
+
+function tOpenApply(){
+  document.getElementById("tApplyAlert").style.display="none";
+  document.getElementById("tApplyModal").style.display="flex";
+}
+
+async function tSubmitApply(){
+  var alrt=document.getElementById("tApplyAlert");
+  var btn=document.getElementById("tApplyBtn");
+  var body={
+    fullName:document.getElementById("aFullName").value.trim(),
+    email:document.getElementById("aEmail").value.trim(),
+    phone:document.getElementById("aPhone").value.trim(),
+    country:document.getElementById("aCountry").value.trim()||"Zambia",
+    city:document.getElementById("aCity").value.trim()||"Lusaka",
+    profession:document.getElementById("aProfession").value.trim(),
+    specializations:document.getElementById("aSpec").value.trim(),
+    yearsExperience:document.getElementById("aYears").value,
+    languages:document.getElementById("aLanguages").value.trim()||"English",
+    bio:document.getElementById("aBio").value.trim(),
+    degrees:document.getElementById("aDegrees").value.trim(),
+    certifications:document.getElementById("aCerts").value.trim(),
+    licenseNumber:document.getElementById("aLicense").value.trim(),
+    sessionPrice:document.getElementById("aPrice").value,
+    reference1Name:document.getElementById("aRef1Name").value.trim(),
+    reference1Phone:document.getElementById("aRef1Phone").value.trim(),
+    reference2Name:document.getElementById("aRef2Name").value.trim(),
+    reference2Phone:document.getElementById("aRef2Phone").value.trim(),
+  };
+  if(!body.fullName||!body.email||!body.phone||!body.profession||!body.yearsExperience){alrt.textContent="Please fill in all required fields.";alrt.style.display="block";alrt.style.color="#f43f5e";return;}
+  if(parseInt(body.yearsExperience)<3){alrt.textContent="Minimum 3 years of experience required.";alrt.style.display="block";alrt.style.color="#f43f5e";return;}
+  btn.textContent="Submitting..."; btn.disabled=true;
+  var res=await fetch("/api/therapist/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  var data=await res.json();
+  btn.textContent="Submit Application"; btn.disabled=false;
+  if(res.ok){alrt.textContent="✅ "+data.message;alrt.style.display="block";alrt.style.color="#4ade80";setTimeout(function(){document.getElementById("tApplyModal").style.display="none";},3000);}
+  else{alrt.textContent=data.error||"Could not submit.";alrt.style.display="block";alrt.style.color="#f43f5e";}
+}
+</script>
 </body>
 </html>
