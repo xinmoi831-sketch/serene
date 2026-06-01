@@ -2,13 +2,48 @@
 const express  = require("express");
 const { v4: uuidv4 } = require("uuid");
 const router   = express.Router();
+const multer   = require("multer");
+const path     = require("path");
+const fs       = require("fs");
 const { collections, find, findOne, insert, update } = require("../lib/db");
 const { authenticate } = require("../middleware/auth");
 
 const SERENE_CUT = 0.20;
 
-// POST /api/therapist/apply
-router.post("/apply", async (req, res) => {
+// ── FILE UPLOAD SETUP ─────────────────────────────────────────────
+const uploadDir = path.join(__dirname, "../data/uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: function(req, file, cb) { cb(null, uploadDir); },
+  filename: function(req, file, cb) {
+    var ext  = path.extname(file.originalname).toLowerCase();
+    var name = uuidv4() + ext;
+    cb(null, name);
+  },
+});
+
+const fileFilter = function(req, file, cb) {
+  var allowed = [".pdf", ".jpg", ".jpeg", ".png"];
+  var ext = path.extname(file.originalname).toLowerCase();
+  if (allowed.includes(ext)) cb(null, true);
+  else cb(new Error("Only PDF, JPG and PNG files are allowed."), false);
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+});
+
+const uploadFields = upload.fields([
+  { name: "cv",      maxCount: 1 },
+  { name: "license", maxCount: 1 },
+  { name: "nrc",     maxCount: 1 },
+]);
+
+// ── POST /api/therapist/apply ─────────────────────────────────────
+router.post("/apply", uploadFields, async (req, res) => {
   try {
     const {
       fullName, email, phone, country, city,
@@ -31,6 +66,12 @@ router.post("/apply", async (req, res) => {
 
     const existing = await findOne(collections.therapists, { email: email.toLowerCase().trim() });
     if (existing) return res.status(400).json({ error: "An application with this email already exists." });
+
+    // Get uploaded file paths
+    const files    = req.files || {};
+    const cvFile   = files.cv      ? "/uploads/" + files.cv[0].filename      : null;
+    const licFile  = files.license ? "/uploads/" + files.license[0].filename : null;
+    const nrcFile  = files.nrc     ? "/uploads/" + files.nrc[0].filename     : null;
 
     const therapist = {
       id:              uuidv4(),
@@ -56,6 +97,11 @@ router.post("/apply", async (req, res) => {
         { name: reference1Name.trim(), phone: reference1Phone.trim() },
         { name: reference2Name.trim(), phone: reference2Phone.trim() },
       ],
+      documents: {
+        cv:      cvFile,
+        license: licFile,
+        nrc:     nrcFile,
+      },
       status:      "pending",
       verified:    false,
       rating:      0,
@@ -64,7 +110,7 @@ router.post("/apply", async (req, res) => {
     };
 
     await insert(collections.therapists, therapist);
-    console.log("[Therapist] New application:", therapist.fullName);
+    console.log("[Therapist] New application:", therapist.fullName, "CV:", cvFile ? "uploaded" : "none");
 
     res.json({
       ok: true,
@@ -73,11 +119,11 @@ router.post("/apply", async (req, res) => {
     });
   } catch (err) {
     console.error("[Therapist] Apply error:", err.message);
-    res.status(500).json({ error: "Could not submit application. Please try again." });
+    res.status(500).json({ error: err.message || "Could not submit application." });
   }
 });
 
-// GET /api/therapist/list
+// ── GET /api/therapist/list ───────────────────────────────────────
 router.get("/list", async (req, res) => {
   try {
     const { search, specialization, language } = req.query;
@@ -109,7 +155,7 @@ router.get("/list", async (req, res) => {
   }
 });
 
-// POST /api/therapist/book
+// ── POST /api/therapist/book ──────────────────────────────────────
 router.post("/book", authenticate, async (req, res) => {
   try {
     const { therapistId, scheduledAt, notes } = req.body;
@@ -121,7 +167,7 @@ router.post("/book", authenticate, async (req, res) => {
     if (!therapist) return res.status(404).json({ error: "Therapist not found." });
 
     const conflict = await findOne(collections.bookings, { therapistId, scheduledAt, status: "confirmed" });
-    if (conflict) return res.status(409).json({ error: "This time slot is already booked. Please choose another time." });
+    if (conflict) return res.status(409).json({ error: "This time slot is already booked." });
 
     const roomName = "serene-" + uuidv4().replace(/-/g, "").slice(0, 12);
     const jitsiUrl = "https://meet.jit.si/" + roomName;
@@ -158,11 +204,11 @@ router.post("/book", authenticate, async (req, res) => {
     });
   } catch (err) {
     console.error("[Therapist] Book error:", err.message);
-    res.status(500).json({ error: "Could not book session. Please try again." });
+    res.status(500).json({ error: "Could not book session." });
   }
 });
 
-// GET /api/therapist/bookings/mine
+// ── GET /api/therapist/bookings/mine ─────────────────────────────
 router.get("/bookings/mine", authenticate, async (req, res) => {
   try {
     const bookings = await find(collections.bookings, { userId: req.user.id }, { sort: { createdAt: -1 } });
@@ -172,7 +218,18 @@ router.get("/bookings/mine", authenticate, async (req, res) => {
   }
 });
 
-// ADMIN: GET /api/therapist/admin/pending
+// ── ADMIN: GET all ────────────────────────────────────────────────
+router.get("/admin/all", async (req, res) => {
+  if (req.headers["x-admin-key"] !== process.env.ADMIN_KEY) return res.status(403).json({ error: "Unauthorized." });
+  try {
+    const all = await find(collections.therapists, {});
+    res.json({ therapists: all, count: all.length });
+  } catch (err) {
+    res.status(500).json({ error: "Could not load therapists." });
+  }
+});
+
+// ── ADMIN: GET pending ────────────────────────────────────────────
 router.get("/admin/pending", async (req, res) => {
   if (req.headers["x-admin-key"] !== process.env.ADMIN_KEY) return res.status(403).json({ error: "Unauthorized." });
   try {
@@ -183,7 +240,7 @@ router.get("/admin/pending", async (req, res) => {
   }
 });
 
-// ADMIN: POST /api/therapist/admin/review
+// ── ADMIN: POST review ────────────────────────────────────────────
 router.post("/admin/review", async (req, res) => {
   if (req.headers["x-admin-key"] !== process.env.ADMIN_KEY) return res.status(403).json({ error: "Unauthorized." });
   try {
@@ -205,3 +262,6 @@ router.post("/admin/review", async (req, res) => {
 });
 
 module.exports = router;
+// Note: Add this to server.js to serve uploaded files:
+// const path = require("path");
+// app.use("/uploads", express.static(path.join(__dirname, "data/uploads")));

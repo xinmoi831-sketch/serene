@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Serene Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#080d1a;color:#f0f4ff;min-height:100vh}
+.topbar{background:#0d1428;border-bottom:0.5px solid rgba(255,255,255,0.1);padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+.topbar-title{font-size:18px;font-weight:600;color:#a5b4fc}
+.topbar-sub{font-size:12px;color:#8b9dc3;margin-top:2px}
+.logout-btn{background:transparent;border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;color:#8b9dc3;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit}
+.logout-btn:hover{border-color:#f43f5e;color:#f43f5e}
+
+/* Login */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#080d1a}
+.login-card{background:#0d1428;border:0.5px solid rgba(255,255,255,0.1);border-radius:20px;padding:2rem;width:100%;max-width:360px}
+.login-card h2{font-size:22px;font-weight:600;color:#f0f4ff;margin-bottom:6px;text-align:center}
+.login-card p{font-size:13px;color:#8b9dc3;text-align:center;margin-bottom:1.5rem}
+.field{margin-bottom:14px}
+.field label{font-size:12px;color:#8b9dc3;display:block;margin-bottom:5px}
+.field input{width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;color:#f0f4ff;font-size:14px;font-family:inherit}
+.field input:focus{outline:none;border-color:#6366f1}
+.btn-primary{width:100%;padding:13px;background:#6366f1;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+.alert{padding:10px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none}
+
+/* Dashboard */
+#dashboard{display:none}
+.container{max-width:1100px;margin:0 auto;padding:24px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.stat{background:#0d1428;border:0.5px solid rgba(255,255,255,0.1);border-radius:14px;padding:16px}
+.stat-num{font-size:28px;font-weight:700;margin-bottom:4px}
+.stat-label{font-size:12px;color:#8b9dc3}
+.tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:0.5px solid rgba(255,255,255,0.1);padding-bottom:0}
+.tab-btn{padding:10px 18px;background:transparent;border:none;color:#8b9dc3;font-size:14px;font-family:inherit;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab-btn.active{color:#a5b4fc;border-bottom-color:#6366f1;font-weight:500}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.card{background:#0d1428;border:0.5px solid rgba(255,255,255,0.1);border-radius:16px;padding:20px;margin-bottom:14px}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.therapist-name{font-size:17px;font-weight:600;color:#f0f4ff}
+.therapist-sub{font-size:13px;color:#8b9dc3;margin-top:3px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-pending{background:rgba(245,158,11,0.15);color:#f59e0b;border:0.5px solid rgba(245,158,11,0.3)}
+.badge-approved{background:rgba(74,222,128,0.15);color:#4ade80;border:0.5px solid rgba(74,222,128,0.3)}
+.badge-rejected{background:rgba(244,63,94,0.15);color:#f43f5e;border:0.5px solid rgba(244,63,94,0.3)}
+.badge-suspended{background:rgba(156,163,175,0.15);color:#9ca3af;border:0.5px solid rgba(156,163,175,0.3)}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.info-item{background:rgba(255,255,255,0.04);border-radius:8px;padding:10px}
+.info-label{font-size:11px;color:#8b9dc3;margin-bottom:3px}
+.info-value{font-size:13px;color:#f0f4ff}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-approve{background:rgba(74,222,128,0.15);border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
+.btn-approve:hover{background:rgba(74,222,128,0.25)}
+.btn-reject{background:rgba(244,63,94,0.15);border:0.5px solid rgba(244,63,94,0.3);color:#f43f5e;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
+.btn-reject:hover{background:rgba(244,63,94,0.25)}
+.btn-suspend{background:rgba(156,163,175,0.1);border:0.5px solid rgba(156,163,175,0.2);color:#9ca3af;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
+.empty{text-align:center;padding:48px;color:#8b9dc3}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.section-title{font-size:14px;font-weight:500;color:#8b9dc3;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
+.refs{background:rgba(99,102,241,0.08);border:0.5px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px;margin-bottom:14px}
+.refs-title{font-size:11px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.ref-item{font-size:13px;color:#8b9dc3;margin-bottom:4px}
+.ref-item strong{color:#f0f4ff}
+.toast{position:fixed;bottom:24px;right:24px;background:#0d1428;border:0.5px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px 18px;font-size:14px;color:#f0f4ff;z-index:1000;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div style="font-size:40px;text-align:center;margin-bottom:16px">🌿</div>
+    <h2>Serene Admin</h2>
+    <p>Enter your admin key to continue</p>
+    <div class="alert" id="loginAlert" style="background:rgba(244,63,94,0.1);color:#f43f5e;border:0.5px solid rgba(244,63,94,0.3)"></div>
+    <div class="field">
+      <label>Admin Key</label>
+      <input id="adminKeyInput" type="password" placeholder="Enter admin key" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Access Dashboard</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">🌿 Serene Admin</div>
+      <div class="topbar-sub">Therapist Management Dashboard</div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()"><i class="ti ti-logout"></i> Logout</button>
+  </div>
+
+  <div class="container">
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat"><div class="stat-num" id="statPending" style="color:#f59e0b">0</div><div class="stat-label">Pending Review</div></div>
+      <div class="stat"><div class="stat-num" id="statApproved" style="color:#4ade80">0</div><div class="stat-label">Approved</div></div>
+      <div class="stat"><div class="stat-num" id="statRejected" style="color:#f43f5e">0</div><div class="stat-label">Rejected</div></div>
+      <div class="stat"><div class="stat-num" id="statAll" style="color:#a5b4fc">0</div><div class="stat-label">Total Applications</div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('pending',this)">⏳ Pending</button>
+      <button class="tab-btn" onclick="switchTab('approved',this)">✅ Approved</button>
+      <button class="tab-btn" onclick="switchTab('rejected',this)">❌ Rejected</button>
+      <button class="tab-btn" onclick="switchTab('all',this)">📋 All</button>
+    </div>
+
+    <div id="tab-pending" class="tab-panel active"><div id="list-pending"></div></div>
+    <div id="tab-approved" class="tab-panel"><div id="list-approved"></div></div>
+    <div id="tab-rejected" class="tab-panel"><div id="list-rejected"></div></div>
+    <div id="tab-all" class="tab-panel"><div id="list-all"></div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var ADMIN_KEY = "";
+
+function doLogin() {
+  var key = document.getElementById("adminKeyInput").value.trim();
+  if (!key) return;
+  ADMIN_KEY = key;
+  loadDashboard();
+}
+
+function doLogout() {
+  ADMIN_KEY = "";
+  document.getElementById("dashboard").style.display = "none";
+  document.getElementById("loginScreen").style.display = "flex";
+  document.getElementById("adminKeyInput").value = "";
+}
+
+async function loadDashboard() {
+  var res = await fetch("/api/therapist/admin/all", {
+    headers: { "x-admin-key": ADMIN_KEY }
+  });
+
+  if (res.status === 403) {
+    var alrt = document.getElementById("loginAlert");
+    alrt.textContent = "Invalid admin key. Please try again.";
+    alrt.style.display = "block";
+    ADMIN_KEY = "";
+    return;
+  }
+
+  var data = await res.json();
+  var all = data.therapists || [];
+
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+
+  var pending  = all.filter(function(t){ return t.status === "pending"; });
+  var approved = all.filter(function(t){ return t.status === "approved"; });
+  var rejected = all.filter(function(t){ return t.status === "rejected"; });
+
+  document.getElementById("statPending").textContent  = pending.length;
+  document.getElementById("statApproved").textContent = approved.length;
+  document.getElementById("statRejected").textContent = rejected.length;
+  document.getElementById("statAll").textContent      = all.length;
+
+  renderList("pending",  pending);
+  renderList("approved", approved);
+  renderList("rejected", rejected);
+  renderList("all",      all);
+}
+
+function renderList(type, list) {
+  var el = document.getElementById("list-" + type);
+  if (!list || list.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div>No ' + type + ' applications</div></div>';
+    return;
+  }
+  el.innerHTML = list.map(function(t) {
+    var refs = (t.references || []).map(function(r,i){
+      return '<div class="ref-item">Reference '+(i+1)+': <strong>'+r.name+'</strong> · '+r.phone+'</div>';
+    }).join('');
+
+    var actions = '';
+    if (t.status === 'pending') {
+      actions = '<button class="btn-approve" onclick="reviewTherapist(\''+t.id+'\',\'approve\')">✅ Approve</button>' +
+                '<button class="btn-reject" onclick="reviewTherapist(\''+t.id+'\',\'reject\')">❌ Reject</button>';
+    } else if (t.status === 'approved') {
+      actions = '<button class="btn-suspend" onclick="reviewTherapist(\''+t.id+'\',\'suspend\')">⏸ Suspend</button>' +
+                '<button class="btn-reject" onclick="reviewTherapist(\''+t.id+'\',\'reject\')">❌ Reject</button>';
+    } else if (t.status === 'rejected' || t.status === 'suspended') {
+      actions = '<button class="btn-approve" onclick="reviewTherapist(\''+t.id+'\',\'approve\')">✅ Approve</button>';
+    }
+
+    var badgeClass = {pending:'badge-pending',approved:'badge-approved',rejected:'badge-rejected',suspended:'badge-suspended'}[t.status]||'badge-pending';
+
+    return '<div class="card">'+
+      '<div class="card-header">'+
+        '<div>'+
+          '<div class="therapist-name">'+t.fullName+'</div>'+
+          '<div class="therapist-sub">'+t.profession+' · '+t.city+', '+t.country+'</div>'+
+          '<div class="therapist-sub" style="margin-top:2px">'+t.email+' · '+t.phone+'</div>'+
+        '</div>'+
+        '<span class="badge '+badgeClass+'">'+t.status.toUpperCase()+'</span>'+
+      '</div>'+
+      '<div class="info-grid">'+
+        '<div class="info-item"><div class="info-label">Years Experience</div><div class="info-value">'+t.yearsExperience+' years</div></div>'+
+        '<div class="info-item"><div class="info-label">Session Price</div><div class="info-value">K'+t.sessionPrice+'</div></div>'+
+        '<div class="info-item"><div class="info-label">Specializations</div><div class="info-value">'+(t.specializations||[]).join(', ')||'Not specified'+'</div></div>'+
+        '<div class="info-item"><div class="info-label">Languages</div><div class="info-value">'+(t.languages||[]).join(', ')||'English'+'</div></div>'+
+        '<div class="info-item"><div class="info-label">Degrees</div><div class="info-value">'+(t.degrees||'Not provided')+'</div></div>'+
+        '<div class="info-item"><div class="info-label">License</div><div class="info-value">'+(t.licenseNumber||'Not provided')+'</div></div>'+
+      '</div>'+
+      (t.bio?'<div style="font-size:13px;color:#8b9dc3;line-height:1.6;margin-bottom:14px">'+t.bio+'</div>':'')+
+      (refs?'<div class="refs"><div class="refs-title">References</div>'+refs+'</div>':'')+
+      '<div style="font-size:11px;color:#4a5568;margin-bottom:12px">Applied: '+new Date(t.createdAt).toLocaleString()+'</div>'+
+      '<div class="actions">'+actions+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+async function reviewTherapist(id, action) {
+  var confirm_msg = {approve:"Approve this therapist?", reject:"Reject this application?", suspend:"Suspend this therapist?"};
+  if (!confirm(confirm_msg[action])) return;
+
+  var res = await fetch("/api/therapist/admin/review", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-admin-key": ADMIN_KEY },
+    body: JSON.stringify({ therapistId: id, action: action }),
+  });
+  var data = await res.json();
+
+  if (res.ok) {
+    showToast("✅ Therapist " + action + "d successfully");
+    loadDashboard();
+  } else {
+    showToast("❌ " + (data.error || "Action failed"));
+  }
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("active"); });
+  document.querySelectorAll(".tab-panel").forEach(function(p){ p.classList.remove("active"); });
+  btn.classList.add("active");
+  document.getElementById("tab-" + name).classList.add("active");
+}
+
+function showToast(msg) {
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  setTimeout(function(){ t.style.display = "none"; }, 3000);
+}
+</script>
+</body>
+</html>

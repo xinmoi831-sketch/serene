@@ -585,6 +585,10 @@
       <div class="t-field"><label>Reference 2 Name *</label><input id="aRef2Name" type="text" placeholder="Full name"/></div>
       <div class="t-field"><label>Reference 2 Phone *</label><input id="aRef2Phone" type="tel" placeholder="Phone number"/></div>
     </div>
+    <div class="t-section">Documents</div>
+    <div class="t-field"><label>CV / Resume * (PDF, JPG, PNG — max 5MB)</label><input id="aCV" type="file" accept=".pdf,.jpg,.jpeg,.png" style="color:#8b9dc3"/></div>
+    <div class="t-field"><label>Professional License / Certificate (PDF, JPG, PNG — max 5MB)</label><input id="aLicense2" type="file" accept=".pdf,.jpg,.jpeg,.png" style="color:#8b9dc3"/></div>
+    <div class="t-field"><label>NRC / National ID (PDF, JPG, PNG — max 5MB)</label><input id="aNRC2" type="file" accept=".pdf,.jpg,.jpeg,.png" style="color:#8b9dc3"/></div>
     <button class="t-submit" id="tApplyBtn" onclick="tSubmitApply()">Submit Application</button>
     <p style="font-size:11px;color:#4a5568;text-align:center;margin-top:10px">Serene takes 20% per session. You keep 80%. Reviewed within 2-3 business days.</p>
   </div>
@@ -869,7 +873,15 @@ async function tSubmitApply(){
   if(!body.fullName||!body.email||!body.phone||!body.profession||!body.yearsExperience){alrt.textContent="Please fill in all required fields.";alrt.style.display="block";alrt.style.color="#f43f5e";return;}
   if(parseInt(body.yearsExperience)<3){alrt.textContent="Minimum 3 years of experience required.";alrt.style.display="block";alrt.style.color="#f43f5e";return;}
   btn.textContent="Submitting..."; btn.disabled=true;
-  var res=await fetch("/api/therapist/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  var formData = new FormData();
+  Object.keys(body).forEach(function(k){ formData.append(k, body[k]); });
+  var cvFile = document.getElementById("aCV").files[0];
+  var licFile = document.getElementById("aLicense2").files[0];
+  var nrcFile = document.getElementById("aNRC2").files[0];
+  if (cvFile) formData.append("cv", cvFile);
+  if (licFile) formData.append("license", licFile);
+  if (nrcFile) formData.append("nrc", nrcFile);
+  var res=await fetch("/api/therapist/apply",{method:"POST",body:formData});
   var data=await res.json();
   btn.textContent="Submit Application"; btn.disabled=false;
   if(res.ok){alrt.textContent="✅ "+data.message;alrt.style.display="block";alrt.style.color="#4ade80";setTimeout(function(){document.getElementById("tApplyModal").style.display="none";},3000);}
