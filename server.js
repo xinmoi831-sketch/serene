@@ -79,7 +79,10 @@ try {
   const ttsRoutes          = require("./routes/tts");
   const paymentRoutes      = require("./routes/payments");
   const userRoutes         = require("./routes/user");
-  const therapistRoutes    = require("./routes/therapist");
+  const therapistRoutes       = require("./routes/therapist");
+  const phoneRoutes           = require("./routes/phone");
+  const conversationRoutes    = require("./routes/conversations");
+  const hotlineRoutes         = require("./routes/hotlines");
 
   app.use("/api/auth",         authRoutes);
   app.use("/api/auth",         googleAuthRoutes);
@@ -90,7 +93,10 @@ try {
   app.use("/api/tts",          ttsRoutes);
   app.use("/api/payments",     paymentRoutes);
   app.use("/api/user",         userRoutes);
-  app.use("/api/therapist",    therapistRoutes);
+  app.use("/api/therapist",       therapistRoutes);
+  app.use("/api/phone",           phoneRoutes);
+  app.use("/api/conversations",   conversationRoutes);
+  app.use("/api/hotlines",        hotlineRoutes);
 
   console.log("All routes loaded successfully");
 } catch (err) {

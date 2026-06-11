@@ -33,9 +33,15 @@ var api = {
   me:             function(token) { return this.get("/api/auth/me", token); },
   deleteAccount:  function(token) { return this.del("/api/auth/account", token); },
 
-  sendMessage:    function(message, mood, token) { return this.post("/api/chat/message", { message: message, mood: mood }, token); },
+  sendMessage:    function(message, mood, token, conversationId) { return this.post("/api/chat/message", { message: message, mood: mood, conversationId: conversationId || undefined }, token); },
   getChatHistory: function(token) { return this.get("/api/chat/history", token); },
   clearHistory:   function(token) { return this.del("/api/chat/history", token); },
+
+  getConversations:        function(token) { return this.get("/api/conversations", token); },
+  createConversation:      function(token) { return this.post("/api/conversations", {}, token); },
+  renameConversation:      function(id, title, token) { return this.request("PATCH", "/api/conversations/" + id, { title: title }, token); },
+  deleteConversation:      function(id, token) { return this.del("/api/conversations/" + id, token); },
+  getConversationMessages: function(id, token) { return this.get("/api/conversations/" + id + "/messages", token); },
 
   saveEntry:      function(content, generateReflection, token) { return this.post("/api/journal/entry", { content: content, generateReflection: generateReflection }, token); },
   getEntries:     function(token) { return this.get("/api/journal/entries", token); },
@@ -49,4 +55,5 @@ var api = {
 
   saveOnboarding:  function(data, token) { return this.post("/api/user/onboarding", data, token); },
   getProfile:      function(token) { return this.get("/api/user/profile", token); },
+  getHotlines:     function(token) { return this.get("/api/hotlines", token); },
 };

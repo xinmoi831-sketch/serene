@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Serene — Therapist Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#080d1a;color:#f0f4ff;min-height:100vh}
+.screen{display:none;min-height:100vh;align-items:center;justify-content:center;padding:1.5rem}
+.screen.active{display:flex}
+.card{background:#0d1428;border:0.5px solid rgba(255,255,255,0.1);border-radius:20px;padding:2rem;width:100%;max-width:400px}
+.card-icon{font-size:40px;text-align:center;margin-bottom:14px}
+.card-title{font-size:20px;font-weight:600;color:#f0f4ff;text-align:center;margin-bottom:6px}
+.card-sub{font-size:13px;color:#8b9dc3;text-align:center;margin-bottom:1.5rem}
+.field{margin-bottom:14px}
+.field label{font-size:12px;color:#8b9dc3;display:block;margin-bottom:5px}
+.field input{width:100%;padding:11px 12px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;color:#f0f4ff;font-size:14px;font-family:inherit}
+.field input:focus{outline:none;border-color:#6366f1}
+.btn{width:100%;padding:13px;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:10px}
+.btn-primary{background:#6366f1;color:#fff}
+.btn-outline{background:transparent;border:0.5px solid rgba(255,255,255,0.12);color:#8b9dc3}
+.btn-sm{padding:9px 16px;width:auto;font-size:13px;border-radius:8px}
+.alert{padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
+.alert-error{background:rgba(244,63,94,0.1);color:#f43f5e;border:0.5px solid rgba(244,63,94,0.3)}
+.alert-success{background:rgba(74,222,128,0.1);color:#4ade80;border:0.5px solid rgba(74,222,128,0.3)}
+.link{color:#8b9dc3;font-size:13px;text-align:center;cursor:pointer;text-decoration:none;display:block;margin-top:8px}
+.link:hover{color:#a5b4fc}
+.code-row{display:flex;gap:8px;justify-content:center;margin:16px 0}
+.code-box{width:46px;height:54px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;font-size:22px;font-weight:600;color:#f0f4ff;text-align:center;font-family:inherit}
+.code-box:focus{outline:none;border-color:#6366f1}
+
+/* Dashboard */
+#dashboardScreen{display:none;flex-direction:column;min-height:100vh}
+#dashboardScreen.active{display:flex}
+.topbar{background:#0d1428;border-bottom:0.5px solid rgba(255,255,255,0.1);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#818cf8);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#fff}
+.topbar-name{font-size:15px;font-weight:600;color:#f0f4ff}
+.topbar-role{font-size:12px;color:#8b9dc3}
+.logout-btn{background:transparent;border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;color:#8b9dc3;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit}
+.container{max-width:1000px;margin:0 auto;padding:20px;flex:1}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:#0d1428;border:0.5px solid rgba(255,255,255,0.1);border-radius:14px;padding:16px}
+.stat-num{font-size:26px;font-weight:700;margin-bottom:4px}
+.stat-label{font-size:12px;color:#8b9dc3}
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:0.5px solid rgba(255,255,255,0.08)}
+.tab-btn{padding:10px 16px;background:transparent;border:none;color:#8b9dc3;font-size:13px;font-family:inherit;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab-btn.active{color:#a5b4fc;border-bottom-color:#6366f1;font-weight:500}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.session-card{background:#0d1428;border:0.5px solid rgba(255,255,255,0.1);border-radius:14px;padding:18px;margin-bottom:12px}
+.client-brief{background:rgba(99,102,241,0.08);border:0.5px solid rgba(99,102,241,0.2);border-radius:10px;padding:14px;margin:12px 0}
+.brief-title{font-size:11px;font-weight:600;color:#6366f1;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.brief-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.brief-item{font-size:12px;color:#8b9dc3}
+.brief-item strong{color:#f0f4ff;display:block;margin-bottom:2px}
+.join-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:#6366f1;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;margin-top:4px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-upcoming{background:rgba(99,102,241,0.15);color:#a5b4fc;border:0.5px solid rgba(99,102,241,0.3)}
+.badge-today{background:rgba(245,158,11,0.15);color:#f59e0b;border:0.5px solid rgba(245,158,11,0.3)}
+.badge-done{background:rgba(74,222,128,0.15);color:#4ade80;border:0.5px solid rgba(74,222,128,0.3)}
+.empty{text-align:center;padding:48px;color:#8b9dc3}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.avail-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px}
+@media(max-width:500px){.avail-grid{grid-template-columns:repeat(4,1fr)}}
+.day-btn{padding:8px 4px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#8b9dc3;font-size:12px;cursor:pointer;text-align:center;font-family:inherit}
+.day-btn.active{background:rgba(99,102,241,0.2);border-color:rgba(99,102,241,0.4);color:#a5b4fc}
+.time-row{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.time-row label{font-size:12px;color:#8b9dc3;width:70px;flex-shrink:0}
+.time-row input,.time-row select{flex:1;padding:8px 10px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;color:#f0f4ff;font-size:13px;font-family:inherit}
+.earnings-row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid rgba(255,255,255,0.06);font-size:13px}
+.earnings-row:last-child{border-bottom:none}
+.review-card{background:#0d1428;border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<!-- SCREEN 1: LOGIN -->
+<div class="screen active" id="loginScreen">
+  <div class="card">
+    <div class="card-icon">🌿</div>
+    <div class="card-title">Therapist Dashboard</div>
+    <div class="card-sub">Sign in with your registered email and dashboard key</div>
+    <div class="alert alert-error" id="loginAlert"></div>
+    <div class="field"><label>Email Address</label><input id="tEmail" type="email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')tLogin()"/></div>
+    <div class="field"><label>Your Dashboard Key</label><input id="tKey" type="password" placeholder="Your unique dashboard key" onkeydown="if(event.key==='Enter')tLogin()"/></div>
+    <button class="btn btn-primary" onclick="tLogin()"><i class="ti ti-login"></i> Sign In</button>
+    <a class="link" onclick="showScreen('forgotScreen')">Forgot your dashboard key?</a>
+    <p style="font-size:11px;color:#4a5568;text-align:center;margin-top:12px">Only approved Serene therapists can access this dashboard</p>
+  </div>
+</div>
+
+<!-- SCREEN 2: FORGOT KEY — ENTER EMAIL -->
+<div class="screen" id="forgotScreen">
+  <div class="card">
+    <div class="card-icon">🔑</div>
+    <div class="card-title">Reset Dashboard Key</div>
+    <div class="card-sub">Enter your registered email and we will send you a reset code</div>
+    <div class="alert alert-error" id="forgotAlert"></div>
+    <div class="field"><label>Your registered phone number</label><input id="forgotEmail" type="tel" placeholder="+260 97 123 4567" onkeydown="if(event.key==='Enter')sendResetCode()"/></div>
+    <button class="btn btn-primary" onclick="sendResetCode()"><i class="ti ti-send"></i> Send Reset Code</button>
+    <a class="link" onclick="showScreen('loginScreen')">← Back to login</a>
+  </div>
+</div>
+
+<!-- SCREEN 3: RESET KEY — ENTER CODE + NEW KEY -->
+<div class="screen" id="resetScreen">
+  <div class="card">
+    <div class="card-icon">🔐</div>
+    <div class="card-title">Set New Key</div>
+    <div class="card-sub">Enter the 6-digit code sent to your email and create a new key</div>
+    <div class="alert alert-error" id="resetAlert"></div>
+    <div class="field">
+      <label>6-digit reset code</label>
+      <div class="code-row">
+        <input class="code-box" id="rc0" maxlength="1" oninput="rcInput(this,0)" onkeydown="rcBack(event,0)"/>
+        <input class="code-box" id="rc1" maxlength="1" oninput="rcInput(this,1)" onkeydown="rcBack(event,1)"/>
+        <input class="code-box" id="rc2" maxlength="1" oninput="rcInput(this,2)" onkeydown="rcBack(event,2)"/>
+        <input class="code-box" id="rc3" maxlength="1" oninput="rcInput(this,3)" onkeydown="rcBack(event,3)"/>
+        <input class="code-box" id="rc4" maxlength="1" oninput="rcInput(this,4)" onkeydown="rcBack(event,4)"/>
+        <input class="code-box" id="rc5" maxlength="1" oninput="rcInput(this,5)" onkeydown="rcBack(event,5)"/>
+      </div>
+    </div>
+    <div class="field"><label>New dashboard key (min 6 characters)</label><input id="newKey" type="password" placeholder="Create a new key"/></div>
+    <button class="btn btn-primary" onclick="submitResetKey()"><i class="ti ti-check"></i> Set New Key</button>
+    <a class="link" onclick="showScreen('loginScreen')">← Back to login</a>
+  </div>
+</div>
+
+<!-- SCREEN 4: DASHBOARD -->
+<div id="dashboardScreen">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="avatar" id="tAvatar">T</div>
+      <div>
+        <div class="topbar-name" id="tName">Therapist</div>
+        <div class="topbar-role" id="tProfession"></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:12px;color:#4ade80;background:rgba(74,222,128,0.1);border:0.5px solid rgba(74,222,128,0.2);padding:4px 10px;border-radius:20px">● Active</div>
+      <button class="logout-btn" onclick="tLogout()"><i class="ti ti-logout"></i></button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="stats">
+      <div class="stat"><div class="stat-num" id="statTotal" style="color:#a5b4fc">0</div><div class="stat-label">Total Sessions</div></div>
+      <div class="stat"><div class="stat-num" id="statUpcoming" style="color:#f59e0b">0</div><div class="stat-label">Upcoming</div></div>
+      <div class="stat"><div class="stat-num" id="statEarned" style="color:#4ade80">K0</div><div class="stat-label">Total Earned</div></div>
+      <div class="stat"><div class="stat-num" id="statRating" style="color:#f59e0b">—</div><div class="stat-label">Rating</div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('sessions',this)"><i class="ti ti-calendar"></i> Sessions</button>
+      <button class="tab-btn" onclick="switchTab('earnings',this)"><i class="ti ti-coin"></i> Earnings</button>
+      <button class="tab-btn" onclick="switchTab('reviews',this)"><i class="ti ti-star"></i> Reviews</button>
+      <button class="tab-btn" onclick="switchTab('availability',this)"><i class="ti ti-clock"></i> Availability</button>
+      <button class="tab-btn" onclick="switchTab('profile',this)"><i class="ti ti-user"></i> Profile</button>
+    </div>
+
+    <!-- SESSIONS -->
+    <div id="tab-sessions" class="tab-panel active">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button onclick="filterSessions('upcoming',this)" style="padding:7px 14px;background:rgba(99,102,241,0.2);border:0.5px solid rgba(99,102,241,0.4);border-radius:8px;color:#a5b4fc;font-size:12px;cursor:pointer;font-family:inherit">Upcoming</button>
+        <button onclick="filterSessions('all',this)" style="padding:7px 14px;background:transparent;border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;color:#8b9dc3;font-size:12px;cursor:pointer;font-family:inherit">All Sessions</button>
+      </div>
+      <div id="sessionsList"></div>
+    </div>
+
+    <!-- EARNINGS -->
+    <div id="tab-earnings" class="tab-panel">
+      <div class="session-card" style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div><div style="font-size:13px;color:#8b9dc3">Total Earned</div><div style="font-size:32px;font-weight:700;color:#4ade80" id="totalEarned">K0</div></div>
+          <div style="text-align:right"><div style="font-size:13px;color:#8b9dc3">Per Session</div><div style="font-size:20px;font-weight:600;color:#a5b4fc">K96</div></div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px;font-size:12px;color:#8b9dc3;line-height:1.7">
+          Session fee: <strong style="color:#f0f4ff">K120</strong> · Serene fee: <strong style="color:#f43f5e">K24 (20%)</strong> · Your earnings: <strong style="color:#4ade80">K96 (80%)</strong>
+        </div>
+      </div>
+      <div style="font-size:13px;font-weight:500;color:#8b9dc3;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Payment History</div>
+      <div class="session-card"><div id="earningsList"></div></div>
+    </div>
+
+    <!-- REVIEWS -->
+    <div id="tab-reviews" class="tab-panel">
+      <div class="session-card" style="text-align:center;margin-bottom:16px">
+        <div style="font-size:40px;font-weight:700;color:#f59e0b" id="avgRating">—</div>
+        <div style="font-size:24px;color:#f59e0b;letter-spacing:3px" id="avgStars">☆☆☆☆☆</div>
+        <div style="font-size:13px;color:#8b9dc3;margin-top:6px" id="reviewCount">No reviews yet</div>
+      </div>
+      <div id="reviewsList"></div>
+    </div>
+
+    <!-- AVAILABILITY -->
+    <div id="tab-availability" class="tab-panel">
+      <div class="session-card">
+        <div style="font-size:15px;font-weight:600;color:#f0f4ff;margin-bottom:4px">Set Your Availability</div>
+        <div style="font-size:13px;color:#8b9dc3;margin-bottom:16px">Choose which days and hours you accept bookings</div>
+        <div style="font-size:11px;font-weight:600;color:#6366f1;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Available Days</div>
+        <div class="avail-grid">
+          <button class="day-btn" data-day="Monday" onclick="toggleDay(this)">Mon</button>
+          <button class="day-btn" data-day="Tuesday" onclick="toggleDay(this)">Tue</button>
+          <button class="day-btn" data-day="Wednesday" onclick="toggleDay(this)">Wed</button>
+          <button class="day-btn" data-day="Thursday" onclick="toggleDay(this)">Thu</button>
+          <button class="day-btn" data-day="Friday" onclick="toggleDay(this)">Fri</button>
+          <button class="day-btn" data-day="Saturday" onclick="toggleDay(this)">Sat</button>
+          <button class="day-btn" data-day="Sunday" onclick="toggleDay(this)">Sun</button>
+        </div>
+        <div style="font-size:11px;font-weight:600;color:#6366f1;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Session Hours</div>
+        <div class="time-row"><label>Start time</label><input type="time" id="startTime" value="09:00"/></div>
+        <div class="time-row"><label>End time</label><input type="time" id="endTime" value="17:00"/></div>
+        <div class="time-row">
+          <label>Duration</label>
+          <select id="sessionDuration">
+            <option value="30">30 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="60" selected>60 minutes</option>
+            <option value="90">90 minutes</option>
+          </select>
+        </div>
+        <button onclick="saveAvailability()" style="width:100%;padding:12px;background:#6366f1;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px"><i class="ti ti-check"></i> Save Availability</button>
+        <div id="availAlert" style="display:none;font-size:13px;margin-top:10px;text-align:center"></div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="tab-profile" class="tab-panel">
+      <div class="session-card" id="profileCard"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var therapistData = null;
+var allBookings   = [];
+var forgotEmail   = "";
+var ADMIN_KEY     = "";
+
+// ── SCREEN ROUTING ────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("active"); });
+  var el = document.getElementById(id);
+  if (el) el.classList.add("active");
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────────
+async function tLogin() {
+  var email = document.getElementById("tEmail").value.trim();
+  var key   = document.getElementById("tKey").value.trim();
+  var alrt  = document.getElementById("loginAlert");
+  alrt.style.display = "none";
+
+  if (!email || !key) {
+    alrt.textContent = "Please enter your email and dashboard key.";
+    alrt.style.display = "block"; return;
+  }
+
+  var res  = await fetch("/api/therapist/dashboard-login", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ email: email, dashboardKey: key }),
+  });
+  var data = await res.json();
+
+  if (!res.ok) {
+    alrt.textContent = data.error || "Invalid email or dashboard key.";
+    alrt.style.display = "block"; return;
+  }
+
+  therapistData = data.therapist;
+  ADMIN_KEY     = data.adminKey || "";
+  loadDashboard();
+}
+
+function tLogout() {
+  therapistData = null; allBookings = [];
+  document.getElementById("dashboardScreen").classList.remove("active");
+  document.getElementById("dashboardScreen").style.display = "none";
+  document.getElementById("tEmail").value = "";
+  document.getElementById("tKey").value   = "";
+  showScreen("loginScreen");
+}
+
+// ── FORGOT KEY ────────────────────────────────────────────────────
+async function sendResetCode() {
+  var email = document.getElementById("forgotEmail").value.trim();
+  var alrt  = document.getElementById("forgotAlert");
+  alrt.style.display = "none";
+
+  if (!email) {
+    alrt.textContent = "Please enter your email.";
+    alrt.style.display = "block"; alrt.className = "alert alert-error"; return;
+  }
+
+  forgotEmail = email;
+
+  var res  = await fetch("/api/therapist/forgot-key", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ email: email }),
+  });
+  var data = await res.json();
+
+  if (res.ok) {
+    if (data.devCode) alert("DEV MODE — Reset code: " + data.devCode);
+    showScreen("resetScreen");
+  } else {
+    alrt.textContent   = data.error || "Could not send code.";
+    alrt.style.display = "block"; alrt.className = "alert alert-error";
+  }
+}
+
+// Code boxes
+function rcInput(el, idx) {
+  el.value = el.value.replace(/[^0-9]/g,"").slice(-1);
+  if (el.value && idx < 5) { var n = document.getElementById("rc"+(idx+1)); if(n) n.focus(); }
+  var code = "";
+  for (var i=0;i<6;i++) { var d=document.getElementById("rc"+i); code += d ? (d.value||"") : ""; }
+  if (code.length === 6) submitResetKey();
+}
+function rcBack(e, idx) {
+  if (e.key==="Backspace" && !e.target.value && idx>0) { var p=document.getElementById("rc"+(idx-1)); if(p) p.focus(); }
+}
+function getResetCode() {
+  var c=""; for(var i=0;i<6;i++){var d=document.getElementById("rc"+i);c+=d?(d.value||""):"";}return c;
+}
+
+async function submitResetKey() {
+  var code   = getResetCode();
+  var newKey = document.getElementById("newKey").value.trim();
+  var alrt   = document.getElementById("resetAlert");
+  alrt.style.display = "none";
+
+  if (code.length < 6) { alrt.textContent="Please enter the full 6-digit code."; alrt.style.display="block"; alrt.className="alert alert-error"; return; }
+  if (!newKey || newKey.length < 6) { alrt.textContent="New key must be at least 6 characters."; alrt.style.display="block"; alrt.className="alert alert-error"; return; }
+
+  var res  = await fetch("/api/therapist/reset-key", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ email: forgotEmail, resetCode: code, newKey: newKey }),
+  });
+  var data = await res.json();
+
+  if (res.ok) {
+    alrt.textContent   = "✅ Key reset successfully! You can now log in.";
+    alrt.style.display = "block"; alrt.className = "alert alert-success";
+    setTimeout(function() { showScreen("loginScreen"); }, 2000);
+  } else {
+    alrt.textContent   = data.error || "Could not reset key.";
+    alrt.style.display = "block"; alrt.className = "alert alert-error";
+  }
+}
+
+// ── LOAD DASHBOARD ────────────────────────────────────────────────
+async function loadDashboard() {
+  var t = therapistData;
+  var initials = t.fullName.split(" ").map(function(n){return n[0];}).join("").slice(0,2).toUpperCase();
+  document.getElementById("tAvatar").textContent    = initials;
+  document.getElementById("tName").textContent      = t.fullName;
+  document.getElementById("tProfession").textContent = t.profession;
+  document.getElementById("statRating").textContent  = t.rating > 0 ? t.rating : "—";
+
+  // Hide all screens, show dashboard
+  document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("active"); });
+  var db = document.getElementById("dashboardScreen");
+  db.style.display = "flex";
+  db.classList.add("active");
+
+  loadProfile();
+  loadAvailability();
+  await loadBookings();
+}
+
+// ── BOOKINGS ──────────────────────────────────────────────────────
+async function loadBookings() {
+  try {
+    var res  = await fetch("/api/therapist/bookings/therapist/" + therapistData.id);
+    var data = await res.json();
+    allBookings = data.bookings || [];
+
+    var now       = new Date();
+    var upcoming  = allBookings.filter(function(b){ return b.status==="confirmed" && new Date(b.scheduledAt) > now; });
+    var completed = allBookings.filter(function(b){ return b.status==="completed"; });
+    var earnings  = completed.length * 96;
+
+    document.getElementById("statTotal").textContent    = allBookings.length;
+    document.getElementById("statUpcoming").textContent = upcoming.length;
+    document.getElementById("statEarned").textContent   = "K" + earnings;
+    document.getElementById("totalEarned").textContent  = "K" + earnings;
+
+    renderSessions("upcoming");
+    renderEarnings(completed);
+  } catch(err) {
+    console.error("Load bookings error:", err);
+  }
+}
+
+function filterSessions(type, btn) {
+  document.querySelectorAll("#tab-sessions button").forEach(function(b){
+    b.style.background = "transparent";
+    b.style.borderColor = "rgba(255,255,255,0.1)";
+    b.style.color = "#8b9dc3";
+  });
+  if (btn) {
+    btn.style.background   = "rgba(99,102,241,0.2)";
+    btn.style.borderColor  = "rgba(99,102,241,0.4)";
+    btn.style.color        = "#a5b4fc";
+  }
+  renderSessions(type);
+}
+
+function renderSessions(filter) {
+  var list = document.getElementById("sessionsList");
+  var now  = new Date();
+
+  var bookings = filter === "upcoming"
+    ? allBookings.filter(function(b){ return b.status==="confirmed" && new Date(b.scheduledAt) > now; })
+    : allBookings;
+
+  bookings.sort(function(a,b){ return new Date(a.scheduledAt)-new Date(b.scheduledAt); });
+
+  if (bookings.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div>' + (filter==="upcoming"?"No upcoming sessions":"No sessions yet") + '</div></div>';
+    return;
+  }
+
+  list.innerHTML = bookings.map(function(b) {
+    var st     = new Date(b.scheduledAt);
+    var isPast = st < now;
+    var isToday = st.toDateString() === now.toDateString();
+    var canJoin = !isPast && (st - now) < 30*60*1000;
+
+    var timeStr = st.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}) + " at " + st.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+    var badge   = isPast ? '<span class="badge badge-done">Completed</span>' : isToday ? '<span class="badge badge-today">Today</span>' : '<span class="badge badge-upcoming">Upcoming</span>';
+
+    var brief = !isPast ? '<div class="client-brief"><div class="brief-title">📋 Client Brief</div><div class="brief-grid"><div class="brief-item"><strong>Client</strong>' + (b.userEmail||"Anonymous") + '</div><div class="brief-item"><strong>Fee</strong>K' + (b.sessionPrice||120) + '</div><div class="brief-item"><strong>Notes</strong>' + (b.notes||"No notes provided") + '</div><div class="brief-item"><strong>Room</strong><span style="font-family:monospace;font-size:11px;color:#4ade80">' + (b.roomName||"—") + '</span></div></div></div>' : "";
+
+    var joinBtn = isPast
+      ? '<div style="text-align:center;font-size:13px;color:#4a5568;padding:8px">Session completed</div>'
+      : canJoin
+        ? '<a href="' + (b.jitsiUrl||"#") + '" target="_blank" class="join-btn"><i class="ti ti-video"></i> Join Session Now</a>'
+        : '<div style="width:100%;padding:10px;background:rgba(255,255,255,0.04);border-radius:8px;color:#4a5568;font-size:12px;text-align:center;margin-top:4px">Join link available 30 minutes before session</div>';
+
+    return '<div class="session-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div style="font-size:16px;font-weight:600;color:#f0f4ff">' + (b.userEmail?(b.userEmail.split("@")[0]):"Client") + '</div><div style="font-size:13px;color:#8b9dc3;margin-top:2px">📅 ' + timeStr + '</div></div>' + badge + '</div>' + brief + joinBtn + '</div>';
+  }).join('');
+}
+
+function renderEarnings(completed) {
+  var el = document.getElementById("earningsList");
+  if (completed.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">💰</div><div>No completed sessions yet</div></div>';
+    return;
+  }
+  el.innerHTML = completed.map(function(b) {
+    return '<div class="earnings-row"><div><div style="color:#f0f4ff">' + (b.userEmail?(b.userEmail.split("@")[0]):"Client") + '</div><div style="font-size:12px;color:#8b9dc3">' + new Date(b.scheduledAt).toLocaleDateString() + '</div></div><div style="font-size:15px;font-weight:600;color:#4ade80">+K96</div></div>';
+  }).join('');
+}
+
+// ── REVIEWS ───────────────────────────────────────────────────────
+async function loadReviews() {
+  try {
+    var res  = await fetch("/api/therapist/reviews/" + therapistData.id);
+    var data = await res.json();
+    var reviews = data.reviews || [];
+
+    if (therapistData.rating > 0) {
+      document.getElementById("avgRating").textContent = therapistData.rating;
+      document.getElementById("avgStars").textContent  = "★".repeat(Math.round(therapistData.rating)) + "☆".repeat(5-Math.round(therapistData.rating));
+      document.getElementById("reviewCount").textContent = reviews.length + " review" + (reviews.length!==1?"s":"");
+    }
+
+    var el = document.getElementById("reviewsList");
+    if (reviews.length === 0) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">⭐</div><div>No reviews yet</div></div>';
+      return;
+    }
+    el.innerHTML = reviews.map(function(r) {
+      return '<div class="review-card"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><div style="color:#f59e0b;font-size:18px;letter-spacing:2px">' + "★".repeat(r.rating)+"☆".repeat(5-r.rating) + '</div><div style="font-size:12px;color:#8b9dc3">' + new Date(r.createdAt).toLocaleDateString() + '</div></div>' + (r.comment?'<div style="font-size:13px;color:#8b9dc3">"'+r.comment+'"</div>':"") + '</div>';
+    }).join('');
+  } catch(err) {}
+}
+
+// ── AVAILABILITY ──────────────────────────────────────────────────
+function loadAvailability() {
+  var avail = therapistData.availability || [];
+  var days  = avail.map(function(a){return a.day;});
+  document.querySelectorAll(".day-btn").forEach(function(btn){
+    if (days.includes(btn.dataset.day)) btn.classList.add("active");
+  });
+  if (avail.length > 0) {
+    document.getElementById("startTime").value       = avail[0].startTime || "09:00";
+    document.getElementById("endTime").value         = avail[0].endTime   || "17:00";
+    document.getElementById("sessionDuration").value = avail[0].duration  || "60";
+  }
+}
+
+function toggleDay(btn){ btn.classList.toggle("active"); }
+
+async function saveAvailability() {
+  var days      = Array.from(document.querySelectorAll(".day-btn.active")).map(function(b){return b.dataset.day;});
+  var startTime = document.getElementById("startTime").value;
+  var endTime   = document.getElementById("endTime").value;
+  var duration  = document.getElementById("sessionDuration").value;
+  var alrt      = document.getElementById("availAlert");
+
+  if (days.length === 0) {
+    alrt.textContent = "Please select at least one day.";
+    alrt.style.display = "block"; alrt.style.color = "#f43f5e"; return;
+  }
+
+  var slots = days.map(function(day){return {day:day,startTime:startTime,endTime:endTime,duration:parseInt(duration)};});
+
+  var res  = await fetch("/api/therapist/admin/availability", {
+    method:  "POST",
+    headers: { "Content-Type":"application/json", "x-admin-key": therapistData.dashboardKey },
+    body:    JSON.stringify({ therapistId: therapistData.id, slots: slots }),
+  });
+  var data = await res.json();
+
+  alrt.textContent   = res.ok ? "✅ Availability saved!" : (data.error||"Could not save.");
+  alrt.style.display = "block";
+  alrt.style.color   = res.ok ? "#4ade80" : "#f43f5e";
+  if (res.ok) therapistData.availability = slots;
+  setTimeout(function(){ alrt.style.display="none"; }, 3000);
+}
+
+// ── PROFILE ───────────────────────────────────────────────────────
+function loadProfile() {
+  var t  = therapistData;
+  var el = document.getElementById("profileCard");
+  var initials = t.fullName.split(" ").map(function(n){return n[0];}).join("").slice(0,2).toUpperCase();
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:14px;margin-bottom:18px"><div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#818cf8);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#fff">' + initials + '</div><div><div style="font-size:18px;font-weight:600;color:#f0f4ff">' + t.fullName + '</div><div style="font-size:13px;color:#8b9dc3;margin-top:2px">' + t.profession + '</div><div style="font-size:12px;color:#4ade80;margin-top:4px">✅ Verified Therapist</div></div></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
+    '<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px"><div style="font-size:11px;color:#8b9dc3;margin-bottom:3px">Email</div><div style="font-size:13px;color:#f0f4ff">' + t.email + '</div></div>' +
+    '<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px"><div style="font-size:11px;color:#8b9dc3;margin-bottom:3px">Phone</div><div style="font-size:13px;color:#f0f4ff">' + (t.phone||"Not set") + '</div></div>' +
+    '<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px"><div style="font-size:11px;color:#8b9dc3;margin-bottom:3px">Location</div><div style="font-size:13px;color:#f0f4ff">' + (t.city||"") + ', ' + (t.country||"Zambia") + '</div></div>' +
+    '<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px"><div style="font-size:11px;color:#8b9dc3;margin-bottom:3px">Experience</div><div style="font-size:13px;color:#f0f4ff">' + t.yearsExperience + ' years</div></div>' +
+    '</div>' +
+    (t.bio?'<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-size:11px;color:#8b9dc3;margin-bottom:6px">Bio</div><div style="font-size:13px;color:#f0f4ff;line-height:1.7">' + t.bio + '</div></div>':"") +
+    '<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:12px"><div style="font-size:11px;color:#8b9dc3;margin-bottom:6px">Specializations</div><div style="font-size:13px;color:#f0f4ff">' + (t.specializations||[]).join(", ") + '</div></div>';
+}
+
+// ── TABS ──────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll(".tab-btn").forEach(function(b){b.classList.remove("active");});
+  document.querySelectorAll(".tab-panel").forEach(function(p){p.classList.remove("active");});
+  btn.classList.add("active");
+  document.getElementById("tab-"+name).classList.add("active");
+  if (name==="reviews") loadReviews();
+}
+</script>
+</body>
+</html>

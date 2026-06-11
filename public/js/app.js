@@ -5,6 +5,9 @@ let state = {
   chatMessages: [],
   journalEntries: [],
   moodHistory: [],
+  hotlines: [],
+  hotlinesLoading: false,
+  hotlinesError: "",
   currentPage: "chat",
   sending: false,
   voiceUsedToday: 0,
@@ -21,11 +24,14 @@ window.addEventListener("DOMContentLoaded", async () => {
     const today = new Date().toISOString().slice(0, 10);
     const stored = JSON.parse(localStorage.getItem("serene_voice_usage") || "{}");
     state.voiceUsedToday = stored.date === today ? (stored.count || 0) : 0;
-    // Reset if date changed
     if (stored.date !== today) {
       localStorage.setItem("serene_voice_usage", JSON.stringify({ date: today, count: 0 }));
     }
-    showApp();
+    if (!state.user.phoneVerified) {
+      showPhoneVerifyPage();
+    } else {
+      showApp();
+    }
   } else {
     api.clearToken();
     showPage("login");
@@ -33,14 +39,15 @@ window.addEventListener("DOMContentLoaded", async () => {
 });
 
 function showApp() {
+  document.body.classList.add("app-active");
   showPage("app");
   updateUserUI();
   navigateTo("chat");
-  SessionTimeout.init();
+  if (typeof SessionTimeout !== "undefined") SessionTimeout.init();
   setTimeout(function() {
     if (typeof EmotionTracker !== "undefined") EmotionTracker.init();
-    if (typeof ScrollEngine !== "undefined") ScrollEngine.init();
   }, 300);
+
 }
 
 function navigateTo(tab) {
@@ -62,13 +69,13 @@ function navigateTo(tab) {
   if (tab === "settings") loadSettings();
   if (tab === "chat") loadChat();
   if (tab === "therapists") tLoadList();
+  if (tab === "hotlines") loadHotlines();
 }
 
-// ── Auth ──────────────────────────────────────────────────────────
 async function doLogin() {
   const email = document.getElementById("loginEmail").value.trim();
-  const pass = document.getElementById("loginPass").value;
-  const alrt = document.getElementById("loginAlert");
+  const pass  = document.getElementById("loginPass").value;
+  const alrt  = document.getElementById("loginAlert");
   if (!email || !pass) return showAlert(alrt, "Please fill in all fields.", "error");
   setLoading("loginBtn", true);
   const res = await api.login(email, pass);
@@ -76,17 +83,23 @@ async function doLogin() {
   if (res.ok) {
     api.setToken(res.data.token);
     state.user = res.data.user;
-    showApp();
+    if (res.data.user.twoFactorEnabled) {
+      showTFAPage(email, pass);
+    } else if (!res.data.user.phoneVerified) {
+      showPhoneVerifyPage();
+    } else {
+      showApp();
+    }
   } else {
     showAlert(alrt, res.data.error || "Incorrect email or password.", "error");
   }
 }
 
 async function doRegister() {
-  const name = document.getElementById("regName").value.trim();
+  const name  = document.getElementById("regName").value.trim();
   const email = document.getElementById("regEmail").value.trim();
-  const pass = document.getElementById("regPass").value;
-  const alrt = document.getElementById("regAlert");
+  const pass  = document.getElementById("regPass").value;
+  const alrt  = document.getElementById("regAlert");
   if (!name || !email || !pass) return showAlert(alrt, "Please fill in all fields.", "error");
   if (pass.length < 8) return showAlert(alrt, "Password must be at least 8 characters.", "error");
   setLoading("regBtn", true);
@@ -95,59 +108,19 @@ async function doRegister() {
   if (res.ok) {
     api.setToken(res.data.token);
     state.user = res.data.user;
-    showApp();
+    showPhoneVerifyPage();
   } else {
     showAlert(alrt, res.data.error || "Could not create account.", "error");
   }
 }
 
 function doLogout() {
-  // 1. Clear auth state
   api.clearToken();
-  state.user         = null;
-  state.chatMessages = [];
-
-  // 2. Close drawer — try all possible IDs
-  var drawer  = document.getElementById("drawer") || document.getElementById("appDrawer");
-  var overlay = document.getElementById("drawerOverlay");
-  var hamburger = document.getElementById("hamburgerBtn");
-  if (drawer)    { drawer.classList.remove("open"); drawer.style.transform = ""; }
-  if (overlay)   { overlay.classList.remove("open"); overlay.style.display = "none"; overlay.style.opacity = "0"; overlay.style.pointerEvents = "none"; }
-  if (hamburger) { hamburger.classList.remove("active"); }
-
-  // 3. Close all modals
-  document.querySelectorAll("[id$='Modal'],[id$='Overlay'],[id$='Sheet']").forEach(function(m) {
-    m.style.display = "none";
-  });
-
-  // 4. Stop voice mode
-  if (typeof VoiceSystem !== "undefined") VoiceSystem.exitVoiceMode();
-
-  // 5. Close crisis banner
-  var crisis = document.getElementById("crisisBanner");
-  if (crisis) crisis.style.display = "none";
-
-  // 6. Clear inputs
-  var input = document.getElementById("chatInput");
-  if (input) input.value = "";
-
-  // 7. Clear chat area
-  var chatArea = document.getElementById("chatMessages");
-  if (chatArea) chatArea.innerHTML = '<div class="scroll-anchor" id="scrollAnchor"></div>';
-
-  // 8. Also call closeDrawer if it exists
-  if (typeof closeDrawer === "function") closeDrawer();
-
-  // 9. Stop session timeout
-  SessionTimeout.stop();
-
-  // 10. Go to login
-  showPage("login");
-
-  console.log("[Logout] Full reset complete");
+  localStorage.clear();
+  sessionStorage.clear();
+  window.location.href = "/";
 }
 
-// ── User UI ───────────────────────────────────────────────────────
 function updateUserUI() {
   if (!state.user) return;
   const u = state.user;
@@ -157,9 +130,9 @@ function updateUserUI() {
     const lbl = u.plan === "free" ? "Free" : u.plan === "annual" ? "Pro Annual" : "Pro";
     el("userPlan").innerHTML = '<span class="plan-badge ' + cls + '">' + lbl + "</span>";
   }
-  if (el("drawerAvatar")) el("drawerAvatar").textContent = (u.name || u.email).charAt(0).toUpperCase();
+  if (el("drawerAvatar"))   el("drawerAvatar").textContent   = (u.name || u.email).charAt(0).toUpperCase();
   if (el("drawerUsername")) el("drawerUsername").textContent = u.name || u.email.split("@")[0];
-  if (el("drawerEmail")) el("drawerEmail").textContent = u.email;
+  if (el("drawerEmail"))    el("drawerEmail").textContent    = u.email;
   if (el("drawerPlanChip")) {
     var labels = { free: "Free plan", pro: "Pro Monthly", annual: "Pro Annual" };
     el("drawerPlanChip").textContent = labels[u.plan] || "Free plan";
@@ -167,12 +140,11 @@ function updateUserUI() {
   updateVoiceBtn();
 }
 
-// ── Voice limits ──────────────────────────────────────────────────
 function updateVoiceBtn() {
   const btn = document.getElementById("voiceModeBtn");
   if (!btn) return;
   const isPro = state.user && state.user.plan !== "free";
-  const left = state.VOICE_FREE_LIMIT - state.voiceUsedToday;
+  const left  = state.VOICE_FREE_LIMIT - state.voiceUsedToday;
   const badge = document.getElementById("voiceBadge");
   if (isPro) {
     btn.title = "Voice mode — unlimited";
@@ -189,9 +161,6 @@ function canUseVoice() {
 }
 
 function handleVoiceBtnClick() {
-  console.log("[Voice] Button clicked. canUseVoice:", canUseVoice(), "used today:", state.voiceUsedToday, "limit:", state.VOICE_FREE_LIMIT);
-  console.log("[Voice] VoiceSystem defined:", typeof VoiceSystem !== "undefined");
-
   if (canUseVoice()) {
     if (typeof VoiceSystem !== "undefined") {
       VoiceSystem.toggleVoiceMode();
@@ -199,11 +168,8 @@ function handleVoiceBtnClick() {
       var today = new Date().toISOString().slice(0, 10);
       localStorage.setItem("serene_voice_usage", JSON.stringify({ date: today, count: state.voiceUsedToday }));
       updateVoiceBtn();
-    } else {
-      console.error("[Voice] VoiceSystem is not defined. Check voice.js is loaded.");
     }
   } else {
-    console.warn("[Voice] Limit reached:", state.voiceUsedToday, "/", state.VOICE_FREE_LIMIT);
     showVoiceLimitModal();
   }
 }
@@ -217,10 +183,9 @@ function hideVoiceLimitModal() {
   if (m) m.style.display = "none";
 }
 
-// ── Welcome message ───────────────────────────────────────────────
 function getWelcomeHTML() {
-  var name = state.user && state.user.name ? state.user.name.split(" ")[0] : "there";
-  var hour = new Date().getHours();
+  var name  = state.user && state.user.name ? state.user.name.split(" ")[0] : "there";
+  var hour  = new Date().getHours();
   var greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   var bodies = [
     "Think of me as that one friend who actually read all the medical and psychology books so you do not have to. I am here for the big things, the small things, and everything in between. No judgment, no rush. What is on your mind today?",
@@ -231,7 +196,7 @@ function getWelcomeHTML() {
   return '<div class="welcome-card-new">' +
     '<div class="wcn-glow-ring"></div>' +
     '<div class="wcn-glow-ring wcn-ring2"></div>' +
-    '<div class="wcn-logo">🌿</div>' +
+    '<video class="wcn-logo" src="/videos/serene-welcome-animation.mp4" autoplay muted loop playsinline></video>' +
     '<div class="wcn-brand">Serene</div>' +
     '<div class="wcn-lines">' +
       '<div class="wcn-line wcn-line1">We are here for you</div>' +
@@ -244,12 +209,8 @@ function getWelcomeHTML() {
   '</div>';
 }
 
-// ── Chat ──────────────────────────────────────────────────────────
-async function loadChat() {
-  if (state.chatMessages.length > 0) return renderChat();
-  const res = await api.getChatHistory(api.getToken());
-  if (res.ok) state.chatMessages = res.data.messages || [];
-  renderChat();
+function loadChat() {
+  window.SereneChat.mount();
 }
 
 function renderChat() {
@@ -272,20 +233,18 @@ function renderChat() {
   ScrollEngine.onLoad();
 }
 
-
-
 let msgCounter = 0;
 function appendMessageToDOM(role, content, time, isNew) {
   if (isNew === undefined) isNew = true;
   const area = document.getElementById("chatMessages");
   if (!area) return;
-  const msgId = "msg-" + (++msgCounter);
-  const div = document.createElement("div");
-  div.className = "msg " + (role === "user" ? "user" : "ai");
+  const msgId     = "msg-" + (++msgCounter);
+  const div       = document.createElement("div");
+  div.className   = "msg " + (role === "user" ? "user" : "ai");
   div.setAttribute("data-msg-id", msgId);
-  const timeStr = time ? new Date(time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+  const timeStr   = time ? new Date(time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
   const bubbleCls = "bubble" + (isNew && role === "assistant" ? " new-reply" : "");
-  const ttsBtn = (role === "assistant" && typeof TTS !== "undefined" && TTS.isSupported())
+  const ttsBtn    = (role === "assistant" && typeof TTS !== "undefined" && TTS.isSupported())
     ? '<div class="msg-actions"><button class="tts-play-btn" onclick="TTS.play(\'' + msgId + '\')" title="Play audio"><i class="ti ti-volume"></i></button><span class="msg-time-inline">' + timeStr + "</span></div>"
     : '<div class="msg-time">' + timeStr + "</div>";
   div.innerHTML = '<div class="msg-sender">' + (role === "user" ? "You" : "Serene") + "</div>" +
@@ -322,30 +281,25 @@ function hideThinking() {
 async function sendMessage() {
   if (state.sending) return;
   const input = document.getElementById("chatInput");
-  const text = input ? input.value.trim() : "";
+  const text  = input ? input.value.trim() : "";
   if (!text) return;
-
   const welcome = document.querySelector(".welcome-card");
   if (welcome) {
     welcome.style.transition = "all 0.3s ease";
-    welcome.style.opacity = "0";
-    welcome.style.transform = "scale(0.95)";
+    welcome.style.opacity    = "0";
+    welcome.style.transform  = "scale(0.95)";
     setTimeout(function() { if (welcome.parentNode) welcome.parentNode.removeChild(welcome); }, 300);
   }
-
   state.sending = true;
-  input.value = "";
+  input.value   = "";
   input.style.height = "auto";
   const sendBtn = document.getElementById("sendBtn");
   if (sendBtn) sendBtn.disabled = true;
-
   appendMessageToDOM("user", text, new Date().toISOString(), false);
   state.chatMessages.push({ role: "user", content: text, createdAt: new Date().toISOString() });
   showThinking();
-
   const res = await api.sendMessage(text, state.mood, api.getToken());
   hideThinking();
-
   if (res.ok) {
     const reply = res.data.reply;
     appendMessageToDOM("assistant", reply, new Date().toISOString(), true);
@@ -353,6 +307,7 @@ async function sendMessage() {
     if (typeof EmotionTracker !== "undefined") EmotionTracker.track(text, reply);
     const crisisBanner = document.getElementById("crisisBanner");
     if (res.data.isCrisis && crisisBanner) crisisBanner.style.display = "flex";
+    if (res.data.showSupportButton) SupportButton.show(res.data.safetyLevel);
     if (res.data.dailyLimit && res.data.dailyUsed) {
       const remaining = res.data.dailyLimit - res.data.dailyUsed;
       if (remaining <= 2 && state.user && state.user.plan === "free") {
@@ -364,7 +319,6 @@ async function sendMessage() {
   } else {
     appendMessageToDOM("assistant", "I am so sorry — something went wrong on my end. Could you try sending that again?", new Date().toISOString(), true);
   }
-
   state.sending = false;
   if (sendBtn) sendBtn.disabled = false;
 }
@@ -385,23 +339,20 @@ function handleChatKey(e) {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 }
 
-// ── Chat Summary ──────────────────────────────────────────────────
 async function summarizeChat() {
   if (state.chatMessages.length < 4) { alert("Have a longer conversation first before summarising."); return; }
   const btn = document.getElementById("summaryBtn");
   if (btn) { btn.disabled = true; btn.textContent = "..."; }
-  const res = await api.sendMessage("Please summarise our conversation so far in 3-4 sentences. What were the main topics we discussed and how is the user feeling? Write it in third person as a brief note.", state.mood, api.getToken());
+  const res = await api.sendMessage("Please summarise our conversation so far in 3-4 sentences.", state.mood, api.getToken());
   if (btn) { btn.disabled = false; btn.textContent = "📋"; }
   if (res.ok) {
-    const summary = res.data.reply;
     const overlay = document.createElement("div");
     overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:1.5rem";
-    overlay.innerHTML = '<div style="background:#0d1428;border:0.5px solid rgba(255,255,255,0.15);border-radius:20px;padding:1.75rem;max-width:400px;width:100%"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem"><h3 style="color:#a5b4fc;font-size:16px">Conversation Summary</h3><button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none;border:none;color:#8b9dc3;font-size:20px;cursor:pointer">X</button></div><p style="font-size:14px;color:#f0f4ff;line-height:1.7">' + escHtml(summary) + "</p></div>";
+    overlay.innerHTML = '<div style="background:#0d1428;border:0.5px solid rgba(255,255,255,0.15);border-radius:20px;padding:1.75rem;max-width:400px;width:100%"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem"><h3 style="color:#a5b4fc;font-size:16px">Conversation Summary</h3><button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none;border:none;color:#8b9dc3;font-size:20px;cursor:pointer">X</button></div><p style="font-size:14px;color:#f0f4ff;line-height:1.7">' + escHtml(res.data.reply) + "</p></div>";
     document.body.appendChild(overlay);
   }
 }
 
-// ── Journal ───────────────────────────────────────────────────────
 async function loadJournal() {
   const res = await api.getEntries(api.getToken());
   if (res.ok) state.journalEntries = res.data.entries || [];
@@ -412,7 +363,7 @@ function renderJournal() {
   const list = document.getElementById("journalList");
   if (!list) return;
   if (!state.journalEntries.length) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📓</div><div class="empty-title">No journal entries yet</div><div class="empty-sub">Start writing to track your mental wellness journey</div></div>';
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📔</div><div class="empty-title">No journal entries yet</div><div class="empty-sub">Start writing to track your mental wellness journey</div></div>';
     return;
   }
   list.innerHTML = state.journalEntries.map(function(e) {
@@ -425,8 +376,8 @@ function showNewEntry() { document.getElementById("newEntryForm").style.display 
 function hideNewEntry() { document.getElementById("newEntryForm").style.display = "none"; document.getElementById("journalContent").value = ""; }
 
 async function saveJournalEntry() {
-  const content = document.getElementById("journalContent").value.trim();
-  const wantsReflection = document.getElementById("wantsReflection") && document.getElementById("wantsReflection").checked;
+  const content          = document.getElementById("journalContent").value.trim();
+  const wantsReflection  = document.getElementById("wantsReflection") && document.getElementById("wantsReflection").checked;
   if (!content) return;
   setLoading("saveEntryBtn", true);
   const res = await api.saveEntry(content, wantsReflection && state.user && state.user.plan !== "free", api.getToken());
@@ -435,7 +386,6 @@ async function saveJournalEntry() {
   else alert(res.data.error || "Could not save entry.");
 }
 
-// ── Insights ──────────────────────────────────────────────────────
 async function loadInsights() {
   const res = await api.getMoodHistory(api.getToken());
   if (res.ok) state.moodHistory = res.data;
@@ -445,37 +395,92 @@ async function loadInsights() {
 function renderInsights() {
   const c = document.getElementById("insightsContent");
   if (!c) return;
-  const summary = (state.moodHistory && state.moodHistory.summary) || {};
-  const total = Object.values(summary).reduce(function(a, b) { return a + b; }, 0);
-  const moodColors = { good: "#1D9E75", okay: "#818cf8", low: "#f59e0b", distressed: "#f43f5e" };
-  const moodLabels = { good: "Good", okay: "Okay", low: "Low", distressed: "Distressed" };
+  const summary     = (state.moodHistory && state.moodHistory.summary) || {};
+  const total       = Object.values(summary).reduce(function(a, b) { return a + b; }, 0);
+  const moodColors  = { good: "#1D9E75", okay: "#818cf8", low: "#f59e0b", distressed: "#f43f5e" };
+  const moodLabels  = { good: "Good", okay: "Okay", low: "Low", distressed: "Distressed" };
   var bars = "";
   if (total === 0) {
     bars = '<p style="font-size:13px;text-align:center;padding:1rem 0;color:var(--text3)">No mood data yet. Select your mood in the chat tab.</p>';
   } else {
     ["good","okay","low","distressed"].forEach(function(m) {
       var count = summary[m] || 0;
-      var pct = total ? Math.round(count / total * 100) : 0;
+      var pct   = total ? Math.round(count / total * 100) : 0;
       bars += '<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span style="color:var(--text2)">' + moodLabels[m] + '</span><span style="color:var(--text3)">' + count + " (" + pct + '%)</span></div><div style="background:var(--surface2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + moodColors[m] + ';border-radius:4px"></div></div></div>';
     });
   }
-  c.innerHTML = '<div class="stats-grid" style="margin-bottom:1.25rem"><div class="stat-card"><div class="stat-num">' + total + '</div><div class="stat-label">Mood logs</div></div><div class="stat-card"><div class="stat-num">' + state.journalEntries.length + '</div><div class="stat-label">Journal entries</div></div><div class="stat-card"><div class="stat-num">' + (state.user && state.user.plan === "free" ? "10" : "500") + '</div><div class="stat-label">Daily limit</div></div></div><div class="glass" style="padding:1.25rem;margin-bottom:1rem"><h3 style="margin-bottom:1rem">Mood history</h3>' + bars + "</div>";
+  c.innerHTML = '<div class="stats-grid" style="margin-bottom:1.25rem"><div class="stat-card"><div class="stat-num">' + total + '</div><div class="stat-label">Mood logs</div></div><div class="stat-card"><div class="stat-num">' + state.journalEntries.length + '</div><div class="stat-label">Journal entries</div></div><div class="stat-card"><div class="stat-num">' + (state.user && state.user.plan === "free" ? "200" : "500") + '</div><div class="stat-label">Daily limit</div></div></div><div class="glass" style="padding:1.25rem;margin-bottom:1rem"><h3 style="margin-bottom:1rem">Mood history</h3>' + bars + "</div>";
 }
 
-// ── Settings ──────────────────────────────────────────────────────
+async function loadHotlines() {
+  state.hotlinesLoading = true;
+  state.hotlinesError = "";
+  renderHotlines();
+
+  const res = await api.getHotlines(api.getToken());
+  state.hotlinesLoading = false;
+
+  if (res.ok) {
+    state.hotlines = Array.isArray(res.data && res.data.hotlines) ? res.data.hotlines : [];
+  } else {
+    state.hotlines = [];
+    state.hotlinesError = (res.data && res.data.error) || "Could not load hotlines.";
+  }
+
+  renderHotlines();
+}
+
+function renderHotlines() {
+  const list = document.getElementById("hotlinesList");
+  if (!list) return;
+
+  if (state.hotlinesLoading) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📞</div><div class="empty-title">Loading resources...</div><div class="empty-sub">Finding available support numbers</div></div>';
+    return;
+  }
+
+  if (state.hotlinesError) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Could not load hotlines</div><div class="empty-sub">' + escHtml(state.hotlinesError) + '</div></div>';
+    return;
+  }
+
+  if (!state.hotlines.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📞</div><div class="empty-title">No hotlines available</div><div class="empty-sub">Please check back later.</div></div>';
+    return;
+  }
+
+  list.innerHTML = state.hotlines.map(function(h) {
+    var name = h.name || "Support hotline";
+    var description = h.description || "Reach out for support when you need help.";
+    var phone = h.phone_number || h.phoneNumber || h.phone || "";
+    var category = h.category || "support";
+    var categoryClass = "hotline-cat-" + String(category).replace(/[^a-z0-9_-]/gi, "_");
+    var tel = phone.replace(/[^\d+]/g, "");
+
+    return '<div class="hotline-card">' +
+      '<div class="hotline-card-header">' +
+        '<div class="hotline-card-name">' + escHtml(name) + '</div>' +
+        '<div class="hotline-card-category ' + escAttr(categoryClass) + '">' + escHtml(String(category).replace(/_/g, " ")) + '</div>' +
+      '</div>' +
+      '<div class="hotline-card-desc">' + escHtml(description) + '</div>' +
+      '<a class="hotline-call-btn" href="tel:' + escAttr(tel) + '">' +
+        '<i class="ti ti-phone"></i><span>' + escHtml(phone || "Call") + '</span>' +
+      '</a>' +
+    '</div>';
+  }).join("");
+}
+
 function loadSettings() {
   const u = state.user;
   if (!u) return;
-  // Inject currency selector
   var currWrap = document.getElementById("currencySelectorWrap");
   if (currWrap && typeof CurrencySystem !== "undefined") {
-    currWrap.innerHTML = '<select class="currency-select" onchange="CurrencySystem.setManual(this.value)">' +
-      CurrencySystem.buildSelector() + "</select>";
+    currWrap.innerHTML = '<select class="currency-select" onchange="CurrencySystem.setManual(this.value)">' + CurrencySystem.buildSelector() + "</select>";
   }
-  const emailEl = document.getElementById("settingsEmail");
-  const planEl = document.getElementById("settingsPlan");
+  const emailEl    = document.getElementById("settingsEmail");
+  const planEl     = document.getElementById("settingsPlan");
   const upgradeBtn = document.getElementById("upgradeBtn");
-  const manageBtn = document.getElementById("manageBtn");
+  const manageBtn  = document.getElementById("manageBtn");
   if (emailEl) emailEl.textContent = u.email;
   if (planEl) {
     var cls = u.plan === "free" ? "plan-free" : u.plan === "annual" ? "plan-annual" : "plan-pro";
@@ -483,12 +488,48 @@ function loadSettings() {
     planEl.innerHTML = '<span class="plan-badge ' + cls + '">' + lbl + "</span>";
   }
   if (upgradeBtn) upgradeBtn.style.display = u.plan === "free" ? "block" : "none";
-  if (manageBtn) manageBtn.style.display = u.plan !== "free" ? "block" : "none";
+  if (manageBtn)  manageBtn.style.display  = u.plan !== "free" ? "block" : "none";
+  var tfaCheck  = document.getElementById("toggle2faCheck");
+  var tfaSlider = document.getElementById("toggle2faSlider");
+  var tfaThumb  = document.getElementById("toggle2faThumb");
+  if (tfaCheck) {
+    tfaCheck.checked = !!u.twoFactorEnabled;
+    if (u.twoFactorEnabled) {
+      if (tfaSlider) tfaSlider.style.background = "rgba(108,99,255,0.6)";
+      if (tfaThumb)  { tfaThumb.style.background = "#c4b5fd"; tfaThumb.style.left = "24px"; }
+    }
+  }
+
+  // Voice toggle — read from React state (localStorage) if available, else from user profile
+  var voiceOn = localStorage.getItem("serene_voice") !== "false";
+  if (u.voiceEnabled === false) voiceOn = false;
+  var voiceCheck  = document.getElementById("toggleVoiceCheck");
+  var voiceSlider = document.getElementById("toggleVoiceSlider");
+  var voiceThumb  = document.getElementById("toggleVoiceThumb");
+  if (voiceCheck) {
+    voiceCheck.checked = voiceOn;
+    if (voiceOn) {
+      if (voiceSlider) voiceSlider.style.background = "rgba(108,99,255,0.6)";
+      if (voiceThumb)  { voiceThumb.style.background = "#c4b5fd"; voiceThumb.style.left = "24px"; }
+    } else {
+      if (voiceSlider) voiceSlider.style.background = "rgba(255,255,255,0.1)";
+      if (voiceThumb)  { voiceThumb.style.background = "#8b9dc3"; voiceThumb.style.left = "2px"; }
+    }
+  }
+}
+
+function toggleVoiceSetting(checkbox) {
+  var enabled = checkbox.checked;
+  var slider  = document.getElementById("toggleVoiceSlider");
+  var thumb   = document.getElementById("toggleVoiceThumb");
+  if (slider) slider.style.background = enabled ? "rgba(108,99,255,0.6)" : "rgba(255,255,255,0.1)";
+  if (thumb)  { thumb.style.background = enabled ? "#c4b5fd" : "#8b9dc3"; thumb.style.left = enabled ? "24px" : "2px"; }
+  if (typeof window.sereneSetVoice === "function") window.sereneSetVoice(enabled);
 }
 
 async function showPlans() {
   document.getElementById("plansModal").style.display = "flex";
-  const res = await api.getPlans();
+  const res  = await api.getPlans();
   if (!res.ok) return;
   const list = document.getElementById("plansList");
   list.innerHTML = res.data.plans.filter(function(p) { return p.id !== "free"; }).map(function(plan) {
@@ -513,60 +554,47 @@ async function startCheckout(planId) {
 async function initiatePayment(planId, provider) {
   hidePaymentMethodModal();
   var token = api.getToken();
-
-  var res = await fetch("/api/payments/" + provider, {
+  var res   = await fetch("/api/payments/" + provider, {
     method:  "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
     body:    JSON.stringify({ planId: planId }),
   });
-
   var data = await res.json();
-  if (res.ok && data.paymentUrl) {
-    window.location.href = data.paymentUrl;
-  } else {
-    alert(data.error || "Could not start payment. Please try again.");
-  }
+  if (res.ok && data.paymentUrl) { window.location.href = data.paymentUrl; }
+  else alert(data.error || "Could not start payment. Please try again.");
 }
 
 function showPaymentMethodModal(planId) {
   var existing = document.getElementById("paymentMethodModal");
   if (existing) existing.remove();
-
   var modal = document.createElement("div");
-  modal.id = "paymentMethodModal";
+  modal.id  = "paymentMethodModal";
   modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);z-index:700;display:flex;align-items:flex-end;justify-content:center;padding:1rem";
-
   var wrap = document.createElement("div");
   wrap.style.cssText = "background:#0d1428;border:0.5px solid rgba(255,255,255,0.15);border-radius:24px 24px 0 0;padding:2rem;width:100%;max-width:480px";
-
   var title = document.createElement("h3");
   title.style.cssText = "color:#f0f4ff;font-size:18px;margin-bottom:6px;text-align:center";
   title.textContent = "How do you want to pay?";
   wrap.appendChild(title);
-
   var sub = document.createElement("p");
   sub.style.cssText = "color:#8b9dc3;font-size:13px;text-align:center;margin-bottom:1.5rem";
   sub.textContent = "K250 per month — cancel anytime";
   wrap.appendChild(sub);
-
   function btn(emoji, label, provider, bg, border, color) {
     var b = document.createElement("button");
     b.style.cssText = "width:100%;padding:14px;background:" + bg + ";border:0.5px solid " + border + ";border-radius:12px;color:" + color + ";font-size:15px;font-weight:500;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px";
     b.innerHTML = emoji + " " + label;
-    b.onclick = function() { initiatePayment(planId, provider); };
+    b.onclick   = function() { initiatePayment(planId, provider); };
     return b;
   }
-
-  wrap.appendChild(btn("🅿️", "PayPal",                      "paypal",  "rgba(0,112,243,0.12)", "rgba(0,112,243,0.35)",   "#60a5fa"));
-  wrap.appendChild(btn("📱", "Mobile Money (MTN / Airtel)", "pesapal", "rgba(255,196,0,0.1)",  "rgba(255,196,0,0.35)",   "#fbbf24"));
-  wrap.appendChild(btn("💳", "Visa / Mastercard",           "pesapal", "rgba(99,102,241,0.12)","rgba(99,102,241,0.35)",  "#a5b4fc"));
-
+  wrap.appendChild(btn("🅿️", "PayPal",                      "paypal",  "rgba(0,112,243,0.12)", "rgba(0,112,243,0.35)",  "#60a5fa"));
+  wrap.appendChild(btn("📱", "Mobile Money (MTN / Airtel)", "pesapal", "rgba(255,196,0,0.1)",  "rgba(255,196,0,0.35)",  "#fbbf24"));
+  wrap.appendChild(btn("💳", "Visa / Mastercard",           "pesapal", "rgba(99,102,241,0.12)","rgba(99,102,241,0.35)", "#a5b4fc"));
   var cancel = document.createElement("button");
   cancel.style.cssText = "width:100%;padding:12px;background:transparent;border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;color:#8b9dc3;font-size:14px;cursor:pointer;margin-top:4px";
   cancel.textContent = "Cancel";
   cancel.onclick = hidePaymentMethodModal;
   wrap.appendChild(cancel);
-
   modal.appendChild(wrap);
   document.body.appendChild(modal);
 }
@@ -588,10 +616,9 @@ async function confirmDeleteAccount() {
   if (res.ok) { api.clearToken(); location.reload(); }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────
 function showAlert(el, msg, type) {
   if (!el) return;
-  el.className = "alert alert-" + (type || "error") + " show";
+  el.className  = "alert alert-" + (type || "error") + " show";
   el.textContent = msg;
   setTimeout(function() { el.classList.remove("show"); }, 4000);
 }
@@ -611,3 +638,80 @@ function escHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/\n/g, "<br>");
 }
+
+function escAttr(str) {
+  return escHtml(str)
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+async function toggle2FA(checkbox) {
+  var token = api.getToken();
+  var res   = await fetch("/api/auth/toggle-2fa", {method:"POST", headers:{"Authorization":"Bearer "+token}});
+  var data  = await res.json();
+  if (res.ok) {
+    if (state.user) state.user.twoFactorEnabled = data.twoFactorEnabled;
+    var slider = document.getElementById("toggle2faSlider");
+    var thumb  = document.getElementById("toggle2faThumb");
+    if (data.twoFactorEnabled) {
+      if (slider) slider.style.background = "rgba(108,99,255,0.6)";
+      if (thumb)  { thumb.style.background = "#c4b5fd"; thumb.style.left = "24px"; }
+    } else {
+      if (slider) slider.style.background = "rgba(255,255,255,0.1)";
+      if (thumb)  { thumb.style.background = "#8b9dc3"; thumb.style.left = "2px"; }
+    }
+  } else {
+    if (checkbox) checkbox.checked = !checkbox.checked;
+    alert(data.error || "Could not update 2FA setting.");
+  }
+}
+
+// ── SUPPORT BUTTON ────────────────────────────────────────────────────────
+// Shown for orange / red / critical safety levels.
+// Dismissed per-session; resets (re-shows) on every new elevated response.
+var SupportButton = (function () {
+  function _btn()  { return document.getElementById("supportFloatBtn"); }
+  function _wrap() { return document.getElementById("supportBtnWrap"); }
+  function _menu() { return document.getElementById("supportFloatMenu"); }
+
+  function show(level) {
+    var wrap = _wrap(); var btn = _btn();
+    if (!wrap || !btn) return;
+    btn.className = "support-float-btn " +
+      (level === "red" || level === "critical" ? "support-float-btn--red" : "support-float-btn--orange");
+    wrap.style.display = "flex";
+    var m = _menu(); if (m) m.style.display = "none"; // close menu on re-show
+  }
+
+  function dismiss(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    var wrap = _wrap(); if (wrap) wrap.style.display = "none";
+    var m = _menu(); if (m) m.style.display = "none";
+  }
+
+  function toggleMenu(e) {
+    if (e) e.stopPropagation();
+    var m = _menu(); if (!m) return;
+    m.style.display = m.style.display === "none" ? "block" : "none";
+  }
+
+  function goHotlines() {
+    var m = _menu(); if (m) m.style.display = "none";
+    navigateTo("hotlines");
+  }
+
+  function goTherapists() {
+    var m = _menu(); if (m) m.style.display = "none";
+    navigateTo("therapists");
+  }
+
+  // Close menu when clicking anywhere outside the support button
+  document.addEventListener("click", function (e) {
+    var wrap = _wrap();
+    if (wrap && !wrap.contains(e.target)) {
+      var m = _menu(); if (m) m.style.display = "none";
+    }
+  });
+
+  return { show: show, dismiss: dismiss, toggleMenu: toggleMenu, goHotlines: goHotlines, goTherapists: goTherapists };
+})();

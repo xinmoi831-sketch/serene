@@ -1,0 +1,164 @@
+<!-- 
+INSTRUCTIONS:
+In index.html, find:
+  <!-- LOGIN -->
+  <div class="auth-wrap" id="page-login">
+
+Select and DELETE everything from that line down to and including 
+the closing </div> just before <!-- LOGIN VERIFICATION -->
+
+Then paste this entire block in its place.
+-->
+
+<!-- NEW LOGIN STYLES — paste inside existing <style> tag in <head> -->
+<style id="newLoginStyles">
+.new-login{min-height:100vh;display:none;flex-direction:column;align-items:center;justify-content:space-between;background:#04080f;overflow:hidden;position:relative;padding:0}
+.new-login.active{display:flex}
+#loginBgCanvas{position:absolute;inset:0;z-index:0}
+.login-orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:1;animation:loginOrbFloat ease-in-out infinite}
+@keyframes loginOrbFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(20px,-25px)}}
+.login-particle{position:absolute;border-radius:50%;pointer-events:none;z-index:2;animation:loginRise linear infinite}
+@keyframes loginRise{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:0.7}90%{opacity:0.2}100%{transform:translateY(-50px) translateX(var(--pdx)) scale(1);opacity:0}}
+.login-top{display:flex;flex-direction:column;align-items:center;padding-top:36px;z-index:5;width:100%}
+#loginCharWrap{position:relative;display:flex;flex-direction:column;align-items:center}
+#loginSerena{width:150px;height:150px;object-fit:contain;border-radius:50%;filter:drop-shadow(0 0 24px rgba(108,99,255,0.45));animation:charFloat 4s ease-in-out infinite}
+@keyframes charFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+#loginLogoVideo{width:200px;margin-top:-8px;filter:drop-shadow(0 0 18px rgba(108,99,255,0.3));border-radius:12px}
+.login-wordmark{font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;font-weight:300;letter-spacing:0.2em;background:linear-gradient(135deg,#f0eeff,#a78bfa,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-top:6px;text-align:center}
+.login-tagline{font-size:11px;color:rgba(196,181,253,0.5);letter-spacing:0.22em;text-transform:uppercase;margin-top:4px;font-weight:300;text-align:center}
+.login-card-new{width:100%;max-width:420px;background:rgba(8,13,26,0.88);backdrop-filter:blur(40px) saturate(1.4);-webkit-backdrop-filter:blur(40px) saturate(1.4);border:0.5px solid rgba(167,139,250,0.18);border-radius:28px 28px 0 0;padding:22px 22px 32px;box-shadow:0 -1px 0 rgba(167,139,250,0.1) inset,0 -40px 80px rgba(4,8,15,0.7);z-index:10;animation:cardRise 1.2s cubic-bezier(.16,1,.3,1) both;animation-delay:0.2s}
+@keyframes cardRise{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+.lc-tabs{display:flex;gap:4px;background:rgba(255,255,255,0.04);border-radius:14px;padding:4px;margin-bottom:16px}
+.lc-tab{flex:1;padding:9px;background:transparent;border:none;border-radius:11px;color:rgba(196,181,253,0.45);font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.25s}
+.lc-tab.active{background:rgba(108,99,255,0.22);color:#c4b5fd;box-shadow:0 1px 0 rgba(167,139,250,0.15) inset}
+.lc-form{display:none}
+.lc-form.active{display:block}
+.lc-field{margin-bottom:11px}
+.lc-field input{width:100%;padding:12px 14px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(167,139,250,0.14);border-radius:12px;color:#f0eeff;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:all 0.2s}
+.lc-field input:focus{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.06);box-shadow:0 0 0 3px rgba(108,99,255,0.08)}
+.lc-field input::placeholder{color:rgba(196,181,253,0.25)}
+.lc-forgot{text-align:right;margin-bottom:12px;margin-top:-6px}
+.lc-forgot a{font-size:11px;color:rgba(196,181,253,0.4);text-decoration:none;cursor:pointer}
+.lc-forgot a:hover{color:rgba(196,181,253,0.8)}
+.lc-submit{width:100%;padding:13px;background:linear-gradient(135deg,#6c63ff,#8b5cf6);border:none;border-radius:14px;color:white;font-size:14px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;box-shadow:0 4px 20px rgba(108,99,255,0.3);margin-bottom:10px;letter-spacing:0.03em}
+.lc-submit:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(108,99,255,0.45)}
+.lc-submit:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+.lc-divider{display:flex;align-items:center;gap:10px;margin:10px 0}
+.lc-divider-line{flex:1;height:0.5px;background:rgba(167,139,250,0.1)}
+.lc-divider-text{font-size:11px;color:rgba(196,181,253,0.25);letter-spacing:0.1em}
+.lc-google{width:100%;padding:11px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(167,139,250,0.14);border-radius:14px;color:rgba(196,181,253,0.7);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}
+.lc-google:hover{background:rgba(255,255,255,0.07);border-color:rgba(167,139,250,0.25)}
+.lc-terms{font-size:10px;color:rgba(196,181,253,0.25);text-align:center;margin-top:12px;line-height:1.6}
+.lc-terms a{color:rgba(196,181,253,0.4);text-decoration:none}
+</style>
+
+<!-- NEW LOGIN PAGE -->
+<div class="new-login" id="page-login">
+
+  <canvas id="loginBgCanvas"></canvas>
+
+  <div class="login-orb" style="width:400px;height:400px;top:-150px;left:-100px;background:radial-gradient(circle,rgba(108,99,255,0.07),transparent 70%);animation-duration:13s"></div>
+  <div class="login-orb" style="width:350px;height:350px;bottom:100px;right:-100px;background:radial-gradient(circle,rgba(139,92,246,0.06),transparent 70%);animation-duration:17s;animation-delay:-5s"></div>
+  <div class="login-orb" style="width:250px;height:250px;top:40%;left:60%;background:radial-gradient(circle,rgba(52,211,153,0.04),transparent 70%);animation-duration:11s;animation-delay:-3s"></div>
+
+  <!-- Top: Serena + Logo -->
+  <div class="login-top">
+    <div id="loginCharWrap">
+      <!-- Serena welcome video -->
+      <video id="loginSerena" autoplay loop muted playsinline>
+        <source src="/images/serena/serena-welcome.mp4" type="video/mp4"/>
+        <img src="/images/serena/serena-idle.png.jpg" alt="Serena"/>
+      </video>
+      <!-- Animated herb logo video -->
+      <video id="loginLogoVideo" autoplay loop muted playsinline>
+        <source src="/images/serene-logo-animated.mp4" type="video/mp4"/>
+      </video>
+      <div class="login-wordmark">SERENE</div>
+      <div class="login-tagline">Your mental wellness companion</div>
+    </div>
+  </div>
+
+  <!-- Bottom: Card -->
+  <div class="login-card-new">
+    <div class="lc-tabs">
+      <button class="lc-tab active" onclick="lcSwitchTab('signin',this)">Sign In</button>
+      <button class="lc-tab" onclick="lcSwitchTab('signup',this)">Sign Up</button>
+    </div>
+
+    <!-- SIGN IN -->
+    <div class="lc-form active" id="lcSigninForm">
+      <div id="loginAlert" class="alert"></div>
+      <div class="lc-field"><input id="loginEmail" type="email" placeholder="Email address" autocomplete="email"/></div>
+      <div class="lc-field"><input id="loginPass" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <div class="lc-forgot"><a onclick="showPage('forgot')">Forgot password?</a></div>
+      <button class="lc-submit" id="loginBtn" onclick="doLogin()">Sign In</button>
+      <div class="lc-divider"><div class="lc-divider-line"></div><div class="lc-divider-text">or</div><div class="lc-divider-line"></div></div>
+      <button class="lc-google" onclick="signInWithGoogle()">
+        <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
+        Sign In with Google
+      </button>
+      <div class="lc-terms">By continuing you agree to our <a href="/legal.html">Terms</a> and <a href="/legal.html">Privacy Policy</a></div>
+    </div>
+
+    <!-- SIGN UP -->
+    <div class="lc-form" id="lcSignupForm">
+      <div id="regAlert" class="alert"></div>
+      <div class="lc-field"><input id="regName" type="text" placeholder="Your name" autocomplete="name"/></div>
+      <div class="lc-field"><input id="regEmail" type="email" placeholder="Email address" autocomplete="email"/></div>
+      <div class="lc-field"><input id="regPass" type="password" placeholder="Password (min. 8 characters)" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/></div>
+      <button class="lc-submit" id="regBtn" onclick="doRegister()">Create Account</button>
+      <div class="lc-divider"><div class="lc-divider-line"></div><div class="lc-divider-text">or</div><div class="lc-divider-line"></div></div>
+      <button class="lc-google" onclick="signInWithGoogle()">
+        <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
+        Sign Up with Google
+      </button>
+      <div class="lc-terms">By signing up you agree to our <a href="/legal.html">Terms</a> and <a href="/legal.html">Privacy Policy</a></div>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    var canvas = document.getElementById("loginBgCanvas");
+    if (!canvas) return;
+    var ctx = canvas.getContext("2d");
+    var stars = [];
+    function resize(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+    resize(); window.addEventListener("resize",resize);
+    for(var i=0;i<140;i++) stars.push({x:Math.random(),y:Math.random()*0.72,r:Math.random()*1.3+0.2,o:Math.random(),s:Math.random()*0.004+0.001,d:Math.random()>.5?1:-1});
+    function draw(){
+      var W=canvas.width,H=canvas.height;
+      var g=ctx.createLinearGradient(0,0,0,H);
+      g.addColorStop(0,"#020510"); g.addColorStop(0.5,"#04080f"); g.addColorStop(1,"#080d1a");
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+      var n=ctx.createRadialGradient(W*.25,H*.2,0,W*.25,H*.2,W*.35);
+      n.addColorStop(0,"rgba(108,99,255,0.05)"); n.addColorStop(1,"transparent");
+      ctx.fillStyle=n; ctx.fillRect(0,0,W,H);
+      stars.forEach(function(s){
+        s.o+=s.s*s.d; if(s.o>.9||s.o<.1)s.d*=-1;
+        ctx.beginPath(); ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);
+        ctx.fillStyle="rgba(255,255,255,"+s.o+")"; ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+    for(var p=0;p<10;p++){
+      var el=document.createElement("div");
+      el.className="login-particle";
+      var sz=Math.random()*3+2;
+      el.style.cssText="width:"+sz+"px;height:"+sz+"px;left:"+(Math.random()*100)+"%;"
+        +"background:rgba("+(100+Math.random()*60|0)+","+(80+Math.random()*40|0)+",255,0.5);"
+        +"animation-duration:"+(Math.random()*14+10)+"s;"
+        +"animation-delay:-"+(Math.random()*14)+"s;"
+        +"--pdx:"+(Math.random()*60-30)+"px;";
+      document.getElementById("page-login").appendChild(el);
+    }
+  })();
+
+  function lcSwitchTab(tab,btn){
+    document.querySelectorAll(".lc-tab").forEach(function(b){b.classList.remove("active");});
+    document.querySelectorAll(".lc-form").forEach(function(f){f.classList.remove("active");});
+    btn.classList.add("active");
+    document.getElementById(tab==="signin"?"lcSigninForm":"lcSignupForm").classList.add("active");
+  }
+  </script>
+</div>

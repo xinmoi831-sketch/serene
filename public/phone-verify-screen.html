@@ -1,0 +1,202 @@
+<!-- 
+ADD THIS to index.html:
+
+1. Add this page before the MAIN APP div (before <div class="page" id="page-app">)
+2. Add the script at the bottom before </body>
+-->
+
+<!-- PHONE VERIFICATION PAGE -->
+<div class="page" id="page-phone" style="background:linear-gradient(160deg,#0a0f1e,#0d1428)">
+  <div class="container" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:2rem 0">
+    <div style="text-align:center;margin-bottom:2rem">
+      <div style="font-size:48px;margin-bottom:12px">📱</div>
+      <h2 style="font-size:24px;font-weight:700;color:#f0f4ff">Verify your phone</h2>
+      <p style="font-size:14px;color:var(--text2);margin-top:8px">Your phone number is required to keep your account secure</p>
+    </div>
+
+    <!-- STEP 1: Enter phone number -->
+    <div id="phoneStep1">
+      <div class="glass-strong" style="padding:1.75rem">
+        <div id="phoneAlert1" class="alert"></div>
+        <div class="input-group">
+          <label>Phone Number</label>
+          <div style="display:flex;gap:8px">
+            <select id="phoneCodeSelect" style="width:110px;padding:10px 8px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;color:#f0f4ff;font-size:13px;font-family:inherit;flex-shrink:0">
+              <option value="+260">🇿🇲 +260</option>
+              <option value="+27">🇿🇦 +27</option>
+              <option value="+263">🇿🇼 +263</option>
+              <option value="+255">🇹🇿 +255</option>
+              <option value="+254">🇰🇪 +254</option>
+              <option value="+256">🇺🇬 +256</option>
+              <option value="+265">🇲🇼 +265</option>
+            </select>
+            <input id="phoneNumberInput" type="tel" placeholder="97 123 4567" style="flex:1" onkeydown="if(event.key==='Enter')sendPhoneCode()"/>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="sendPhoneCodeBtn" onclick="sendPhoneCode()">
+          <i class="ti ti-send"></i> Send verification code
+        </button>
+        <p style="font-size:12px;color:var(--text3);text-align:center;margin-top:12px">We will send a 6-digit code via SMS</p>
+      </div>
+    </div>
+
+    <!-- STEP 2: Enter SMS code -->
+    <div id="phoneStep2" style="display:none">
+      <div class="glass-strong" style="padding:1.75rem">
+        <div id="phoneAlert2" class="alert"></div>
+        <p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:4px">Enter the 6-digit code sent to</p>
+        <p style="font-size:14px;font-weight:600;color:#a5b4fc;text-align:center;margin-bottom:16px" id="phoneDisplay"></p>
+        <div class="code-row">
+          <input class="code-box" id="pd0" maxlength="1" oninput="phoneCodeInput(this,0)" onkeydown="phoneCodeBack(event,0)"/>
+          <input class="code-box" id="pd1" maxlength="1" oninput="phoneCodeInput(this,1)" onkeydown="phoneCodeBack(event,1)"/>
+          <input class="code-box" id="pd2" maxlength="1" oninput="phoneCodeInput(this,2)" onkeydown="phoneCodeBack(event,2)"/>
+          <input class="code-box" id="pd3" maxlength="1" oninput="phoneCodeInput(this,3)" onkeydown="phoneCodeBack(event,3)"/>
+          <input class="code-box" id="pd4" maxlength="1" oninput="phoneCodeInput(this,4)" onkeydown="phoneCodeBack(event,4)"/>
+          <input class="code-box" id="pd5" maxlength="1" oninput="phoneCodeInput(this,5)" onkeydown="phoneCodeBack(event,5)"/>
+        </div>
+        <button class="btn btn-primary" id="verifyPhoneBtn" onclick="verifyPhoneCode()">
+          <i class="ti ti-check"></i> Verify phone number
+        </button>
+        <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)">
+          Didn't get it? <a href="#" onclick="resendPhoneCode()" style="color:var(--accent2);text-decoration:none">Resend code</a>
+        </p>
+        <p style="text-align:center;font-size:13px;margin-top:8px">
+          <a href="#" onclick="backToPhoneEntry()" style="color:var(--text3);text-decoration:none">← Change number</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── PHONE VERIFICATION ────────────────────────────────────────────
+var currentPhone = "";
+
+async function sendPhoneCode() {
+  var code    = document.getElementById("phoneCodeSelect").value;
+  var number  = document.getElementById("phoneNumberInput").value.trim();
+  var alrt    = document.getElementById("phoneAlert1");
+  var btn     = document.getElementById("sendPhoneCodeBtn");
+
+  if (!number) {
+    showAlert(alrt, "Please enter your phone number.", "error");
+    return;
+  }
+
+  currentPhone = code + number.replace(/^0/, "");
+  document.getElementById("phoneDisplay").textContent = currentPhone;
+
+  btn.disabled    = true;
+  btn.textContent = "Sending...";
+
+  var res  = await fetch("/api/phone/send-code", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + api.getToken() },
+    body:    JSON.stringify({ phone: currentPhone }),
+  });
+  var data = await res.json();
+
+  btn.disabled    = false;
+  btn.innerHTML   = '<i class="ti ti-send"></i> Send verification code';
+
+  if (res.ok) {
+    if (data.devCode) showAlert(alrt, "DEV CODE: " + data.devCode, "success");
+    document.getElementById("phoneStep1").style.display = "none";
+    document.getElementById("phoneStep2").style.display = "block";
+  } else {
+    showAlert(alrt, data.error || "Could not send code.", "error");
+  }
+}
+
+function phoneCodeInput(el, idx) {
+  el.value = el.value.replace(/[^0-9]/g, "").slice(-1);
+  if (el.value && idx < 5) {
+    var next = document.getElementById("pd" + (idx + 1));
+    if (next) next.focus();
+  }
+  // Auto verify when all 6 digits entered
+  var code = "";
+  for (var i = 0; i < 6; i++) {
+    var d = document.getElementById("pd" + i);
+    code += d ? (d.value || "") : "";
+  }
+  if (code.length === 6) verifyPhoneCode();
+}
+
+function phoneCodeBack(e, idx) {
+  if (e.key === "Backspace" && !e.target.value && idx > 0) {
+    var prev = document.getElementById("pd" + (idx - 1));
+    if (prev) prev.focus();
+  }
+}
+
+function getPhoneCode() {
+  var code = "";
+  for (var i = 0; i < 6; i++) {
+    var d = document.getElementById("pd" + i);
+    code += d ? (d.value || "") : "";
+  }
+  return code;
+}
+
+async function verifyPhoneCode() {
+  var code = getPhoneCode();
+  var alrt = document.getElementById("phoneAlert2");
+  var btn  = document.getElementById("verifyPhoneBtn");
+
+  if (code.length < 6) {
+    showAlert(alrt, "Please enter the full 6-digit code.", "error");
+    return;
+  }
+
+  btn.disabled    = true;
+  btn.textContent = "Verifying...";
+
+  var res  = await fetch("/api/phone/verify", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + api.getToken() },
+    body:    JSON.stringify({ code: code }),
+  });
+  var data = await res.json();
+
+  btn.disabled   = false;
+  btn.innerHTML  = '<i class="ti ti-check"></i> Verify phone number';
+
+  if (res.ok) {
+    state.user.phoneVerified = true;
+    state.user.phone         = currentPhone;
+    showApp();
+  } else {
+    showAlert(alrt, data.error || "Incorrect code.", "error");
+    // Clear code boxes
+    for (var i = 0; i < 6; i++) {
+      var d = document.getElementById("pd" + i);
+      if (d) d.value = "";
+    }
+    document.getElementById("pd0").focus();
+  }
+}
+
+async function resendPhoneCode() {
+  var alrt = document.getElementById("phoneAlert2");
+  var res  = await fetch("/api/phone/resend", {
+    method:  "POST",
+    headers: { "Authorization": "Bearer " + api.getToken() },
+  });
+  var data = await res.json();
+  if (res.ok) {
+    showAlert(alrt, "New code sent!" + (data.devCode ? " DEV: " + data.devCode : ""), "success");
+  } else {
+    showAlert(alrt, data.error || "Could not resend.", "error");
+  }
+}
+
+function backToPhoneEntry() {
+  document.getElementById("phoneStep1").style.display = "block";
+  document.getElementById("phoneStep2").style.display = "none";
+  for (var i = 0; i < 6; i++) {
+    var d = document.getElementById("pd" + i);
+    if (d) d.value = "";
+  }
+}
+</script>

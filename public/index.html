@@ -4,10 +4,35 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <title>Serene</title>
+<script>
+// Kill ALL service workers and caches permanently
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(r) { r.unregister(); console.log("[Serene] SW unregistered"); });
+  });
+  if (window.caches) {
+    caches.keys().then(function(keys) {
+      keys.forEach(function(k) { caches.delete(k); });
+    });
+  }
+}
+</script>
+<script>
+// Kill any lingering service workers permanently
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(reg) { reg.unregister(); });
+  });
+  caches.keys().then(function(keys) {
+    keys.forEach(function(key) { caches.delete(key); });
+  });
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css"/>
 <link rel="stylesheet" href="/css/style.css"/>
+<link rel="stylesheet" href="/css/chat-scroll.css"/>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 .auth-wrap{min-height:100vh;display:none;flex-direction:row}
@@ -50,18 +75,61 @@
 .t-section{font-size:11px;font-weight:600;color:#6366f1;text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px}
 .t-submit{width:100%;padding:14px;background:#6366f1;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px}
 .t-submit:disabled{opacity:0.6;cursor:not-allowed}
+/* ── Custom multi-select dropdown ── */
+.t-multiselect{position:relative;width:100%}
+.t-ms-trigger{width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;color:#f0f4ff;font-size:14px;font-family:inherit;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;user-select:none;transition:border-color 0.2s}
+.t-ms-trigger:hover,.t-ms-trigger.open{border-color:rgba(99,102,241,0.5)}
+.t-ms-trigger-text{flex:1;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.t-ms-trigger-text.placeholder{color:rgba(196,181,253,0.35)}
+.t-ms-arrow{font-size:10px;color:rgba(196,181,253,0.4);transition:transform 0.2s;flex-shrink:0}
+.t-ms-trigger.open .t-ms-arrow{transform:rotate(180deg)}
+.t-ms-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#0d1428;border:0.5px solid rgba(99,102,241,0.3);border-radius:12px;z-index:9999;max-height:220px;overflow-y:auto;box-shadow:0 16px 40px rgba(0,0,0,0.6);padding:6px}
+.t-ms-dropdown.open{display:block}
+.t-ms-option{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:#8b9dc3;transition:all 0.15s;user-select:none}
+.t-ms-option:hover{background:rgba(99,102,241,0.1);color:#c4b5fd}
+.t-ms-option.selected{color:#a5b4fc;background:rgba(99,102,241,0.12)}
+.t-ms-option.disabled{opacity:0.35;cursor:not-allowed;pointer-events:none}
+.t-ms-check{width:16px;height:16px;border-radius:4px;border:0.5px solid rgba(255,255,255,0.2);background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;transition:all 0.15s;color:#fff}
+.t-ms-option.selected .t-ms-check{background:#6366f1;border-color:#6366f1}
+.t-ms-option.selected .t-ms-check::after{content:'✓'}
+.t-ms-max-note{font-size:11px;color:rgba(196,181,253,0.35);text-align:center;padding:6px 0 2px;border-top:0.5px solid rgba(255,255,255,0.06);margin-top:4px}
+.new-login-page{min-height:100vh;display:none;flex-direction:column;align-items:center;justify-content:space-between;background:#04080f;overflow:hidden;position:relative;padding:0}.new-login-page.active{display:flex}#loginBgCanvas{position:absolute;inset:0;z-index:0;width:100%;height:100%}.login-orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:1;animation:loginOrbFloat ease-in-out infinite}@keyframes loginOrbFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(15px,-20px)}}.login-particle{position:absolute;border-radius:50%;pointer-events:none;z-index:2;animation:loginRise linear infinite}@keyframes loginRise{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:0.6}90%{opacity:0.2}100%{transform:translateY(-5vh) translateX(var(--ldx)) scale(1);opacity:0}}.login-logo-section{display:flex;flex-direction:column;align-items:center;flex:1;justify-content:center;width:100%;position:relative;padding-top:40px}#loginGlowRing{position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(108,99,255,0.2) 0%,rgba(99,102,241,0.08) 45%,transparent 70%);animation:loginGlowPulse 3.5s ease-in-out infinite;pointer-events:none}@keyframes loginGlowPulse{0%,100%{transform:scale(1);opacity:0.65}50%{transform:scale(1.12);opacity:1}}#loginHerbWrap{position:relative;z-index:2}#sereneAvatar{width:120px;height:auto;display:block;animation:sereneBreath 6s ease-in-out infinite,sereneGlow 8s ease-in-out infinite}@keyframes sereneBreath{0%,100%{transform:scale(1)}40%{transform:scale(1.026)}65%{transform:scale(1.016)}}@keyframes sereneGlow{0%,100%{filter:drop-shadow(0 0 8px rgba(139,92,246,0.22)) drop-shadow(0 0 18px rgba(108,99,255,0.08))}50%{filter:drop-shadow(0 0 18px rgba(139,92,246,0.48)) drop-shadow(0 0 36px rgba(108,99,255,0.18))}}#loginWordmark{font-family:"Cormorant Garamond",Georgia,serif;font-size:46px;font-weight:300;letter-spacing:0.15em;background:linear-gradient(135deg,#f0eeff 0%,#a78bfa 50%,#c4b5fd 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-top:8px}#loginTagline{font-size:11px;color:rgba(196,181,253,0.5);letter-spacing:0.22em;text-transform:uppercase;margin-top:6px;font-weight:300}.login-spark{position:absolute;border-radius:50%;animation:loginSparkTwinkle ease-in-out infinite;pointer-events:none}@keyframes loginSparkTwinkle{0%,100%{opacity:0.1;transform:scale(0.5)}50%{opacity:1;transform:scale(1.5)}}#loginCardSection{width:100%;max-width:440px;background:rgba(8,13,26,0.88);backdrop-filter:blur(40px) saturate(1.4);-webkit-backdrop-filter:blur(40px) saturate(1.4);border:0.5px solid rgba(167,139,250,0.18);border-radius:28px 28px 0 0;padding:22px 22px 36px;box-shadow:0 -1px 0 rgba(167,139,250,0.12) inset,0 -40px 80px rgba(4,8,15,0.7)}.lc-tabs{display:flex;gap:4px;background:rgba(255,255,255,0.04);border-radius:14px;padding:4px;margin-bottom:16px}.lc-tab{flex:1;padding:9px;background:transparent;border:none;border-radius:11px;color:rgba(196,181,253,0.45);font-size:13px;font-weight:500;cursor:pointer;font-family:"Inter",sans-serif;transition:all 0.25s}.lc-tab.active{background:rgba(108,99,255,0.22);color:#c4b5fd;box-shadow:0 1px 0 rgba(167,139,250,0.15) inset}.lc-form{display:none}.lc-form.active{display:block}.lc-field{margin-bottom:11px}.lc-field input{width:100%;padding:12px 14px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(167,139,250,0.14);border-radius:12px;color:#f0eeff;font-size:14px;font-family:"Inter",sans-serif;outline:none;transition:all 0.2s}.lc-field input:focus{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.06);box-shadow:0 0 0 3px rgba(108,99,255,0.08)}.lc-field input::placeholder{color:rgba(196,181,253,0.25)}.lc-forgot{text-align:right;margin-bottom:12px;margin-top:-6px}.lc-forgot a{font-size:11px;color:rgba(196,181,253,0.4);text-decoration:none;cursor:pointer}.lc-submit{width:100%;padding:13px;background:linear-gradient(135deg,#6c63ff,#8b5cf6);border:none;border-radius:14px;color:white;font-size:14px;font-weight:500;cursor:pointer;font-family:"Inter",sans-serif;box-shadow:0 4px 20px rgba(108,99,255,0.35);margin-bottom:10px;letter-spacing:0.03em;transition:all 0.2s}.lc-submit:disabled{opacity:0.6;cursor:not-allowed;transform:none}.lc-divider{display:flex;align-items:center;gap:10px;margin:10px 0}.lc-divider-line{flex:1;height:0.5px;background:rgba(167,139,250,0.1)}.lc-divider-text{font-size:11px;color:rgba(196,181,253,0.25);letter-spacing:0.1em}.lc-google{width:100%;padding:11px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(167,139,250,0.14);border-radius:14px;color:rgba(196,181,253,0.7);font-size:13px;cursor:pointer;font-family:"Inter",sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}.lc-google:hover{background:rgba(255,255,255,0.07)}.lc-terms{font-size:10px;color:rgba(196,181,253,0.25);text-align:center;margin-top:12px;line-height:1.6}.lc-terms a{color:rgba(196,181,253,0.4);text-decoration:none}
+.phone-verify-page{min-height:100vh;display:none;flex-direction:column;align-items:center;justify-content:space-between;background:#04080f;overflow:hidden;position:relative;padding:0}
+.phone-verify-page.active{display:flex}
+#pvBgCanvas{position:absolute;inset:0;z-index:0;width:100%;height:100%}
+.pv-top{display:flex;flex-direction:column;align-items:center;flex:1;justify-content:center;width:100%;position:relative;padding-top:40px;z-index:5}
+.pv-card{width:100%;max-width:440px;background:rgba(8,13,26,0.88);backdrop-filter:blur(40px) saturate(1.4);-webkit-backdrop-filter:blur(40px) saturate(1.4);border:0.5px solid rgba(167,139,250,0.18);border-radius:28px 28px 0 0;padding:22px 22px 36px;box-shadow:0 -1px 0 rgba(167,139,250,0.12) inset,0 -40px 80px rgba(4,8,15,0.7);z-index:5}
+.pv-title{font-size:22px;font-weight:700;color:#f0eeff;margin-bottom:6px;text-align:center}
+.pv-sub{font-size:13px;color:rgba(196,181,253,0.5);text-align:center;margin-bottom:20px;line-height:1.6}
+.pv-input{width:100%;padding:12px 14px 12px 60px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(167,139,250,0.14);border-radius:12px;color:#f0eeff;font-size:14px;font-family:inherit;outline:none;transition:all 0.2s;box-sizing:border-box}
+.pv-input:focus{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.06);box-shadow:0 0 0 3px rgba(108,99,255,0.08)}
+.pv-input::placeholder{color:rgba(196,181,253,0.25)}
+.pv-btn{width:100%;padding:13px;background:linear-gradient(135deg,#6c63ff,#8b5cf6);border:none;border-radius:14px;color:white;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(108,99,255,0.35);margin-bottom:10px;letter-spacing:0.03em;transition:all 0.2s}
+.pv-btn:disabled{opacity:0.6;cursor:not-allowed}
+.pv-alert{display:none;padding:10px 12px;border-radius:10px;font-size:13px;margin-bottom:14px}
+.login-footer{position:absolute;bottom:16px;left:0;right:0;text-align:center;z-index:10;font-size:11px;color:rgba(196,181,253,0.2);letter-spacing:0.05em}
+.phone-verify-page{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#020510,#04080f);padding:2rem 1.5rem;z-index:50}
+.phone-verify-page.active{display:flex}
+.phone-verify-card{width:100%;max-width:360px;text-align:center}
+.phone-verify-glass{background:rgba(8,13,26,0.88);backdrop-filter:blur(40px) saturate(1.4);-webkit-backdrop-filter:blur(40px) saturate(1.4);border:0.5px solid rgba(167,139,250,0.18);border-radius:20px;padding:28px 24px;box-shadow:0 24px 80px rgba(0,0,0,0.5);text-align:left}
+.phone-input-wrap{position:relative;margin-bottom:14px}
+.phone-prefix{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:#a78bfa;font-weight:500;pointer-events:none}
+.phone-input{width:100%;padding:12px 14px 12px 60px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(167,139,250,0.14);border-radius:12px;color:#f0eeff;font-size:14px;font-family:inherit;outline:none;transition:all 0.2s;box-sizing:border-box}
+.phone-input:focus{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.06);box-shadow:0 0 0 3px rgba(108,99,255,0.08)}
+.phone-input::placeholder{color:rgba(196,181,253,0.25)}
+.try-another{display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(167,139,250,0.12);border-radius:12px;color:rgba(196,181,253,0.55);font-size:13px;cursor:pointer;width:100%;margin-top:10px;transition:all 0.2s;font-family:inherit}
+.try-another:hover{background:rgba(108,99,255,0.08);border-color:rgba(108,99,255,0.25);color:#c4b5fd}
+@keyframes pvFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pvSlideUp{from{opacity:0;transform:translateY(24px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 </style>
 </head>
 <body>
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
-
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-
 <div class="drawer" id="drawer">
   <div class="drawer-header">
     <div class="drawer-logo serif">🌿 Serene</div>
-    <div class="drawer-tagline">Your mental wellness companion</div>
     <div class="drawer-user">
       <div class="drawer-avatar" id="drawerAvatar">?</div>
       <div>
@@ -70,101 +138,195 @@
       </div>
     </div>
   </div>
+  <button class="drawer-new-conv" onclick="drawerNewConversation()"><i class="ti ti-plus"></i> New Conversation</button>
+  <div class="drawer-conv-block">
+    <div class="drawer-section-label">Recent Conversations</div>
+    <div id="drawerConvList" class="drawer-conv-list"><div class="drawer-conv-empty">Loading…</div></div>
+  </div>
+  <div class="drawer-divider"></div>
   <nav class="drawer-nav">
     <div class="drawer-section-label">Menu</div>
-    <button class="drawer-nav-item active" data-tab="chat" onclick="navigateTo('chat');closeDrawer()">
-      <i class="ti ti-message-circle drawer-nav-icon"></i><span class="drawer-nav-label">Chat</span>
-    </button>
-    <button class="drawer-nav-item" data-tab="journal" onclick="navigateTo('journal');closeDrawer()">
-      <i class="ti ti-notebook drawer-nav-icon"></i><span class="drawer-nav-label">Journal</span>
-    </button>
-    <button class="drawer-nav-item" data-tab="insights" onclick="navigateTo('insights');closeDrawer()">
-      <i class="ti ti-chart-line drawer-nav-icon"></i><span class="drawer-nav-label">Insights</span>
-    </button>
-    <button class="drawer-nav-item" data-tab="therapists" onclick="navigateTo('therapists');closeDrawer()">
-      <i class="ti ti-stethoscope drawer-nav-icon"></i><span class="drawer-nav-label">Therapists</span>
-    </button>
+    <button class="drawer-nav-item active" data-tab="chat" onclick="navigateTo('chat');closeDrawer()"><i class="ti ti-message-circle drawer-nav-icon"></i><span class="drawer-nav-label">Chat</span></button>
+    <button class="drawer-nav-item" data-tab="journal" onclick="navigateTo('journal');closeDrawer()"><i class="ti ti-notebook drawer-nav-icon"></i><span class="drawer-nav-label">Journal</span></button>
+    <button class="drawer-nav-item" data-tab="insights" onclick="navigateTo('insights');closeDrawer()"><i class="ti ti-chart-line drawer-nav-icon"></i><span class="drawer-nav-label">Insights</span></button>
+    <button class="drawer-nav-item" data-tab="therapists" onclick="navigateTo('therapists');closeDrawer()"><i class="ti ti-stethoscope drawer-nav-icon"></i><span class="drawer-nav-label">Therapists</span></button>
+    <button class="drawer-nav-item" data-tab="hotlines" onclick="navigateTo('hotlines');closeDrawer()"><i class="ti ti-phone drawer-nav-icon"></i><span class="drawer-nav-label">Hotlines</span></button>
     <div class="drawer-divider"></div>
     <div class="drawer-section-label">Account</div>
-    <button class="drawer-nav-item" data-tab="settings" onclick="navigateTo('settings');closeDrawer()">
-      <i class="ti ti-settings drawer-nav-icon"></i><span class="drawer-nav-label">Settings</span>
-    </button>
-    <button class="drawer-nav-item" onclick="showPlans();closeDrawer()">
-      <i class="ti ti-crown drawer-nav-icon"></i><span class="drawer-nav-label">Upgrade to Pro</span>
-      <span class="drawer-nav-badge">7 days free</span>
-    </button>
+    <button class="drawer-nav-item" data-tab="settings" onclick="navigateTo('settings');closeDrawer()"><i class="ti ti-settings drawer-nav-icon"></i><span class="drawer-nav-label">Settings</span></button>
+    <button class="drawer-nav-item" onclick="showPlans();closeDrawer()"><i class="ti ti-crown drawer-nav-icon"></i><span class="drawer-nav-label">Upgrade to Pro</span><span class="drawer-nav-badge">7 days free</span></button>
   </nav>
   <div class="drawer-footer">
     <div class="drawer-plan-chip" id="drawerPlanChip">Free plan</div>
-    <button class="btn btn-outline btn-sm" onclick="doLogout()" style="width:100%">
-      <i class="ti ti-logout"></i> Log out
-    </button>
+    <button class="btn btn-outline btn-sm" onclick="doLogout()" style="width:100%"><i class="ti ti-logout"></i> Log out</button>
   </div>
 </div>
 
 <!-- LOGIN -->
-<div class="auth-wrap" id="page-login">
-  <div class="auth-left">
-    <div class="auth-photo active" id="photo0" style="background-image:url('https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&q=80')"></div>
-    <div class="auth-photo" id="photo1" style="background-image:url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80')"></div>
-    <div class="auth-photo" id="photo2" style="background-image:url('https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=800&q=80')"></div>
-    <div class="float-card" style="bottom:18%;left:6%;animation-delay:0s">
-      <div style="font-size:22px;margin-bottom:6px">🧠</div>
-      <div style="font-size:11px;color:#8b9dc3;text-transform:uppercase;letter-spacing:.07em">Mental health matters</div>
-      <div style="font-size:15px;font-weight:600;color:#a5b4fc;margin-top:2px">You are not alone</div>
+<div class="new-login-page" id="page-login">
+  <canvas id="loginBgCanvas"></canvas>
+  <div class="login-orb" style="width:400px;height:400px;top:-100px;left:-100px;background:radial-gradient(circle,rgba(108,99,255,0.08),transparent 70%);animation-duration:13s"></div>
+  <div class="login-orb" style="width:300px;height:300px;bottom:150px;right:-80px;background:radial-gradient(circle,rgba(52,211,153,0.05),transparent 70%);animation-duration:17s;animation-delay:-5s"></div>
+  <div class="login-logo-section">
+    <div id="loginGlowRing"></div>
+    <div id="loginHerbWrap">
+      <img id="sereneAvatar" src="/images/serene-avatar.png" alt="Serene">
     </div>
-    <div class="float-card" style="top:20%;right:6%;animation-delay:2.5s">
-      <div style="font-size:22px;margin-bottom:6px">💊</div>
-      <div style="font-size:11px;color:#8b9dc3;text-transform:uppercase;letter-spacing:.07em">AI-powered guidance</div>
-      <div style="font-size:15px;font-weight:600;color:#a5b4fc;margin-top:2px">24/7 support</div>
+    <div class="login-spark" style="width:5px;height:5px;background:#a78bfa;top:18%;left:28%;animation-duration:2.2s"></div>
+    <div class="login-spark" style="width:4px;height:4px;background:#c4b5fd;top:22%;right:26%;animation-duration:2.7s;animation-delay:0.5s"></div>
+    <div class="login-spark" style="width:4px;height:4px;background:#a78bfa;top:35%;left:22%;animation-duration:1.9s;animation-delay:1s"></div>
+    <div class="login-spark" style="width:3px;height:3px;background:#c4b5fd;top:30%;right:20%;animation-duration:2.4s;animation-delay:0.3s"></div>
+    <div class="login-spark" style="width:5px;height:5px;background:#a78bfa;top:12%;left:42%;animation-duration:3s;animation-delay:0.8s"></div>
+    <div id="loginWordmark">SERENE</div>
+    <div id="loginTagline">Your mental wellness companion</div>
+  </div>
+  <div id="loginCardSection">
+    <div class="lc-tabs">
+      <button class="lc-tab active" onclick="lcSwitchTab('signin',this)">Sign In</button>
+      <button class="lc-tab" onclick="lcSwitchTab('signup',this)">Sign Up</button>
     </div>
-    <div class="auth-quote">
-      <div class="auth-quote-text" id="quoteText">"The greatest wealth is health."</div>
-      <div class="auth-quote-author" id="quoteAuthor">— Virgil</div>
+    <div class="lc-form active" id="lcSigninForm">
+      <div id="loginAlert" class="alert"></div>
+      <div class="lc-field"><input id="loginEmail" type="email" placeholder="Email address" autocomplete="email"/></div>
+      <div class="lc-field"><input id="loginPass" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <div class="lc-forgot"><a onclick="showPage('forgot')">Forgot password?</a></div>
+      <button class="lc-submit" id="loginBtn" onclick="doLogin()">Sign In</button>
+      <div class="lc-divider"><div class="lc-divider-line"></div><div class="lc-divider-text">or</div><div class="lc-divider-line"></div></div>
+      <button class="lc-google" onclick="signInWithGoogle()"><svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg> Sign In with Google</button>
+      <div class="lc-terms">By continuing you agree to our <a href="/legal.html">Terms</a> and <a href="/legal.html">Privacy Policy</a></div>
     </div>
-    <div class="photo-dots">
-      <div class="photo-dot active" onclick="goToPhoto(0)"></div>
-      <div class="photo-dot" onclick="goToPhoto(1)"></div>
-      <div class="photo-dot" onclick="goToPhoto(2)"></div>
-    </div>
-    <div class="marquee-wrap">
-      <div class="marquee-track">
-        <span class="marquee-item">Your mental health is our priority <span>*</span></span>
-        <span class="marquee-item">You are never alone <span>*</span></span>
-        <span class="marquee-item">Evidence-based care, available 24/7 <span>*</span></span>
-        <span class="marquee-item">Compassionate AI wellness support <span>*</span></span>
-        <span class="marquee-item">Your mental health is our priority <span>*</span></span>
-        <span class="marquee-item">You are never alone <span>*</span></span>
-        <span class="marquee-item">Evidence-based care, available 24/7 <span>*</span></span>
-        <span class="marquee-item">Compassionate AI wellness support <span>*</span></span>
-      </div>
+    <div class="lc-form" id="lcSignupForm">
+      <div id="regAlert" class="alert"></div>
+      <div class="lc-field"><input id="regName" type="text" placeholder="Your name" autocomplete="name"/></div>
+      <div class="lc-field"><input id="regEmail" type="email" placeholder="Email address" autocomplete="email"/></div>
+      <div class="lc-field"><input id="regPass" type="password" placeholder="Password (min. 8 characters)" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/></div>
+      <button class="lc-submit" id="regBtn" onclick="doRegister()">Create Account</button>
+      <div class="lc-divider"><div class="lc-divider-line"></div><div class="lc-divider-text">or</div><div class="lc-divider-line"></div></div>
+      <button class="lc-google" onclick="signInWithGoogle()"><svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg> Sign Up with Google</button>
+      <div class="lc-terms">By signing up you agree to our <a href="/legal.html">Terms</a> and <a href="/legal.html">Privacy Policy</a></div>
     </div>
   </div>
-  <div class="auth-right">
-    <div class="auth-inner">
-      <div style="text-align:center;margin-bottom:2rem">
-        <div style="font-size:48px;margin-bottom:12px">🌿</div>
-        <h1 style="font-size:32px;font-weight:700;background:linear-gradient(135deg,#a5b4fc,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:'Playfair Display',serif">Serene</h1>
-        <p style="font-size:14px;color:var(--text2);margin-top:6px">Your mental wellness companion</p>
+  <script>
+  (function(){var c=document.getElementById("loginBgCanvas");if(!c)return;var ctx=c.getContext("2d"),stars=[];function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}resize();window.addEventListener("resize",resize);for(var i=0;i<150;i++)stars.push({x:Math.random(),y:Math.random()*0.7,r:Math.random()*1.4+0.2,o:Math.random(),s:Math.random()*0.004+0.001,d:Math.random()>.5?1:-1});function draw(){var W=c.width,H=c.height;var g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#020510");g.addColorStop(0.5,"#04080f");g.addColorStop(1,"#080d1a");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(function(s){s.o+=s.s*s.d;if(s.o>.9||s.o<.1)s.d*=-1;ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,"+s.o+")";ctx.fill();});requestAnimationFrame(draw);}draw();for(var p=0;p<12;p++){var el=document.createElement("div");el.className="login-particle";var sz=Math.random()*3+2;el.style.cssText="width:"+sz+"px;height:"+sz+"px;left:"+(Math.random()*100)+"%;"+"background:rgba("+(100+Math.random()*60|0)+","+(80+Math.random()*40|0)+",255,0.5);"+"animation-duration:"+(Math.random()*14+10)+"s;"+"animation-delay:-"+(Math.random()*14)+"s;"+"--ldx:"+(Math.random()*60-30)+"px;";document.getElementById("page-login").appendChild(el);}})();
+  function lcSwitchTab(tab,btn){document.querySelectorAll(".lc-tab").forEach(function(b){b.classList.remove("active");});document.querySelectorAll(".lc-form").forEach(function(f){f.classList.remove("active");});btn.classList.add("active");document.getElementById(tab==="signin"?"lcSigninForm":"lcSignupForm").classList.add("active");}
+  </script>
+  <div class="login-footer">Serene AI by LME Falcon</div>
+</div>
+
+<!-- 2FA PAGE -->
+<div class="phone-verify-page" id="page-2fa">
+  <canvas id="tfaBgCanvas"></canvas>
+  <div class="login-orb" style="width:400px;height:400px;top:-100px;left:-100px;background:radial-gradient(circle,rgba(108,99,255,0.08),transparent 70%);animation-duration:13s"></div>
+  <div class="pv-top">
+    <img src="/images/serene-avatar.png" alt="Serene" style="width:72px;height:auto;display:block;margin-bottom:8px;animation:sereneBreath 6s ease-in-out infinite,sereneGlow 8s ease-in-out infinite">
+    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:300;letter-spacing:0.15em;background:linear-gradient(135deg,#f0eeff,#a78bfa,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">SERENE</div>
+  </div>
+  <div class="pv-card">
+    <div id="tfaStep1">
+      <div class="pv-title">Two-Factor Authentication</div>
+      <div class="pv-sub">Choose how you want to receive your verification code.</div>
+      <div id="tfaAlert1" class="pv-alert"></div>
+      <button onclick="tfaSend('email')" id="tfaEmailBtn" style="width:100%;padding:13px;background:rgba(108,99,255,0.12);border:0.5px solid rgba(108,99,255,0.3);border-radius:14px;color:#c4b5fd;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.2s"><i class="ti ti-mail"></i> Send code to my Email</button>
+      <button onclick="tfaSend('sms')" id="tfaSmsBtn" style="width:100%;padding:13px;background:rgba(52,211,153,0.08);border:0.5px solid rgba(52,211,153,0.25);border-radius:14px;color:#6ee7b7;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.2s"><i class="ti ti-device-mobile"></i> Send code via SMS</button>
+      <p style="text-align:center;font-size:12px;color:rgba(196,181,253,0.35);margin-top:4px">SMS requires a verified phone number</p>
+    </div>
+    <div id="tfaStep2" style="display:none">
+      <div class="pv-title">Enter verification code</div>
+      <div class="pv-sub" id="tfaSentTo">Code sent</div>
+      <div id="tfaAlert2" class="pv-alert"></div>
+      <div class="code-row" style="margin-bottom:20px">
+        <input class="code-box" id="tfa0" maxlength="1" oninput="tfaCodeInput(this,0)" onkeydown="tfaCodeBack(event,0)"/>
+        <input class="code-box" id="tfa1" maxlength="1" oninput="tfaCodeInput(this,1)" onkeydown="tfaCodeBack(event,1)"/>
+        <input class="code-box" id="tfa2" maxlength="1" oninput="tfaCodeInput(this,2)" onkeydown="tfaCodeBack(event,2)"/>
+        <input class="code-box" id="tfa3" maxlength="1" oninput="tfaCodeInput(this,3)" onkeydown="tfaCodeBack(event,3)"/>
+        <input class="code-box" id="tfa4" maxlength="1" oninput="tfaCodeInput(this,4)" onkeydown="tfaCodeBack(event,4)"/>
+        <input class="code-box" id="tfa5" maxlength="1" oninput="tfaCodeInput(this,5)" onkeydown="tfaCodeBack(event,5)"/>
       </div>
-      <div class="glass-strong" style="padding:1.75rem">
-        <div id="loginAlert" class="alert"></div>
-        <div class="input-group"><label>Email address</label><input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com"/></div>
-        <div class="input-group"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
-        <button class="btn btn-primary" id="loginBtn" onclick="doLogin()" style="margin-top:4px"><i class="ti ti-login"></i> Log in</button>
-        <p style="text-align:right;margin-top:8px"><a href="#" onclick="showPage('forgot')" style="font-size:13px;color:var(--text2);text-decoration:none">Forgot password?</a></p>
-        <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
-          <div style="flex:1;height:0.5px;background:var(--border)"></div><span style="font-size:12px;color:var(--text3)">or</span><div style="flex:1;height:0.5px;background:var(--border)"></div>
-        </div>
-        <button class="btn btn-outline" onclick="signInWithGoogle()" style="gap:10px;margin-bottom:12px">
-          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
-          Continue with Google
-        </button>
-        <p style="text-align:center;font-size:13px;color:var(--text2)">Don't have an account? <a href="#" onclick="showPage('register')" style="color:var(--accent2);text-decoration:none;font-weight:500"> Create account</a></p>
-        <p style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">By signing in you agree to our <a href="/legal.html" style="color:var(--text2);text-decoration:none">Terms of Service</a> and <a href="/legal.html" style="color:var(--text2);text-decoration:none">Privacy Policy</a></p>
+      <button class="pv-btn" id="tfaVerifyBtn" onclick="tfaVerify()">Verify &amp; Sign In</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+        <a onclick="tfaBack()" style="font-size:12px;color:rgba(196,181,253,0.4);cursor:pointer">&#8592; Change method</a>
+        <a onclick="tfaResend()" style="font-size:12px;color:#a78bfa;cursor:pointer">Resend code</a>
       </div>
     </div>
+    <div id="tfaStep3" style="display:none;text-align:center;padding:16px 0">
+      <div style="font-size:52px;margin-bottom:14px">✅</div>
+      <div style="font-size:20px;font-weight:600;color:#4ade80;margin-bottom:8px">Verified!</div>
+      <div style="font-size:13px;color:rgba(196,181,253,0.6)">Taking you to Serene...</div>
+    </div>
   </div>
+  <div class="login-footer" style="position:relative;padding:16px 0">Serene AI by LME Falcon</div>
+  <script>
+  (function(){var c=document.getElementById("tfaBgCanvas");if(!c)return;var ctx=c.getContext("2d"),stars=[];function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}resize();window.addEventListener("resize",resize);for(var i=0;i<150;i++)stars.push({x:Math.random(),y:Math.random()*0.7,r:Math.random()*1.4+0.2,o:Math.random(),s:Math.random()*0.004+0.001,d:Math.random()>.5?1:-1});function draw(){var W=c.width,H=c.height;var g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#020510");g.addColorStop(0.5,"#04080f");g.addColorStop(1,"#080d1a");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(function(s){s.o+=s.s*s.d;if(s.o>.9||s.o<.1)s.d*=-1;ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,"+s.o+")";ctx.fill();});requestAnimationFrame(draw);}draw();})();
+  var tfa2FAUserId=null,tfa2FAMethod=null,tfa2FAEmail=null,tfa2FAPass=null;
+  function showTFAPage(email,pass){tfa2FAEmail=email;tfa2FAPass=pass;tfa2FAUserId=null;tfa2FAMethod=null;document.getElementById("tfaStep1").style.display="block";document.getElementById("tfaStep2").style.display="none";document.getElementById("tfaStep3").style.display="none";document.getElementById("tfaAlert1").style.display="none";for(var i=0;i<6;i++){var d=document.getElementById("tfa"+i);if(d)d.value="";}showPage("2fa");}
+  function tfaShowAlert(id,msg,type){var el=document.getElementById(id);if(!el)return;el.textContent=msg;el.style.display="block";el.style.background=type==="success"?"rgba(74,222,128,0.1)":"rgba(244,63,94,0.1)";el.style.color=type==="success"?"#4ade80":"#f43f5e";el.style.border=type==="success"?"0.5px solid rgba(74,222,128,0.2)":"0.5px solid rgba(244,63,94,0.2)";}
+  async function tfaSend(method){tfa2FAMethod=method;var btn=method==="email"?document.getElementById("tfaEmailBtn"):document.getElementById("tfaSmsBtn");btn.textContent="Sending...";btn.disabled=true;var res=await fetch("/api/auth/send-2fa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:tfa2FAEmail,password:tfa2FAPass,method:method})});var data=await res.json();btn.textContent=method==="email"?"Send code to my Email":"Send code via SMS";btn.disabled=false;if(res.ok){tfa2FAUserId=data.userId;document.getElementById("tfaStep1").style.display="none";document.getElementById("tfaStep2").style.display="block";document.getElementById("tfaSentTo").textContent="Code sent to "+data.delivery;setTimeout(function(){document.getElementById("tfa0").focus();},100);}else{if(data.noPhone)tfaShowAlert("tfaAlert1","No verified phone number. Please use email instead.","error");else tfaShowAlert("tfaAlert1",data.error||"Could not send code.","error");}}
+  function tfaCodeInput(el,idx){el.value=el.value.replace(/[^0-9]/g,"");if(el.value&&idx<5){var n=document.getElementById("tfa"+(idx+1));if(n)n.focus();}var code="";for(var i=0;i<6;i++){var d=document.getElementById("tfa"+i);code+=d?d.value:"";}if(code.length===6)setTimeout(tfaVerify,200);}
+  function tfaCodeBack(e,idx){if(e.key==="Backspace"&&!e.target.value&&idx>0){var p=document.getElementById("tfa"+(idx-1));if(p){p.value="";p.focus();}}}
+  function tfaBack(){document.getElementById("tfaStep1").style.display="block";document.getElementById("tfaStep2").style.display="none";document.getElementById("tfaAlert1").style.display="none";document.getElementById("tfaAlert2").style.display="none";}
+  async function tfaResend(){if(tfa2FAMethod)await tfaSend(tfa2FAMethod);}
+  async function tfaVerify(){var code="";for(var i=0;i<6;i++){var d=document.getElementById("tfa"+i);code+=d?d.value:"";}if(code.length<6)return tfaShowAlert("tfaAlert2","Please enter the full 6-digit code.","error");var btn=document.getElementById("tfaVerifyBtn");btn.textContent="Verifying...";btn.disabled=true;var res=await fetch("/api/auth/verify-2fa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:tfa2FAUserId,code:code})});var data=await res.json();btn.textContent="Verify & Sign In";btn.disabled=false;if(res.ok){document.getElementById("tfaStep2").style.display="none";document.getElementById("tfaStep3").style.display="block";api.setToken(data.token);state.user=data.user;tfa2FAEmail=null;tfa2FAPass=null;setTimeout(function(){if(!data.user.phoneVerified){showPhoneVerifyPage();}else{showApp();}},500);}else{tfaShowAlert("tfaAlert2",data.error||"Incorrect code.","error");}}
+  </script>
+</div>
+
+<!-- PHONE VERIFY PAGE -->
+<div class="phone-verify-page" id="page-phone-verify">
+  <canvas id="pvBgCanvas"></canvas>
+  <div class="login-orb" style="width:400px;height:400px;top:-100px;left:-100px;background:radial-gradient(circle,rgba(108,99,255,0.08),transparent 70%);animation-duration:13s"></div>
+  <div class="login-orb" style="width:300px;height:300px;bottom:150px;right:-80px;background:radial-gradient(circle,rgba(52,211,153,0.05),transparent 70%);animation-duration:17s;animation-delay:-5s"></div>
+  <div class="pv-top">
+    <img src="/images/serene-avatar.png" alt="Serene" style="width:72px;height:auto;display:block;margin-bottom:8px;animation:sereneBreath 6s ease-in-out infinite,sereneGlow 8s ease-in-out infinite">
+    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:300;letter-spacing:0.15em;background:linear-gradient(135deg,#f0eeff,#a78bfa,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">SERENE</div>
+  </div>
+  <div class="pv-card">
+    <div id="pvStep1">
+      <div class="pv-title">Verify your phone</div>
+      <div class="pv-sub">Enter your phone number to receive a verification code and secure your account.</div>
+      <div id="pvAlert1" class="pv-alert"></div>
+      <label style="font-size:11px;color:rgba(196,181,253,0.5);display:block;margin-bottom:6px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">Phone number</label>
+      <div style="position:relative;margin-bottom:14px">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:#a78bfa;font-weight:500;pointer-events:none">+260</span>
+        <input class="pv-input" id="pvPhone" type="tel" placeholder="9X XXX XXXX" maxlength="12" onkeydown="if(event.key==='Enter')pvSendCode()"/>
+      </div>
+      <button class="pv-btn" id="pvSendBtn" onclick="pvSendCode()">Send verification code</button>
+    </div>
+    <div id="pvStep2" style="display:none">
+      <div class="pv-title">Enter the code</div>
+      <div class="pv-sub" id="pvSentTo">We sent a 6-digit code to your phone</div>
+      <div id="pvAlert2" class="pv-alert"></div>
+      <div class="code-row" style="margin-bottom:20px">
+        <input class="code-box" id="pv0" maxlength="1" oninput="pvCodeInput(this,0)" onkeydown="pvCodeBack(event,0)"/>
+        <input class="code-box" id="pv1" maxlength="1" oninput="pvCodeInput(this,1)" onkeydown="pvCodeBack(event,1)"/>
+        <input class="code-box" id="pv2" maxlength="1" oninput="pvCodeInput(this,2)" onkeydown="pvCodeBack(event,2)"/>
+        <input class="code-box" id="pv3" maxlength="1" oninput="pvCodeInput(this,3)" onkeydown="pvCodeBack(event,3)"/>
+        <input class="code-box" id="pv4" maxlength="1" oninput="pvCodeInput(this,4)" onkeydown="pvCodeBack(event,4)"/>
+        <input class="code-box" id="pv5" maxlength="1" oninput="pvCodeInput(this,5)" onkeydown="pvCodeBack(event,5)"/>
+      </div>
+      <button class="pv-btn" id="pvVerifyBtn" onclick="pvVerifyCode()">Verify code</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+        <a onclick="pvBackToPhone()" style="font-size:12px;color:rgba(196,181,253,0.4);cursor:pointer">&#8592; Change number</a>
+        <a onclick="pvResend()" style="font-size:12px;color:#a78bfa;cursor:pointer">Resend code</a>
+      </div>
+    </div>
+    <div id="pvStep3" style="display:none;text-align:center;padding:16px 0">
+      <div style="font-size:52px;margin-bottom:14px">✅</div>
+      <div style="font-size:20px;font-weight:600;color:#4ade80;margin-bottom:8px">Phone verified!</div>
+      <div style="font-size:13px;color:rgba(196,181,253,0.6)">Taking you to Serene...</div>
+    </div>
+  </div>
+  <div class="login-footer" style="position:relative;padding:16px 0">Serene AI by LME Falcon</div>
+  <script>
+  (function(){var c=document.getElementById("pvBgCanvas");if(!c)return;var ctx=c.getContext("2d"),stars=[];function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}resize();window.addEventListener("resize",resize);for(var i=0;i<150;i++)stars.push({x:Math.random(),y:Math.random()*0.7,r:Math.random()*1.4+0.2,o:Math.random(),s:Math.random()*0.004+0.001,d:Math.random()>.5?1:-1});function draw(){var W=c.width,H=c.height;var g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#020510");g.addColorStop(0.5,"#04080f");g.addColorStop(1,"#080d1a");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(function(s){s.o+=s.s*s.d;if(s.o>.9||s.o<.1)s.d*=-1;ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,"+s.o+")";ctx.fill();});requestAnimationFrame(draw);}draw();})();
+  function pvShowAlert(id,msg,type){var el=document.getElementById(id);if(!el)return;el.textContent=msg;el.style.display="block";el.style.background=type==="success"?"rgba(74,222,128,0.1)":"rgba(244,63,94,0.1)";el.style.color=type==="success"?"#4ade80":"#f43f5e";el.style.border=type==="success"?"0.5px solid rgba(74,222,128,0.2)":"0.5px solid rgba(244,63,94,0.2)";}
+  async function pvSendCode(){var phone=document.getElementById("pvPhone").value.trim();if(!phone)return pvShowAlert("pvAlert1","Please enter your phone number.","error");var btn=document.getElementById("pvSendBtn");btn.textContent="Sending...";btn.disabled=true;var res=await fetch("/api/phone/send-code",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+api.getToken()},body:JSON.stringify({phone:phone})});var data=await res.json();btn.textContent="Send verification code";btn.disabled=false;if(res.ok){document.getElementById("pvStep1").style.display="none";document.getElementById("pvStep2").style.display="block";document.getElementById("pvSentTo").textContent="We sent a 6-digit code to +260"+phone.replace(/^0/,"");setTimeout(function(){document.getElementById("pv0").focus();},100);}else{pvShowAlert("pvAlert1",data.error||"Could not send code.","error");}}
+  function pvCodeInput(el,idx){el.value=el.value.replace(/[^0-9]/g,"");if(el.value&&idx<5){var n=document.getElementById("pv"+(idx+1));if(n)n.focus();}var code="";for(var i=0;i<6;i++){var d=document.getElementById("pv"+i);code+=d?d.value:"";}if(code.length===6)setTimeout(pvVerifyCode,200);}
+  function pvCodeBack(e,idx){if(e.key==="Backspace"&&!e.target.value&&idx>0){var p=document.getElementById("pv"+(idx-1));if(p){p.value="";p.focus();}}}
+  function pvBackToPhone(){document.getElementById("pvStep1").style.display="block";document.getElementById("pvStep2").style.display="none";document.getElementById("pvAlert1").style.display="none";document.getElementById("pvAlert2").style.display="none";}
+  async function pvResend(){var res=await fetch("/api/phone/resend",{method:"POST",headers:{"Authorization":"Bearer "+api.getToken()}});var data=await res.json();if(res.ok)pvShowAlert("pvAlert2","New code sent!","success");else pvShowAlert("pvAlert2",data.error||"Could not resend.","error");}
+  async function pvVerifyCode(){var code="";for(var i=0;i<6;i++){var d=document.getElementById("pv"+i);code+=d?d.value:"";}if(code.length<6)return pvShowAlert("pvAlert2","Please enter the full 6-digit code.","error");var btn=document.getElementById("pvVerifyBtn");btn.textContent="Verifying...";btn.disabled=true;var res=await fetch("/api/phone/verify",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+api.getToken()},body:JSON.stringify({code:code})});var data=await res.json();btn.textContent="Verify code";btn.disabled=false;if(res.ok){document.getElementById("pvStep2").style.display="none";document.getElementById("pvStep3").style.display="block";if(state&&state.user)state.user.phoneVerified=true;setTimeout(function(){showApp();},500);}else{pvShowAlert("pvAlert2",data.error||"Incorrect code.","error");}}
+  function pvSkip(){showApp();}
+  function showPhoneVerifyPage(){document.getElementById("pvStep1").style.display="block";document.getElementById("pvStep2").style.display="none";document.getElementById("pvStep3").style.display="none";document.getElementById("pvAlert1").style.display="none";document.getElementById("pvPhone").value="";for(var i=0;i<6;i++){var d=document.getElementById("pv"+i);if(d)d.value="";}showPage("phone-verify");}
+  </script>
 </div>
 
 <!-- LOGIN VERIFICATION -->
@@ -175,11 +337,7 @@
   </div>
   <div class="auth-right">
     <div class="auth-inner">
-      <div style="text-align:center;margin-bottom:2rem">
-        <div style="font-size:48px;margin-bottom:12px">🔐</div>
-        <h1 style="font-size:28px;font-weight:700;color:#f0f4ff">Check your email</h1>
-        <p style="font-size:14px;color:var(--text2);margin-top:6px">We sent a 6-digit code to your email address</p>
-      </div>
+      <div style="text-align:center;margin-bottom:2rem"><div style="font-size:48px;margin-bottom:12px">🔐</div><h1 style="font-size:28px;font-weight:700;color:#f0f4ff">Check your email</h1><p style="font-size:14px;color:var(--text2);margin-top:6px">We sent a 6-digit code to your email address</p></div>
       <div class="glass-strong" style="padding:1.75rem">
         <div id="loginVerifyAlert" class="alert"></div>
         <p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:16px">Enter the code to continue</p>
@@ -192,31 +350,56 @@
           <input class="code-box" id="lvd5" maxlength="1" oninput="codeInput(this,5,'lv')" onkeydown="codeBack(event,5,'lv')"/>
         </div>
         <button class="btn btn-primary" id="loginVerifyBtn" onclick="doVerifyLoginCode()"><i class="ti ti-check"></i> Verify and sign in</button>
-        <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)"><a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">← Back to login</a></p>
+        <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)"><a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">&#8592; Back to login</a></p>
       </div>
     </div>
   </div>
 </div>
 
 <!-- FORGOT PASSWORD -->
-<div class="auth-wrap" id="page-forgot">
-  <div class="auth-left">
-    <div class="auth-photo active" style="background-image:url('https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&q=80')"></div>
-    <div class="auth-quote"><div class="auth-quote-text">"Every day is a fresh start."</div><div class="auth-quote-author">— Unknown</div></div>
+<div class="phone-verify-page" id="page-forgot">
+  <div class="phone-verify-card">
+    <div style="font-size:52px;margin-bottom:16px">🔑</div>
+    <div style="font-size:24px;font-weight:700;color:#f0f4ff;margin-bottom:8px">Reset Password</div>
+    <div style="font-size:14px;color:#8b9dc3;margin-bottom:24px;line-height:1.6">Enter your email and we'll send you a reset code</div>
+    <div class="phone-verify-glass">
+      <div id="forgotAlert" class="alert"></div>
+      <label style="font-size:12px;color:#8b9dc3;display:block;margin-bottom:6px;font-weight:500">Email address</label>
+      <input id="forgotEmail" type="email" placeholder="you@example.com" autocomplete="email" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(167,139,250,0.14);border-radius:12px;color:#f0eeff;font-size:14px;font-family:inherit;outline:none;margin-bottom:14px;box-sizing:border-box"/>
+      <button class="btn btn-primary" id="forgotBtn" onclick="doForgotPassword()" style="width:100%;margin-bottom:0"><i class="ti ti-send"></i> Send reset code</button>
+      <button class="try-another" id="tryAnotherBtn" onclick="doForgotSMS()" style="display:none"><i class="ti ti-device-mobile"></i> Try another way — send code via SMS</button>
+      <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)"><a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">Back to login</a></p>
+    </div>
   </div>
-  <div class="auth-right">
-    <div class="auth-inner">
-      <div style="text-align:center;margin-bottom:2rem">
-        <div style="font-size:48px;margin-bottom:12px">🔑</div>
-        <h1 style="font-size:28px;font-weight:700;color:#f0f4ff">Reset Password</h1>
-        <p style="font-size:14px;color:var(--text2);margin-top:6px">Enter your email and we will send you a code</p>
+</div>
+
+<!-- PHONE VERIFICATION PAGE (legacy) -->
+<div class="phone-verify-page" id="page-phone-verify-legacy">
+  <div class="phone-verify-card">
+    <div style="font-size:52px;margin-bottom:16px">📱</div>
+    <div style="font-size:24px;font-weight:700;color:#f0f4ff;margin-bottom:8px">Verify your phone</div>
+    <div style="font-size:14px;color:#8b9dc3;margin-bottom:24px;line-height:1.6" id="phoneVerifySubtitle">Enter your phone number to receive a verification code</div>
+    <div class="phone-verify-glass">
+      <div id="phoneVerifyAlert" class="alert"></div>
+      <div id="phoneInputSection">
+        <label style="font-size:12px;color:#8b9dc3;display:block;margin-bottom:6px;font-weight:500">Phone number</label>
+        <div class="phone-input-wrap"><span class="phone-prefix">+260</span><input class="phone-input" id="phoneVerifyInput" type="tel" placeholder="9X XXX XXXX" maxlength="12"/></div>
+        <button class="btn btn-primary" id="phoneSendBtn" onclick="doSendPhoneCode()" style="width:100%"><i class="ti ti-send"></i> Send verification code</button>
       </div>
-      <div class="glass-strong" style="padding:1.75rem">
-        <div id="forgotAlert" class="alert"></div>
-        <div class="input-group"><label>Email address</label><input id="forgotEmail" type="email" placeholder="you@example.com" autocomplete="email"/></div>
-        <button class="btn btn-primary" id="forgotBtn" onclick="doForgotPassword()"><i class="ti ti-send"></i> Send reset code</button>
-        <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)"><a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">Back to login</a></p>
+      <div id="phoneCodeSection" style="display:none">
+        <p style="font-size:13px;color:#8b9dc3;text-align:center;margin-bottom:16px">Enter the 6-digit code sent to your phone</p>
+        <div class="code-row">
+          <input class="code-box" id="pvc0" maxlength="1" oninput="codeInput(this,0,'pv')" onkeydown="codeBack(event,0,'pv')"/>
+          <input class="code-box" id="pvc1" maxlength="1" oninput="codeInput(this,1,'pv')" onkeydown="codeBack(event,1,'pv')"/>
+          <input class="code-box" id="pvc2" maxlength="1" oninput="codeInput(this,2,'pv')" onkeydown="codeBack(event,2,'pv')"/>
+          <input class="code-box" id="pvc3" maxlength="1" oninput="codeInput(this,3,'pv')" onkeydown="codeBack(event,3,'pv')"/>
+          <input class="code-box" id="pvc4" maxlength="1" oninput="codeInput(this,4,'pv')" onkeydown="codeBack(event,4,'pv')"/>
+          <input class="code-box" id="pvc5" maxlength="1" oninput="codeInput(this,5,'pv')" onkeydown="codeBack(event,5,'pv')"/>
+        </div>
+        <button class="btn btn-primary" id="phoneVerifyBtn" onclick="doVerifyPhoneCode()" style="width:100%;margin-top:4px"><i class="ti ti-check"></i> Verify code</button>
+        <p style="text-align:center;font-size:13px;margin-top:12px;color:var(--text2)">Didn't get it? <a href="#" onclick="doResendPhoneCode()" style="color:var(--accent2);text-decoration:none">Resend code</a></p>
       </div>
+      <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text2)"><a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none">Back to login</a></p>
     </div>
   </div>
 </div>
@@ -229,11 +412,7 @@
   </div>
   <div class="auth-right">
     <div class="auth-inner">
-      <div style="text-align:center;margin-bottom:2rem">
-        <div style="font-size:48px;margin-bottom:12px">🔐</div>
-        <h1 style="font-size:28px;font-weight:700;color:#f0f4ff">New Password</h1>
-        <p style="font-size:14px;color:var(--text2);margin-top:6px">Enter the code we sent and your new password</p>
-      </div>
+      <div style="text-align:center;margin-bottom:2rem"><div style="font-size:48px;margin-bottom:12px">🔐</div><h1 style="font-size:28px;font-weight:700;color:#f0f4ff">New Password</h1><p style="font-size:14px;color:var(--text2);margin-top:6px">Enter the code we sent and your new password</p></div>
       <div class="glass-strong" style="padding:1.75rem">
         <div id="resetAlert" class="alert"></div>
         <p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:8px">Enter the 6-digit code sent to your email</p>
@@ -264,11 +443,7 @@
   </div>
   <div class="auth-right">
     <div class="auth-inner">
-      <div style="text-align:center;margin-bottom:2rem">
-        <div style="font-size:48px;margin-bottom:12px">🌿</div>
-        <h1 style="font-size:32px;font-weight:700;background:linear-gradient(135deg,#a5b4fc,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:'Playfair Display',serif">Serene</h1>
-        <p style="font-size:14px;color:var(--text2);margin-top:6px">Create your free account</p>
-      </div>
+      <div style="text-align:center;margin-bottom:2rem"><div style="font-size:48px;margin-bottom:12px">🌿</div><h1 style="font-size:32px;font-weight:700;background:linear-gradient(135deg,#a5b4fc,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:'Playfair Display',serif">Serene</h1><p style="font-size:14px;color:var(--text2);margin-top:6px">Create your free account</p></div>
       <div class="glass-strong" style="padding:1.75rem">
         <div id="regAlert" class="alert"></div>
         <div class="input-group"><label>Your name</label><input id="regName" type="text" autocomplete="name" placeholder="Your name"/></div>
@@ -276,10 +451,7 @@
         <div class="input-group"><label>Password</label><input id="regPass" type="password" autocomplete="new-password" placeholder="Minimum 8 characters" onkeydown="if(event.key==='Enter')doRegister()"/></div>
         <button class="btn btn-primary" id="regBtn" onclick="doRegister()" style="margin-top:4px"><i class="ti ti-user-plus"></i> Create account</button>
         <div style="display:flex;align-items:center;gap:10px;margin:14px 0"><div style="flex:1;height:0.5px;background:var(--border)"></div><span style="font-size:12px;color:var(--text3)">or</span><div style="flex:1;height:0.5px;background:var(--border)"></div></div>
-        <button class="btn btn-outline" onclick="signInWithGoogle()" style="gap:10px">
-          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
-          Continue with Google
-        </button>
+        <button class="btn btn-outline" onclick="signInWithGoogle()" style="gap:10px"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg> Continue with Google</button>
         <p style="text-align:center;font-size:13px;margin-top:12px;color:var(--text2)">Already have an account? <a href="#" onclick="showPage('login')" style="color:var(--accent2);text-decoration:none;font-weight:500"> Log in</a></p>
       </div>
     </div>
@@ -307,8 +479,8 @@
   </div>
 </div>
 
-<!-- 2FA -->
-<div class="page" id="page-2fa" style="background:linear-gradient(160deg,#0a0f1e,#0d1428)">
+<!-- 2FA (legacy page) -->
+<div class="page" id="page-2fa-legacy" style="background:linear-gradient(160deg,#0a0f1e,#0d1428)">
   <div class="container" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:2rem 0">
     <div style="text-align:center;margin-bottom:2rem"><div style="font-size:48px;margin-bottom:12px">🔐</div><h2>Two-factor authentication</h2><p style="font-size:14px;color:var(--text2);margin-top:8px">Enter the 6-digit code sent to your email</p></div>
     <div class="glass-strong" style="padding:1.75rem">
@@ -342,9 +514,8 @@
       </div>
     </div>
   </div>
-
   <!-- CHAT -->
-  <div class="tab-content" id="tab-chat" style="display:flex;flex-direction:column;flex:1">
+  <div class="tab-content" id="tab-chat" style="display:flex;flex-direction:column;flex:1;min-height:0">
     <div class="mood-section">
       <div class="mood-label">How are you feeling?</div>
       <div class="mood-pills">
@@ -354,11 +525,19 @@
         <button class="mood-pill" data-mood="distressed" onclick="setMood('distressed',this)">😰 Distressed</button>
       </div>
     </div>
-    <div class="crisis-banner" id="crisisBanner" style="display:none">
-      <i class="ti ti-shield-heart" style="font-size:20px;flex-shrink:0"></i>
-      <div><strong>Need immediate support?</strong><br><span>Call or text 988 — available 24/7, free</span></div>
-    </div>
+    <div class="crisis-banner" id="crisisBanner" style="display:none"><i class="ti ti-shield-heart" style="font-size:20px;flex-shrink:0"></i><div><strong>Need immediate support?</strong><br><span>Use the support button, open Hotlines, or call local emergency services now.</span></div></div>
     <div class="chat-area" id="chatMessages"><div class="scroll-anchor" id="scrollAnchor"></div></div>
+    <!-- Support button — shown for orange / red / critical -->
+    <div class="support-float-wrap" id="supportBtnWrap" style="display:none">
+      <button class="support-float-btn support-float-btn--orange" id="supportFloatBtn" onclick="SupportButton.toggleMenu(event)">
+        💜 Get Immediate Support
+        <span class="support-float-dismiss" onclick="SupportButton.dismiss(event)" title="Dismiss">✕</span>
+      </button>
+      <div class="support-float-menu" id="supportFloatMenu" style="display:none">
+        <button class="support-float-menu-item" onclick="SupportButton.goHotlines()"><i class="ti ti-phone-call"></i> Call Hotline</button>
+        <button class="support-float-menu-item" onclick="SupportButton.goTherapists()"><i class="ti ti-calendar-event"></i> Book Therapist Session</button>
+      </div>
+    </div>
     <div class="chat-input-area">
       <div class="chat-row">
         <textarea class="chat-textarea" id="chatInput" rows="1" placeholder="Share what's on your mind…" onkeydown="handleChatKey(event)" oninput="autoResize(this)" style="background:transparent!important;border:0.5px solid rgba(255,255,255,0.2)!important;"></textarea>
@@ -374,45 +553,28 @@
       </div>
     </div>
   </div>
-
   <!-- JOURNAL -->
   <div class="tab-content" id="tab-journal" style="display:none;flex-direction:column;flex:1;overflow-y:auto">
     <div class="container" style="padding-top:1.25rem;padding-bottom:120px;flex:1">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
-        <h2>Journal</h2>
-        <button class="btn btn-outline btn-sm" onclick="showNewEntry()"><i class="ti ti-plus"></i> New entry</button>
-      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem"><h2>Journal</h2><button class="btn btn-outline btn-sm" onclick="showNewEntry()"><i class="ti ti-plus"></i> New entry</button></div>
       <div id="newEntryForm" class="glass" style="display:none;margin-bottom:1.25rem;padding:1.25rem">
         <div class="input-group"><textarea id="journalContent" rows="5" placeholder="Write your thoughts…"></textarea></div>
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;font-size:13px;color:var(--text2)">
-          <input type="checkbox" id="wantsReflection" style="width:auto;accent-color:var(--accent)"/>
-          <label for="wantsReflection" style="cursor:pointer">AI reflection (Pro)</label>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-primary" id="saveEntryBtn" onclick="saveJournalEntry()" style="flex:1"><i class="ti ti-check"></i> Save entry</button>
-          <button class="btn btn-outline" onclick="hideNewEntry()" style="flex:0 0 auto;width:auto;padding:14px 18px"><i class="ti ti-x"></i></button>
-        </div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;font-size:13px;color:var(--text2)"><input type="checkbox" id="wantsReflection" style="width:auto;accent-color:var(--accent)"/><label for="wantsReflection" style="cursor:pointer">AI reflection (Pro)</label></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" id="saveEntryBtn" onclick="saveJournalEntry()" style="flex:1"><i class="ti ti-check"></i> Save entry</button><button class="btn btn-outline" onclick="hideNewEntry()" style="flex:0 0 auto;width:auto;padding:14px 18px"><i class="ti ti-x"></i></button></div>
       </div>
       <div id="journalList"></div>
     </div>
   </div>
-
   <!-- INSIGHTS -->
   <div class="tab-content" id="tab-insights" style="display:none;flex-direction:column;flex:1;overflow-y:auto">
-    <div class="container" style="padding-top:1.25rem;padding-bottom:120px;flex:1">
-      <h2 style="margin-bottom:1.25rem">Insights</h2>
-      <div id="insightsContent"></div>
-    </div>
+    <div class="container" style="padding-top:1.25rem;padding-bottom:120px;flex:1"><h2 style="margin-bottom:1.25rem">Insights</h2><div id="insightsContent"></div></div>
   </div>
-
   <!-- THERAPISTS -->
   <div class="tab-content" id="tab-therapists" style="display:none;flex-direction:column;flex:1;overflow-y:auto">
     <div class="container" style="padding-top:1.25rem;padding-bottom:100px;flex:1">
       <h2 style="margin-bottom:4px">Therapists</h2>
       <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Verified professionals · 3+ years experience · Zambia based</p>
-      <button onclick="tOpenApply()" style="width:100%;padding:13px;background:rgba(99,102,241,0.12);border:0.5px solid rgba(99,102,241,0.3);border-radius:12px;color:#a5b4fc;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">
-        🩺 Are you a therapist? Apply here
-      </button>
+      <button onclick="tOpenApply()" style="width:100%;padding:13px;background:rgba(99,102,241,0.12);border:0.5px solid rgba(99,102,241,0.3);border-radius:12px;color:#a5b4fc;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">🩺 Are you a therapist? Apply here</button>
       <div style="display:flex;gap:8px;margin-bottom:14px">
         <input id="tSearchInput" type="text" placeholder="Search by name..." oninput="tLoadList()" style="flex:1;padding:10px 12px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;color:#f0f4ff;font-size:13px;font-family:inherit"/>
         <select id="tFilterSpec" onchange="tLoadList()" style="padding:10px 12px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;color:#8b9dc3;font-size:13px;font-family:inherit">
@@ -425,16 +587,22 @@
           <option value="stress">Stress</option>
         </select>
       </div>
-      <div id="therapistList">
-        <div style="text-align:center;padding:48px 20px;color:#8b9dc3">
-          <div style="font-size:48px;margin-bottom:14px">👨‍⚕️</div>
-          <div style="font-size:15px;font-weight:500;color:#f0f4ff;margin-bottom:8px">No verified therapists yet</div>
-          <div style="font-size:13px">Our team is reviewing applications. Check back soon.</div>
+      <div id="therapistList"><div style="text-align:center;padding:48px 20px;color:#8b9dc3"><div style="font-size:48px;margin-bottom:14px">👨‍⚕️</div><div style="font-size:15px;font-weight:500;color:#f0f4ff;margin-bottom:8px">No verified therapists yet</div><div style="font-size:13px">Our team is reviewing applications. Check back soon.</div></div></div>
+    </div>
+  </div>
+  <!-- HOTLINES -->
+  <div class="tab-content" id="tab-hotlines" style="display:none;flex-direction:column;flex:1;overflow-y:auto">
+    <div class="container" style="padding-top:1.25rem;padding-bottom:100px;flex:1">
+      <h2 style="margin-bottom:4px">Hotlines</h2>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:20px">Emergency services and mental health support resources — one tap to call.</p>
+      <div id="hotlinesList">
+        <div style="text-align:center;padding:40px 20px;color:#8b9dc3">
+          <div style="font-size:40px;margin-bottom:12px">📞</div>
+          <div style="font-size:14px">Loading resources...</div>
         </div>
       </div>
     </div>
   </div>
-
   <!-- SETTINGS -->
   <div class="tab-content" id="tab-settings" style="display:none;flex-direction:column;flex:1;overflow-y:auto">
     <div class="container" style="padding-top:1.25rem;padding-bottom:120px;flex:1">
@@ -442,7 +610,10 @@
       <div class="glass" style="padding:1.25rem;margin-bottom:1rem">
         <h3 style="margin-bottom:14px;color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:.08em">Account</h3>
         <div class="settings-row"><span class="settings-label">Email</span><span class="settings-value" id="settingsEmail"></span></div>
-        <div class="settings-row"><span class="settings-label">Two-factor auth</span><button id="toggle2faBtn" class="btn btn-outline btn-sm" onclick="toggle2FA()">Enable 2FA</button></div>
+        <div class="settings-row">
+          <div><span class="settings-label">Two-factor authentication</span><div style="font-size:11px;color:var(--text3);margin-top:2px">Require a code when signing in</div></div>
+          <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer"><input type="checkbox" id="toggle2faCheck" onchange="toggle2FA(this)" style="opacity:0;width:0;height:0;position:absolute"/><span id="toggle2faSlider" style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border-radius:24px;transition:0.3s;border:0.5px solid rgba(255,255,255,0.15)"><span style="position:absolute;width:18px;height:18px;background:#8b9dc3;border-radius:50%;top:2px;left:2px;transition:0.3s" id="toggle2faThumb"></span></span></label>
+        </div>
         <div style="margin-top:14px"><button class="btn btn-outline btn-sm" onclick="doLogout()"><i class="ti ti-logout"></i> Log out</button></div>
       </div>
       <div class="glass" style="padding:1.25rem;margin-bottom:1rem">
@@ -451,6 +622,21 @@
         <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
           <button id="upgradeBtn" class="btn btn-primary" onclick="showPlans()"><i class="ti ti-crown"></i> Upgrade to Pro</button>
           <button id="manageBtn" class="btn btn-outline" onclick="openPortal()" style="display:none"><i class="ti ti-settings"></i> Manage subscription</button>
+        </div>
+      </div>
+      <div class="glass" style="padding:1.25rem;margin-bottom:1rem">
+        <h3 style="margin-bottom:14px;color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:.08em">Voice &amp; Audio</h3>
+        <div class="settings-row">
+          <div>
+            <span class="settings-label">Voice Responses</span>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">SERENE speaks every reply aloud (Qwen3 TTS)</div>
+          </div>
+          <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer">
+            <input type="checkbox" id="toggleVoiceCheck" onchange="toggleVoiceSetting(this)" style="opacity:0;width:0;height:0;position:absolute"/>
+            <span id="toggleVoiceSlider" style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border-radius:24px;transition:0.3s;border:0.5px solid rgba(255,255,255,0.15)">
+              <span style="position:absolute;width:18px;height:18px;background:#8b9dc3;border-radius:50%;top:2px;left:2px;transition:0.3s" id="toggleVoiceThumb"></span>
+            </span>
+          </label>
         </div>
       </div>
       <div class="glass" style="padding:1.25rem;margin-bottom:1rem">
@@ -464,6 +650,27 @@
         <a href="/legal.html" style="display:block;padding:10px 0;color:var(--accent2);font-size:14px;text-decoration:none;border-bottom:0.5px solid var(--border)">Privacy Policy →</a>
         <a href="/legal.html" style="display:block;padding:10px 0;color:var(--accent2);font-size:14px;text-decoration:none">Medical Disclaimer →</a>
       </div>
+      <div class="glass" style="padding:1.25rem;margin-bottom:1rem">
+        <h3 style="margin-bottom:14px;color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:.08em">About SERENE</h3>
+        <p style="font-size:13px;line-height:1.7;color:var(--text2);margin-bottom:14px">SERENE is an AI-powered emotional support companion that helps you understand and manage your mental health — available 24/7, without judgment.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="min-width:28px;height:28px;border-radius:8px;background:rgba(99,102,241,0.15);border:0.5px solid rgba(99,102,241,0.3);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">💜</div>
+            <div><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">Validate</div><div style="font-size:12px;color:var(--text3);line-height:1.5">Your feelings are real and heard. SERENE acknowledges what you're experiencing without dismissing or rushing you.</div></div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="min-width:28px;height:28px;border-radius:8px;background:rgba(52,211,153,0.12);border:0.5px solid rgba(52,211,153,0.25);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">🌿</div>
+            <div><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">Stabilize</div><div style="font-size:12px;color:var(--text3);line-height:1.5">When you're overwhelmed, SERENE helps you find calm, perspective, and a steadier footing before moving forward.</div></div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="min-width:28px;height:28px;border-radius:8px;background:rgba(251,191,36,0.1);border:0.5px solid rgba(251,191,36,0.25);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">✨</div>
+            <div><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">Guide</div><div style="font-size:12px;color:var(--text3);line-height:1.5">Thoughtful, gentle next steps tailored to your situation — not generic advice, but real direction.</div></div>
+          </div>
+        </div>
+        <div style="padding:10px 12px;background:rgba(99,102,241,0.06);border:0.5px solid rgba(99,102,241,0.15);border-radius:10px;font-size:12px;color:var(--text3);line-height:1.6">
+          For deeper support, SERENE connects you with <strong style="color:var(--text2)">verified human therapists</strong> — real professionals you can book directly through the app when you're ready.
+        </div>
+      </div>
       <div class="glass" style="padding:1.25rem;border-color:rgba(244,63,94,0.3)">
         <h3 style="margin-bottom:10px;color:var(--danger)">Danger zone</h3>
         <p style="font-size:13px;margin-bottom:14px;color:var(--text2)">Permanently delete your account and all data.</p>
@@ -471,17 +678,13 @@
       </div>
     </div>
   </div>
-
   <nav class="bottom-nav" style="display:none"></nav>
 </div>
 
 <!-- PLANS MODAL -->
 <div id="plansModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:400;align-items:center;justify-content:center;padding:1rem">
   <div style="background:#0d1428;border:0.5px solid rgba(255,255,255,0.12);border-radius:20px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;padding:1.75rem;box-shadow:0 24px 80px rgba(0,0,0,0.6)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
-      <h2 style="font-size:20px;font-weight:600;color:#f0f4ff">Choose a plan</h2>
-      <button onclick="hidePlans()" style="background:rgba(255,255,255,0.08);border:0.5px solid rgba(255,255,255,0.1);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#8b9dc3;font-size:16px">✕</button>
-    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem"><h2 style="font-size:20px;font-weight:600;color:#f0f4ff">Choose a plan</h2><button onclick="hidePlans()" style="background:rgba(255,255,255,0.08);border:0.5px solid rgba(255,255,255,0.1);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#8b9dc3;font-size:16px">✕</button></div>
     <div id="plansList"></div>
     <p style="text-align:center;font-size:12px;color:var(--text3);margin-top:16px">Visa, Mastercard and PayPal accepted</p>
   </div>
@@ -510,10 +713,7 @@
 <!-- THERAPIST: BOOK SESSION MODAL -->
 <div class="t-modal" id="tBookModal">
   <div class="t-card">
-    <div class="t-header">
-      <div style="font-size:17px;font-weight:600;color:#f0f4ff" id="tBookName">Book Session</div>
-      <button class="t-close" onclick="document.getElementById('tBookModal').style.display='none'">✕</button>
-    </div>
+    <div class="t-header"><div style="font-size:17px;font-weight:600;color:#f0f4ff" id="tBookName">Book Session</div><button class="t-close" onclick="document.getElementById('tBookModal').style.display='none'">✕</button></div>
     <input type="hidden" id="tBookTherapistId"/>
     <div class="t-alert" id="tBookAlert"></div>
     <div id="tBookPrice" style="background:rgba(99,102,241,0.1);border-radius:10px;padding:10px;margin-bottom:16px;font-size:13px;color:#a5b4fc"></div>
@@ -542,7 +742,9 @@
   </div>
 </div>
 
-<!-- THERAPIST: APPLY MODAL -->
+<!-- ══════════════════════════════════════════════════════════════
+     THERAPIST: APPLY MODAL  — all changes applied here
+     ══════════════════════════════════════════════════════════════ -->
 <div class="t-modal" id="tApplyModal">
   <div class="t-card">
     <div class="t-header">
@@ -553,6 +755,7 @@
       Requirements: 3+ years experience · Valid credentials · 2 traceable references · Zambia based
     </div>
     <div class="t-alert" id="tApplyAlert"></div>
+
     <div class="t-section">Personal Information</div>
     <div class="t-field"><label>Full Name *</label><input id="aFullName" type="text" placeholder="Your full legal name"/></div>
     <div class="t-row2">
@@ -560,22 +763,123 @@
       <div class="t-field"><label>Phone *</label><input id="aPhone" type="tel" placeholder="+260 xxx xxx xxx"/></div>
     </div>
     <div class="t-row2">
-      <div class="t-field"><label>Country</label><input id="aCountry" type="text" placeholder="Zambia"/></div>
-      <div class="t-field"><label>City</label><input id="aCity" type="text" placeholder="Lusaka"/></div>
+      <div class="t-field"><label>Country</label><input id="aCountry" type="text" value="Zambia" readonly style="opacity:0.5;cursor:not-allowed;"/></div>
+      <div class="t-field"><label>City *</label>
+        <select id="aCity" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;color:#f0f4ff;font-size:14px;font-family:inherit;box-sizing:border-box">
+          <option value="" style="background:#0d1428">Select city...</option>
+          <option value="Lusaka" style="background:#0d1428">Lusaka</option>
+          <option value="Kitwe" style="background:#0d1428">Kitwe</option>
+          <option value="Ndola" style="background:#0d1428">Ndola</option>
+          <option value="Livingstone" style="background:#0d1428">Livingstone</option>
+          <option value="Kabwe" style="background:#0d1428">Kabwe</option>
+          <option value="Chingola" style="background:#0d1428">Chingola</option>
+          <option value="Mufulira" style="background:#0d1428">Mufulira</option>
+          <option value="Kasama" style="background:#0d1428">Kasama</option>
+          <option value="Chipata" style="background:#0d1428">Chipata</option>
+          <option value="Solwezi" style="background:#0d1428">Solwezi</option>
+          <option value="Mongu" style="background:#0d1428">Mongu</option>
+          <option value="Mazabuka" style="background:#0d1428">Mazabuka</option>
+          <option value="Kalulushi" style="background:#0d1428">Kalulushi</option>
+          <option value="Luanshya" style="background:#0d1428">Luanshya</option>
+          <option value="Other" style="background:#0d1428">Other</option>
+        </select>
+      </div>
     </div>
+
     <div class="t-section">Professional Information</div>
-    <div class="t-field"><label>Profession *</label><input id="aProfession" type="text" placeholder="e.g. Clinical Psychologist, Counsellor"/></div>
-    <div class="t-field"><label>Specializations</label><input id="aSpec" type="text" placeholder="e.g. Anxiety, Depression, Trauma"/></div>
+    <div class="t-field"><label>Profession *</label>
+      <select id="aProfession" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;color:#f0f4ff;font-size:14px;font-family:inherit;box-sizing:border-box">
+        <option value="" style="background:#0d1428">Select profession...</option>
+        <option value="Clinical Psychologist" style="background:#0d1428">Clinical Psychologist</option>
+        <option value="Counselling Psychologist" style="background:#0d1428">Counselling Psychologist</option>
+        <option value="Psychiatrist" style="background:#0d1428">Psychiatrist</option>
+        <option value="Counsellor" style="background:#0d1428">Counsellor</option>
+        <option value="Social Worker" style="background:#0d1428">Social Worker</option>
+        <option value="Marriage & Family Therapist" style="background:#0d1428">Marriage &amp; Family Therapist</option>
+        <option value="Trauma Therapist" style="background:#0d1428">Trauma Therapist</option>
+        <option value="Addiction Counsellor" style="background:#0d1428">Addiction Counsellor</option>
+        <option value="Child & Adolescent Therapist" style="background:#0d1428">Child &amp; Adolescent Therapist</option>
+        <option value="Other" style="background:#0d1428">Other</option>
+      </select>
+    </div>
+
+    <!-- ★ SPECIALIZATIONS — custom dropdown, max 2, auto-closes -->
+    <div class="t-field">
+      <label>Specializations * <span style="color:rgba(196,181,253,0.4);font-weight:400">(select up to 2)</span></label>
+      <div class="t-multiselect" id="aSpecMS">
+        <div class="t-ms-trigger" onclick="tmsToggle('aSpecMS')">
+          <span class="t-ms-trigger-text placeholder" id="aSpecDisplay">Select specializations...</span>
+          <span class="t-ms-arrow">▼</span>
+        </div>
+        <div class="t-ms-dropdown" id="aSpecDropdown">
+          <div class="t-ms-option" data-value="Anxiety" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Anxiety</div>
+          <div class="t-ms-option" data-value="Depression" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Depression</div>
+          <div class="t-ms-option" data-value="Trauma & PTSD" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Trauma &amp; PTSD</div>
+          <div class="t-ms-option" data-value="Relationships" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Relationships</div>
+          <div class="t-ms-option" data-value="Grief & Loss" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Grief &amp; Loss</div>
+          <div class="t-ms-option" data-value="Stress Management" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Stress Management</div>
+          <div class="t-ms-option" data-value="Postpartum" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Postpartum</div>
+          <div class="t-ms-option" data-value="Addiction" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Addiction</div>
+          <div class="t-ms-option" data-value="Child & Adolescent" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Child &amp; Adolescent</div>
+          <div class="t-ms-option" data-value="Abuse & Domestic Violence" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Abuse &amp; DV</div>
+          <div class="t-ms-option" data-value="Self-Esteem" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Self-Esteem</div>
+          <div class="t-ms-option" data-value="Anger Management" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Anger Management</div>
+          <div class="t-ms-option" data-value="Burnout" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Burnout</div>
+          <div class="t-ms-option" data-value="Men's Mental Health" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Men's Mental Health</div>
+          <div class="t-ms-option" data-value="Women's Mental Health" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Women's Mental Health</div>
+          <div class="t-ms-option" data-value="Family Conflict" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>Family Conflict</div>
+          <div class="t-ms-option" data-value="General Wellness" onclick="tmsSelect('aSpecMS',this)"><span class="t-ms-check"></span>General Wellness</div>
+          <div class="t-ms-max-note" id="aSpecMaxNote" style="display:none">Maximum 2 selected</div>
+        </div>
+      </div>
+      <input type="hidden" id="aSpecHidden"/>
+    </div>
+
     <div class="t-row2">
       <div class="t-field"><label>Years of Experience *</label><input id="aYears" type="number" placeholder="Min. 3" min="3"/></div>
-      <div class="t-field"><label>Session Price (ZMW) *</label><input id="aPrice" type="number" placeholder="e.g. 300"/></div>
+      <!-- ★ LANGUAGES — custom dropdown, no max limit -->
+      <div class="t-field"><label>Languages Spoken</label>
+        <div class="t-multiselect" id="aLangMS">
+          <div class="t-ms-trigger" onclick="tmsToggle('aLangMS')">
+            <span class="t-ms-trigger-text placeholder" id="aLangDisplay">Select languages...</span>
+            <span class="t-ms-arrow">▼</span>
+          </div>
+          <div class="t-ms-dropdown" id="aLangDropdown">
+            <div class="t-ms-option" data-value="English" onclick="tmsSelect('aLangMS',this)"><span class="t-ms-check"></span>English</div>
+            <div class="t-ms-option" data-value="Bemba" onclick="tmsSelect('aLangMS',this)"><span class="t-ms-check"></span>Bemba</div>
+            <div class="t-ms-option" data-value="Nyanja" onclick="tmsSelect('aLangMS',this)"><span class="t-ms-check"></span>Nyanja</div>
+            <div class="t-ms-option" data-value="Tonga" onclick="tmsSelect('aLangMS',this)"><span class="t-ms-check"></span>Tonga</div>
+            <div class="t-ms-option" data-value="Lozi" onclick="tmsSelect('aLangMS',this)"><span class="t-ms-check"></span>Lozi</div>
+            <div class="t-ms-option" data-value="Kaonde" onclick="tmsSelect('aLangMS',this)"><span class="t-ms-check"></span>Kaonde</div>
+            <div class="t-ms-option" data-value="Luvale" onclick="tmsSelect('aLangMS',this)"><span class="t-ms-check"></span>Luvale</div>
+            <div class="t-ms-option" data-value="Lunda" onclick="tmsSelect('aLangMS',this)"><span class="t-ms-check"></span>Lunda</div>
+            <div class="t-ms-option" data-value="Chewa" onclick="tmsSelect('aLangMS',this)"><span class="t-ms-check"></span>Chewa</div>
+            <div class="t-ms-option" data-value="Nsenga" onclick="tmsSelect('aLangMS',this)"><span class="t-ms-check"></span>Nsenga</div>
+            <div class="t-ms-option" data-value="Tumbuka" onclick="tmsSelect('aLangMS',this)"><span class="t-ms-check"></span>Tumbuka</div>
+            <div class="t-ms-option" data-value="Mambwe" onclick="tmsSelect('aLangMS',this)"><span class="t-ms-check"></span>Mambwe</div>
+          </div>
+        </div>
+        <input type="hidden" id="aLanguages"/>
+      </div>
     </div>
-    <div class="t-field"><label>Languages Spoken</label><input id="aLanguages" type="text" placeholder="e.g. English, Bemba, Nyanja"/></div>
+
+    <div style="background:rgba(99,102,241,0.08);border:0.5px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px;margin-bottom:13px;font-size:13px;color:#a5b4fc">
+      💰 Session fee: <strong>K120 ZMW</strong> — set by Serene platform. You keep 80% (K96 per session).
+    </div>
     <div class="t-field"><label>Professional Bio</label><textarea id="aBio" rows="3" placeholder="Describe your experience and approach..."></textarea></div>
+
     <div class="t-section">Credentials</div>
     <div class="t-field"><label>Degree(s)</label><input id="aDegrees" type="text" placeholder="e.g. BSc Psychology, MSc Counselling"/></div>
     <div class="t-field"><label>Certification(s)</label><input id="aCerts" type="text" placeholder="e.g. CBT Certified"/></div>
-    <div class="t-field"><label>License Number (if applicable)</label><input id="aLicense" type="text" placeholder="Professional registration number"/></div>
+    <!-- ★ UPDATED: HPCZ/PSY format hint -->
+    <div class="t-field"><label>License Number (HPCZ)</label><input id="aLicense" type="text" placeholder="e.g. HPCZ/PSY/12345"/></div>
+    <!-- ★ NEW: NRC — flexible, no province lock -->
+    <div class="t-field">
+      <label>NRC Number <span style="color:rgba(196,181,253,0.4);font-weight:400">(format varies by province)</span></label>
+      <input id="aNRC" type="text" placeholder="e.g. 327694/76/1"/>
+      <div style="font-size:11px;color:rgba(196,181,253,0.3);margin-top:4px">The district code varies by province — enter yours exactly as issued.</div>
+    </div>
+
     <div class="t-section">References (2 required)</div>
     <div class="t-row2">
       <div class="t-field"><label>Reference 1 Name *</label><input id="aRef1Name" type="text" placeholder="Full name"/></div>
@@ -585,10 +889,6 @@
       <div class="t-field"><label>Reference 2 Name *</label><input id="aRef2Name" type="text" placeholder="Full name"/></div>
       <div class="t-field"><label>Reference 2 Phone *</label><input id="aRef2Phone" type="tel" placeholder="Phone number"/></div>
     </div>
-    <div class="t-section">Documents</div>
-    <div class="t-field"><label>CV / Resume * (PDF, JPG, PNG — max 5MB)</label><input id="aCV" type="file" accept=".pdf,.jpg,.jpeg,.png" style="color:#8b9dc3"/></div>
-    <div class="t-field"><label>Professional License / Certificate (PDF, JPG, PNG — max 5MB)</label><input id="aLicense2" type="file" accept=".pdf,.jpg,.jpeg,.png" style="color:#8b9dc3"/></div>
-    <div class="t-field"><label>NRC / National ID (PDF, JPG, PNG — max 5MB)</label><input id="aNRC2" type="file" accept=".pdf,.jpg,.jpeg,.png" style="color:#8b9dc3"/></div>
     <button class="t-submit" id="tApplyBtn" onclick="tSubmitApply()">Submit Application</button>
     <p style="font-size:11px;color:#4a5568;text-align:center;margin-top:10px">Serene takes 20% per session. You keep 80%. Reviewed within 2-3 business days.</p>
   </div>
@@ -622,236 +922,206 @@
 <script src="/js/emotion.js"></script>
 <script src="/js/currency.js"></script>
 <script src="/js/i18n.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/app.js"></script>
 <script src="/js/voice.js"></script>
 <script src="/js/tts.js"></script>
-<script src="/js/session-timeout.js"></script>
 <script>
 // ── PAGE ROUTING ──────────────────────────────────────────────────
 function showPage(id) {
-  document.querySelectorAll(".page,.auth-wrap").forEach(function(p){ p.classList.remove("active"); });
+  document.querySelectorAll(".page,.auth-wrap,.new-login-page,.phone-verify-page")
+    .forEach(function(p) {
+      p.classList.remove("active");
+      p.style.display = ""; // clear any inline override so CSS class takes effect
+    });
   var el = document.getElementById("page-" + id);
-  if (el) el.classList.add("active");
+  if (el) {
+    el.style.display = ""; // ensure CSS class is not blocked by a lingering inline style
+    el.classList.add("active");
+  }
+  console.log("[Serene] ACTIVE PAGES:",
+    [].slice.call(document.querySelectorAll(
+      ".page.active,.auth-wrap.active,.new-login-page.active,.phone-verify-page.active"
+    )).map(function(e) { return e.id; })
+  );
 }
+function launchApp(){if(typeof showApp==="function"){showApp();}else{showPage("app");}}
+// Failsafe: force login if nothing is visible after 1 second
+window.addEventListener("DOMContentLoaded",function(){setTimeout(function(){var v=document.querySelector(".page.active,.new-login-page.active,.auth-wrap.active,.phone-verify-page.active");if(!v){console.warn("[Serene] Failsafe: forcing login page");showPage("login");}},1000);});
+
+// ── PHONE VERIFY STATE ────────────────────────────────────────────
+var phoneVerifyMode="signup";
+function showPhoneVerify(mode){phoneVerifyMode=mode||"signup";var sub=document.getElementById("phoneVerifySubtitle");if(phoneVerifyMode==="forgot"){if(sub)sub.textContent="We'll send a reset code to your verified phone number";}else{if(sub)sub.textContent="Add your phone number to secure your account";}document.getElementById("phoneInputSection").style.display="block";document.getElementById("phoneCodeSection").style.display="none";document.getElementById("phoneVerifyAlert").style.display="none";document.getElementById("phoneVerifyInput").value="";for(var i=0;i<6;i++){var d=document.getElementById("pvc"+i);if(d)d.value="";}showPage("phone-verify-legacy");}
+async function doSendPhoneCode(){var phone=document.getElementById("phoneVerifyInput").value.trim();var alrt=document.getElementById("phoneVerifyAlert");if(!phone)return showAlert(alrt,"Please enter your phone number.","error");var btn=document.getElementById("phoneSendBtn");btn.textContent="Sending...";btn.disabled=true;var token=api.getToken();var res=await fetch("/api/phone/send-code",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({phone:phone})});var data=await res.json();btn.textContent="Send verification code";btn.disabled=false;if(res.ok){document.getElementById("phoneInputSection").style.display="none";document.getElementById("phoneCodeSection").style.display="block";showAlert(alrt,"Code sent! Check your phone.","success");}else{showAlert(alrt,data.error||"Could not send code.","error");}}
+async function doVerifyPhoneCode(){var code=getCode("pv");var alrt=document.getElementById("phoneVerifyAlert");if(code.length<6)return showAlert(alrt,"Please enter the full 6-digit code.","error");var btn=document.getElementById("phoneVerifyBtn");btn.textContent="Verifying...";btn.disabled=true;var token=api.getToken();var res=await fetch("/api/phone/verify",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({code:code})});var data=await res.json();btn.textContent="Verify";btn.disabled=false;if(res.ok){showAlert(alrt,"Phone verified!","success");if(phoneVerifyMode==="forgot"){setTimeout(function(){showPage("reset");},1000);}else{setTimeout(function(){showApp();},1000);}}else{showAlert(alrt,data.error||"Incorrect code.","error");}}
+async function doResendPhoneCode(){var token=api.getToken();var res=await fetch("/api/phone/resend",{method:"POST",headers:{"Authorization":"Bearer "+token}});var data=await res.json();var alrt=document.getElementById("phoneVerifyAlert");if(res.ok)showAlert(alrt,"New code sent!","success");else showAlert(alrt,data.error||"Could not resend.","error");}
 
 // ── PHOTO SLIDESHOW ───────────────────────────────────────────────
-var quotes = [
-  {text:'"The greatest wealth is health."', author:'— Virgil'},
-  {text:'"Mental health is not a destination, but a process."', author:'— Noam Shpancer'},
-  {text:'"You don\'t have to be positive all the time."', author:'— Lori Deschene'},
-];
-var currentPhoto = 0;
-function goToPhoto(n) {
-  var photos = [document.getElementById("photo0"), document.getElementById("photo1"), document.getElementById("photo2")];
-  photos.forEach(function(p,i){ if(p) p.classList.toggle("active", i===n); });
-  document.querySelectorAll(".photo-dot").forEach(function(d,i){ d.classList.toggle("active", i===n); });
-  currentPhoto = n;
-  var q = quotes[n]||quotes[0];
-  var qt=document.getElementById("quoteText"); var qa=document.getElementById("quoteAuthor");
-  if(qt) qt.textContent=q.text; if(qa) qa.textContent=q.author;
-}
-setInterval(function(){ goToPhoto((currentPhoto+1)%3); }, 5000);
+var quotes=[{text:'"The greatest wealth is health."',author:'— Virgil'},{text:'"Mental health is not a destination, but a process."',author:'— Noam Shpancer'},{text:'"You don\'t have to be positive all the time."',author:'— Lori Deschene'}];
+var currentPhoto=0;
+function goToPhoto(n){var photos=[document.getElementById("photo0"),document.getElementById("photo1"),document.getElementById("photo2")];photos.forEach(function(p,i){if(p)p.classList.toggle("active",i===n);});document.querySelectorAll(".photo-dot").forEach(function(d,i){d.classList.toggle("active",i===n);});currentPhoto=n;var q=quotes[n]||quotes[0];var qt=document.getElementById("quoteText");var qa=document.getElementById("quoteAuthor");if(qt)qt.textContent=q.text;if(qa)qa.textContent=q.author;}
+setInterval(function(){goToPhoto((currentPhoto+1)%3);},5000);
 
 // ── CODE INPUTS ───────────────────────────────────────────────────
-function codeInput(el, idx, prefix) {
-  el.value = el.value.replace(/[^0-9]/g,"").slice(-1);
-  if (el.value && idx < 5) { var n=document.getElementById(prefix+"d"+(idx+1)); if(n) n.focus(); }
-  var code=""; for(var i=0;i<6;i++){var d=document.getElementById(prefix+"d"+i);code+=d?(d.value||""):"";}
-  if(code.length===6){
-    if(prefix==="v") submitVerification();
-    else if(prefix==="t") submit2FA();
-    else if(prefix==="lv") doVerifyLoginCode();
-  }
-}
-function codeBack(e,idx,prefix){ if(e.key==="Backspace"&&!e.target.value&&idx>0){var p=document.getElementById(prefix+"d"+(idx-1));if(p)p.focus();} }
-function getCode(prefix){ var c=""; for(var i=0;i<6;i++){var d=document.getElementById(prefix+"d"+i);c+=d?(d.value||""):"";}return c; }
+function codeInput(el,idx,prefix){el.value=el.value.replace(/[^0-9]/g,"").slice(-1);if(el.value&&idx<5){var n=document.getElementById(prefix+"d"+(idx+1));if(n)n.focus();}var code="";for(var i=0;i<6;i++){var d=document.getElementById(prefix+"d"+i);code+=d?(d.value||""):"";}if(code.length===6){if(prefix==="v")submitVerification();else if(prefix==="t")submit2FA();else if(prefix==="lv")doVerifyLoginCode();else if(prefix==="pv")doVerifyPhoneCode();}}
+function codeBack(e,idx,prefix){if(e.key==="Backspace"&&!e.target.value&&idx>0){var p=document.getElementById(prefix+"d"+(idx-1));if(p)p.focus();}}
+function getCode(prefix){var c="";for(var i=0;i<6;i++){var d=document.getElementById(prefix+"d"+i);c+=d?(d.value||""):"";} return c;}
 
 // ── EMAIL VERIFICATION ────────────────────────────────────────────
-async function submitVerification() {
-  var code=getCode("v"); if(code.length<6)return;
-  var token=api.getToken(); setLoading("verifyBtn",true);
-  var res=await fetch("/api/auth/verify-email",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({code:code})});
-  var data=await res.json(); setLoading("verifyBtn",false);
-  if(res.ok){showApp();}else{showAlert(document.getElementById("verifyAlert"),data.error||"Incorrect code.","error");}
-}
-async function resendVerification(){
-  var token=api.getToken();
-  await fetch("/api/auth/send-verification",{method:"POST",headers:{"Authorization":"Bearer "+token}});
-  showAlert(document.getElementById("verifyAlert"),"Code resent! Check your email.","success");
-}
+async function submitVerification(){var code=getCode("v");if(code.length<6)return;var token=api.getToken();setLoading("verifyBtn",true);var res=await fetch("/api/auth/verify-email",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({code:code})});var data=await res.json();setLoading("verifyBtn",false);if(res.ok){showApp();}else{showAlert(document.getElementById("verifyAlert"),data.error||"Incorrect code.","error");}}
+async function resendVerification(){var token=api.getToken();await fetch("/api/auth/send-verification",{method:"POST",headers:{"Authorization":"Bearer "+token}});showAlert(document.getElementById("verifyAlert"),"Code resent! Check your email.","success");}
 
 // ── 2FA ───────────────────────────────────────────────────────────
 var pending2FAUserId=null;
-async function submit2FA(){
-  var code=getCode("t"); if(code.length<6||!pending2FAUserId)return;
-  setLoading("twoFaBtn",true);
-  var res=await fetch("/api/auth/verify-2fa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:pending2FAUserId,code:code})});
-  var data=await res.json(); setLoading("twoFaBtn",false);
-  if(res.ok){showApp();}else{showAlert(document.getElementById("twoFaAlert"),data.error||"Incorrect code.","error");}
-}
-async function toggle2FA(){
-  var token=api.getToken();
-  var res=await fetch("/api/auth/toggle-2fa",{method:"POST",headers:{"Authorization":"Bearer "+token}});
-  var data=await res.json();
-  if(res.ok){var btn=document.getElementById("toggle2faBtn");if(btn)btn.textContent=data.twoFactorEnabled?"Disable 2FA":"Enable 2FA";}
-}
+async function submit2FA(){var code=getCode("t");if(code.length<6||!pending2FAUserId)return;setLoading("twoFaBtn",true);var res=await fetch("/api/auth/verify-2fa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:pending2FAUserId,code:code})});var data=await res.json();setLoading("twoFaBtn",false);if(res.ok){showApp();}else{showAlert(document.getElementById("twoFaAlert"),data.error||"Incorrect code.","error");}}
+async function toggle2FA(){var token=api.getToken();var res=await fetch("/api/auth/toggle-2fa",{method:"POST",headers:{"Authorization":"Bearer "+token}});var data=await res.json();if(res.ok){var btn=document.getElementById("toggle2faBtn");if(btn)btn.textContent=data.twoFactorEnabled?"Disable 2FA":"Enable 2FA";}}
 
 // ── GOOGLE SIGN IN ────────────────────────────────────────────────
 var GOOGLE_CLIENT_ID="376451848884-hcdi67fcdr3f1of4fefd7gqnvpka9m91.apps.googleusercontent.com";
-function signInWithGoogle(){
-  if(typeof google==="undefined"){alert("Google script is loading. Please wait a moment and try again.");return;}
-  google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleGoogleCredential,auto_select:false});
-  google.accounts.id.prompt(function(n){
-    if(n.isNotDisplayed()||n.isSkippedMoment()){
-      var wrap=document.createElement("div"); wrap.id="gWrap";
-      wrap.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center";
-      wrap.innerHTML="<div style='background:#fff;border-radius:16px;padding:2rem;text-align:center;min-width:280px'><p style='margin-bottom:1rem;color:#333;font-size:15px;font-weight:500'>Sign in with Google</p><div id='gBtn'></div><br><button onclick='document.getElementById(\"gWrap\").remove()' style='color:#999;border:none;background:none;cursor:pointer;font-size:13px'>Cancel</button></div>";
-      document.body.appendChild(wrap);
-      google.accounts.id.renderButton(document.getElementById("gBtn"),{theme:"outline",size:"large"});
-    }
-  });
-}
-async function handleGoogleCredential(response){
-  var wrap=document.getElementById("gWrap"); if(wrap)wrap.remove();
-  if(!response||!response.credential)return;
-  var res=await fetch("/api/auth/google",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential:response.credential})});
-  var data=await res.json();
-  if(res.ok){api.setToken(data.token);state.user=data.user;showApp();}
-  else alert(data.error||"Google sign-in failed.");
-}
+function signInWithGoogle(){if(typeof google==="undefined"){alert("Google script is loading. Please wait a moment and try again.");return;}google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleGoogleCredential,auto_select:false});google.accounts.id.prompt(function(n){if(n.isNotDisplayed()||n.isSkippedMoment()){var wrap=document.createElement("div");wrap.id="gWrap";wrap.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center";wrap.innerHTML="<div style='background:#fff;border-radius:16px;padding:2rem;text-align:center;min-width:280px'><p style='margin-bottom:1rem;color:#333;font-size:15px;font-weight:500'>Sign in with Google</p><div id='gBtn'></div><br><button onclick='document.getElementById(\"gWrap\").remove()' style='color:#999;border:none;background:none;cursor:pointer;font-size:13px'>Cancel</button></div>";document.body.appendChild(wrap);google.accounts.id.renderButton(document.getElementById("gBtn"),{theme:"outline",size:"large"});}});}
+async function handleGoogleCredential(response){var wrap=document.getElementById("gWrap");if(wrap)wrap.remove();if(!response||!response.credential)return;var res=await fetch("/api/auth/google",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential:response.credential})});var data=await res.json();if(res.ok){api.setToken(data.token);state.user=data.user;showApp();}else alert(data.error||"Google sign-in failed.");}
 
 // ── FORGOT / RESET PASSWORD ───────────────────────────────────────
 var forgotUserId=null;
-async function doForgotPassword(){
-  var email=document.getElementById("forgotEmail").value.trim();
-  var alrt=document.getElementById("forgotAlert");
-  if(!email)return showAlert(alrt,"Please enter your email address.","error");
-  setLoading("forgotBtn",true);
-  var res=await fetch("/api/auth/forgot-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email})});
-  var data=await res.json(); setLoading("forgotBtn",false);
-  if(data.googleOnly){showAlert(alrt,"This account uses Google Sign-In.","error");return;}
-  if(data.userId){forgotUserId=data.userId;if(data.devCode)showAlert(alrt,"DEV: Code is "+data.devCode,"success");else showAlert(alrt,"Code sent! Check your email.","success");setTimeout(function(){showPage("reset");},1500);}
-  else{showAlert(alrt,data.message||"Code sent!","success");setTimeout(function(){showPage("reset");},1500);}
-}
-async function doResetPassword(){
-  var code=getCode("r"); var newPass=document.getElementById("newPassword").value; var confirm=document.getElementById("confirmPassword").value;
-  var alrt=document.getElementById("resetAlert");
-  if(code.length<6)return showAlert(alrt,"Please enter the full 6-digit code.","error");
-  if(!newPass||newPass.length<8)return showAlert(alrt,"Password must be at least 8 characters.","error");
-  if(newPass!==confirm)return showAlert(alrt,"Passwords do not match.","error");
-  if(!forgotUserId)return showAlert(alrt,"Session expired. Please start again.","error");
-  setLoading("resetBtn",true);
-  var res=await fetch("/api/auth/reset-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:forgotUserId,code:code,newPassword:newPass})});
-  var data=await res.json(); setLoading("resetBtn",false);
-  if(res.ok&&data.success){showAlert(alrt,"Password reset! Redirecting...","success");forgotUserId=null;setTimeout(function(){showPage("login");},2000);}
-  else showAlert(alrt,data.error||"Could not reset password.","error");
-}
+async function doForgotPassword(){var email=document.getElementById("forgotEmail").value.trim();var alrt=document.getElementById("forgotAlert");if(!email)return showAlert(alrt,"Please enter your email address.","error");setLoading("forgotBtn",true);var res=await fetch("/api/auth/forgot-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email})});var data=await res.json();setLoading("forgotBtn",false);if(data.googleOnly){showAlert(alrt,"This account uses Google Sign-In.","error");return;}if(data.userId){forgotUserId=data.userId;var tryBtn=document.getElementById("tryAnotherBtn");if(tryBtn)tryBtn.style.display=data.hasPhone?"flex":"none";if(data.devCode)showAlert(alrt,"DEV: Code is "+data.devCode,"success");else showAlert(alrt,"Code sent! Check your email.","success");setTimeout(function(){showPage("reset");},1500);}else{showAlert(alrt,data.message||"Code sent!","success");setTimeout(function(){showPage("reset");},1500);}}
+async function doForgotSMS(){var email=document.getElementById("forgotEmail").value.trim();var alrt=document.getElementById("forgotAlert");if(!email)return showAlert(alrt,"Please enter your email first.","error");setLoading("forgotBtn",true);var res=await fetch("/api/auth/forgot-password-sms",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email})});var data=await res.json();setLoading("forgotBtn",false);if(res.ok){forgotUserId=data.userId||forgotUserId;showAlert(alrt,"SMS sent to "+data.phone,"success");setTimeout(function(){showPage("reset");},1500);}else{showAlert(alrt,data.error||"Could not send SMS. Try email instead.","error");}}
+async function doResetPassword(){var code=getCode("r");var newPass=document.getElementById("newPassword").value;var confirm=document.getElementById("confirmPassword").value;var alrt=document.getElementById("resetAlert");if(code.length<6)return showAlert(alrt,"Please enter the full 6-digit code.","error");if(!newPass||newPass.length<8)return showAlert(alrt,"Password must be at least 8 characters.","error");if(newPass!==confirm)return showAlert(alrt,"Passwords do not match.","error");if(!forgotUserId)return showAlert(alrt,"Session expired. Please start again.","error");setLoading("resetBtn",true);var res=await fetch("/api/auth/reset-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:forgotUserId,code:code,newPassword:newPass})});var data=await res.json();setLoading("resetBtn",false);if(res.ok&&data.success){showAlert(alrt,"Password reset! Redirecting...","success");forgotUserId=null;setTimeout(function(){showPage("login");},2000);}else showAlert(alrt,data.error||"Could not reset password.","error");}
 
 // ── DRAWER ────────────────────────────────────────────────────────
-function toggleDrawer(){
-  var d=document.getElementById("drawer"),o=document.getElementById("drawerOverlay"),b=document.getElementById("hamburgerBtn");
-  if(d.classList.contains("open")){closeDrawer();}else{d.classList.add("open");o.classList.add("open");b.classList.add("open");}
-}
-function closeDrawer(){
-  document.getElementById("drawer").classList.remove("open");
-  document.getElementById("drawerOverlay").classList.remove("open");
-  document.getElementById("hamburgerBtn").classList.remove("open");
-}
+function toggleDrawer(){var d=document.getElementById("drawer"),o=document.getElementById("drawerOverlay"),b=document.getElementById("hamburgerBtn");if(d.classList.contains("open")){closeDrawer();}else{d.classList.add("open");o.classList.add("open");if(b)b.classList.add("open");}}
+function closeDrawer(){document.getElementById("drawer").classList.remove("open");document.getElementById("drawerOverlay").classList.remove("open");var b=document.getElementById("hamburgerBtn");if(b)b.classList.remove("open");}
 var tsX=0;
 document.getElementById("drawer").addEventListener("touchstart",function(e){tsX=e.touches[0].clientX;});
 document.getElementById("drawer").addEventListener("touchend",function(e){if(tsX-e.changedTouches[0].clientX>60)closeDrawer();});
 
-// ── THERAPIST SYSTEM ──────────────────────────────────────────────
-var tSessionUrl=null;
+// ── CONVERSATION LIST IN DRAWER ───────────────────────────────────
+window.onConversationsChanged = function(convs, activeId, loaded) {
+  // Only skip when initial load hasn't finished AND there's nothing to show yet.
+  // If there are already conversations in state (e.g. created before load completed),
+  // render them immediately rather than waiting for the loaded flag.
+  if (!loaded && (!convs || convs.length === 0)) return;
+  renderDrawerConvList(convs, activeId);
+};
 
-async function tLoadList(){
-  var list=document.getElementById("therapistList"); if(!list)return;
-  list.innerHTML='<div style="text-align:center;padding:30px;color:#8b9dc3">Loading...</div>';
-  try{
-    var params=new URLSearchParams();
-    var s=document.getElementById("tSearchInput"); var f=document.getElementById("tFilterSpec");
-    if(s&&s.value) params.set("search",s.value);
-    if(f&&f.value) params.set("specialization",f.value);
-    var res=await fetch("/api/therapist/list?"+params.toString());
-    var data=await res.json();
-    if(!data.therapists||data.therapists.length===0){
-      list.innerHTML='<div style="text-align:center;padding:48px 20px;color:#8b9dc3"><div style="font-size:48px;margin-bottom:14px">👨‍⚕️</div><div style="font-size:15px;font-weight:500;color:#f0f4ff;margin-bottom:8px">No verified therapists yet</div><div style="font-size:13px">Our team is reviewing applications. Check back soon.</div></div>';
-      return;
-    }
-    list.innerHTML=data.therapists.map(function(t){
-      var specs=(t.specializations||[]).slice(0,3).join(" · ")||"General Wellness";
-      var initials=t.fullName.split(" ").map(function(n){return n[0];}).join("").slice(0,2).toUpperCase();
-      return '<div style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);border-radius:16px;padding:18px;margin-bottom:12px">'+
-        '<div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:12px">'+
-          '<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#818cf8);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0">'+initials+'</div>'+
-          '<div style="flex:1">'+
-            '<div style="font-weight:600;color:#f0f4ff;font-size:16px">'+t.fullName+'</div>'+
-            '<div style="font-size:12px;color:#8b9dc3;margin-top:2px">'+t.profession+'</div>'+
-            '<div style="font-size:12px;color:#8b9dc3;margin-top:2px">📍 '+t.city+', '+t.country+' · '+t.yearsExperience+' yrs exp</div>'+
-          '</div>'+
-          '<div style="text-align:right;flex-shrink:0">'+
-            '<div style="font-weight:700;color:#a5b4fc;font-size:20px">K'+t.sessionPrice+'</div>'+
-            '<div style="font-size:11px;color:#8b9dc3">per session</div>'+
-          '</div>'+
-        '</div>'+
-        '<div style="font-size:12px;color:#818cf8;margin-bottom:8px">'+specs+'</div>'+
-        (t.bio?'<div style="font-size:13px;color:#8b9dc3;line-height:1.6;margin-bottom:12px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">'+t.bio+'</div>':'')+
-        '<div style="display:flex;justify-content:space-between;align-items:center">'+
-          '<div style="font-size:12px;color:#f59e0b">'+(t.rating>0?'★ '+t.rating+' ('+t.reviewCount+')':'⭐ New therapist')+'</div>'+
-          '<button onclick="tOpenBook(\''+t.id+'\',\''+t.fullName.replace(/'/g,"")+'\',\''+t.sessionPrice+'\')" style="background:#6366f1;border:none;border-radius:10px;color:#fff;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer">Book</button>'+
-        '</div>'+
-      '</div>';
-    }).join('');
-  }catch(e){list.innerHTML='<div style="text-align:center;padding:20px;color:#f43f5e">Could not load therapists.</div>';}
+function timeAgo(dateStr) {
+  if (!dateStr) return "";
+  var then = new Date(dateStr).getTime();
+  if (isNaN(then)) return "";
+  var diff = Math.floor((Date.now() - then) / 1000);
+  if (diff < 60)     return "just now";
+  if (diff < 3600)   return Math.floor(diff / 60) + "m ago";
+  if (diff < 86400)  return Math.floor(diff / 3600) + "h ago";
+  if (diff < 172800) return "Yesterday";
+  if (diff < 604800) return Math.floor(diff / 86400) + "d ago";
+  return new Date(dateStr).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-function tOpenBook(id,name,price){
-  if(!api.getToken()){alert("Please log in to book a session.");return;}
-  document.getElementById("tBookTherapistId").value=id;
-  document.getElementById("tBookName").textContent="Book with "+name;
-  document.getElementById("tBookPrice").textContent="K"+price+" per session";
-  document.getElementById("tBookAlert").style.display="none";
-  document.getElementById("tBookDateTime").value="";
-  document.getElementById("tBookNotes").value="";
-  document.getElementById("tBookBtn").textContent="Confirm Booking";
-  document.getElementById("tBookBtn").disabled=false;
-  document.getElementById("tBookModal").style.display="flex";
+function renderDrawerConvList(convs, activeId) {
+  console.log("[Serene] Sidebar rendered conversations:", convs ? convs.length : 0);
+  var list = document.getElementById("drawerConvList");
+  if (!list) return;
+  if (!convs || !convs.length) {
+    list.innerHTML = '<div class="drawer-conv-empty">No conversations yet.<br>Click <strong>New Conversation</strong> to start.</div>';
+    return;
+  }
+  list.innerHTML = convs.map(function(conv) {
+    var active = conv.id === activeId ? " active" : "";
+    var safeId = conv.id.replace(/'/g, "");
+    var safeTitle = escHtml(conv.title);
+    var ago = timeAgo(conv.updatedAt);
+    return '<div class="drawer-conv-item' + active + '" data-id="' + safeId + '">' +
+      '<div class="drawer-conv-body" onclick="drawerSelectConv(\'' + safeId + '\')">' +
+        '<div class="drawer-conv-title">' + safeTitle + '</div>' +
+        (ago ? '<div class="drawer-conv-time">' + ago + '</div>' : '') +
+      '</div>' +
+      '<button class="drawer-conv-menu-btn" title="Options" onclick="drawerConvMenu(event,\'' + safeId + '\')">&#8943;</button>' +
+    '</div>';
+  }).join("");
 }
 
-async function tSubmitBooking(){
-  var id=document.getElementById("tBookTherapistId").value;
-  var dt=document.getElementById("tBookDateTime").value;
-  var notes=document.getElementById("tBookNotes").value;
-  var alrt=document.getElementById("tBookAlert");
-  var btn=document.getElementById("tBookBtn");
-  if(!dt){alrt.textContent="Please select a date and time.";alrt.style.display="block";alrt.style.color="#f43f5e";return;}
-  btn.textContent="Booking..."; btn.disabled=true;
-  var res=await fetch("/api/therapist/book",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+api.getToken()},body:JSON.stringify({therapistId:id,scheduledAt:dt,notes:notes})});
-  var data=await res.json();
-  btn.textContent="Confirm Booking"; btn.disabled=false;
-  if(res.ok){
-    tSessionUrl=data.jitsiUrl;
-    document.getElementById("tBookModal").style.display="none";
-    document.getElementById("tSessTherapist").textContent=data.therapistName;
-    document.getElementById("tSessTime").textContent=new Date(data.scheduledAt).toLocaleString();
-    document.getElementById("tSessPrice").textContent="K"+data.sessionPrice;
-    document.getElementById("tSessRoom").textContent=data.roomName;
-    document.getElementById("tSessionModal").style.display="flex";
-  }else{alrt.textContent=data.error||"Could not book session.";alrt.style.display="block";alrt.style.color="#f43f5e";}
-}
-
-function tJoinSession() {
-  if (tSessionUrl) {
-    var room = tSessionUrl.split("/").pop();
-    var userName = (state.user && state.user.name) ? state.user.name : "User";
-    window.location.href = "/session?room=" + room + "&user=" + encodeURIComponent(userName) + "&therapist=" + encodeURIComponent(document.getElementById("tSessTherapist").textContent);
+function drawerNewConversation() {
+  if (window.SereneConv && window.SereneConv.createNew) {
+    window.SereneConv.createNew();
+    navigateTo("chat");
+    closeDrawer();
   }
 }
+
+function drawerSelectConv(id) {
+  if (window.SereneConv && window.SereneConv.switchTo) {
+    window.SereneConv.switchTo(id);
+    navigateTo("chat");
+    closeDrawer();
+  }
+}
+
+var _drawerMenuId = null;
+function drawerConvMenu(event, id) {
+  event.stopPropagation();
+  drawerCloseMenu();
+  var item = document.querySelector('.drawer-conv-item[data-id="' + id + '"]');
+  var titleEl = item && item.querySelector(".drawer-conv-title");
+  var title = titleEl ? titleEl.textContent : "this conversation";
+  var menu = document.createElement("div");
+  menu.id = "drawerConvDropdown";
+  menu.className = "drawer-conv-dropdown";
+  menu.innerHTML =
+    '<button onclick="drawerRenameConv(\'' + id + '\')"><i class="ti ti-pencil"></i> Rename</button>' +
+    '<button class="danger" onclick="drawerDeleteConv(\'' + id + '\')"><i class="ti ti-trash"></i> Delete</button>';
+  var btn = event.currentTarget;
+  var rect = btn.getBoundingClientRect();
+  menu.style.cssText = "position:fixed;top:" + (rect.bottom + 4) + "px;left:" + Math.min(rect.left, window.innerWidth - 150) + "px;z-index:9999";
+  document.body.appendChild(menu);
+  _drawerMenuId = id;
+  setTimeout(function() { document.addEventListener("mousedown", drawerCloseMenuOutside); }, 0);
+}
+function drawerCloseMenuOutside(e) {
+  var m = document.getElementById("drawerConvDropdown");
+  if (m && !m.contains(e.target)) drawerCloseMenu();
+}
+function drawerCloseMenu() {
+  var m = document.getElementById("drawerConvDropdown");
+  if (m) m.remove();
+  document.removeEventListener("mousedown", drawerCloseMenuOutside);
+  _drawerMenuId = null;
+}
+function drawerRenameConv(id) {
+  drawerCloseMenu();
+  var item = document.querySelector('.drawer-conv-item[data-id="' + id + '"]');
+  var titleEl = item && item.querySelector(".drawer-conv-title");
+  var current = titleEl ? titleEl.textContent : "";
+  var newTitle = window.prompt("Rename conversation:", current);
+  if (newTitle && newTitle.trim() && newTitle.trim() !== current) {
+    if (window.SereneConv && window.SereneConv.rename) window.SereneConv.rename(id, newTitle.trim());
+  }
+}
+function drawerDeleteConv(id) {
+  drawerCloseMenu();
+  var item = document.querySelector('.drawer-conv-item[data-id="' + id + '"]');
+  var titleEl = item && item.querySelector(".drawer-conv-title");
+  var title = titleEl ? titleEl.textContent : "this conversation";
+  if (window.confirm("Delete \"" + title + "\"? This cannot be undone.")) {
+    if (window.SereneConv && window.SereneConv.deleteConv) window.SereneConv.deleteConv(id);
+  }
+}
+
+// ── THERAPIST SYSTEM ──────────────────────────────────────────────
+var tSessionUrl=null;
+async function tLoadList(){var list=document.getElementById("therapistList");if(!list)return;list.innerHTML='<div style="text-align:center;padding:30px;color:#8b9dc3">Loading...</div>';try{var params=new URLSearchParams();var s=document.getElementById("tSearchInput");var f=document.getElementById("tFilterSpec");if(s&&s.value)params.set("search",s.value);if(f&&f.value)params.set("specialization",f.value);var res=await fetch("/api/therapist/list?"+params.toString());var data=await res.json();if(!data.therapists||data.therapists.length===0){list.innerHTML='<div style="text-align:center;padding:48px 20px;color:#8b9dc3"><div style="font-size:48px;margin-bottom:14px">👨‍⚕️</div><div style="font-size:15px;font-weight:500;color:#f0f4ff;margin-bottom:8px">No verified therapists yet</div><div style="font-size:13px">Our team is reviewing applications. Check back soon.</div></div>';return;}list.innerHTML=data.therapists.map(function(t){var specs=(t.specializations||[]).slice(0,3).join(" · ")||"General Wellness";var initials=t.fullName.split(" ").map(function(n){return n[0];}).join("").slice(0,2).toUpperCase();return '<div style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);border-radius:16px;padding:18px;margin-bottom:12px"><div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:12px"><div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#818cf8);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0">'+initials+'</div><div style="flex:1"><div style="font-weight:600;color:#f0f4ff;font-size:16px">'+t.fullName+'</div><div style="font-size:12px;color:#8b9dc3;margin-top:2px">'+t.profession+'</div><div style="font-size:12px;color:#8b9dc3;margin-top:2px">📍 '+t.city+', '+t.country+' · '+t.yearsExperience+' yrs exp</div></div><div style="text-align:right;flex-shrink:0"><div style="font-weight:700;color:#a5b4fc;font-size:20px">K'+t.sessionPrice+'</div><div style="font-size:11px;color:#8b9dc3">per session</div></div></div><div style="font-size:12px;color:#818cf8;margin-bottom:8px">'+specs+'</div>'+(t.bio?'<div style="font-size:13px;color:#8b9dc3;line-height:1.6;margin-bottom:12px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">'+t.bio+'</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:12px;color:#f59e0b">'+(t.rating>0?'★ '+t.rating+' ('+t.reviewCount+')':'⭐ New therapist')+'</div><button onclick="tOpenBook(\''+t.id+'\',\''+t.fullName.replace(/'/g,"")+'\',\''+t.sessionPrice+'\')" style="background:#6366f1;border:none;border-radius:10px;color:#fff;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer">Book</button></div></div>';}).join('');}catch(e){list.innerHTML='<div style="text-align:center;padding:20px;color:#f43f5e">Could not load therapists.</div>';}}
+function tOpenBook(id,name,price){if(!api.getToken()){alert("Please log in to book a session.");return;}document.getElementById("tBookTherapistId").value=id;document.getElementById("tBookName").textContent="Book with "+name;document.getElementById("tBookPrice").textContent="K"+price+" per session";document.getElementById("tBookAlert").style.display="none";document.getElementById("tBookDateTime").value="";document.getElementById("tBookNotes").value="";document.getElementById("tBookBtn").textContent="Confirm Booking";document.getElementById("tBookBtn").disabled=false;document.getElementById("tBookModal").style.display="flex";}
+async function tSubmitBooking(){var id=document.getElementById("tBookTherapistId").value;var dt=document.getElementById("tBookDateTime").value;var notes=document.getElementById("tBookNotes").value;var alrt=document.getElementById("tBookAlert");var btn=document.getElementById("tBookBtn");if(!dt){alrt.textContent="Please select a date and time.";alrt.style.display="block";alrt.style.color="#f43f5e";return;}btn.textContent="Booking...";btn.disabled=true;var res=await fetch("/api/therapist/book",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+api.getToken()},body:JSON.stringify({therapistId:id,scheduledAt:dt,notes:notes})});var data=await res.json();btn.textContent="Confirm Booking";btn.disabled=false;if(res.ok){tSessionUrl=data.jitsiUrl;document.getElementById("tBookModal").style.display="none";document.getElementById("tSessTherapist").textContent=data.therapistName;document.getElementById("tSessTime").textContent=new Date(data.scheduledAt).toLocaleString();document.getElementById("tSessPrice").textContent="K"+data.sessionPrice;document.getElementById("tSessRoom").textContent=data.roomName;document.getElementById("tSessionModal").style.display="flex";}else{alrt.textContent=data.error||"Could not book session.";alrt.style.display="block";alrt.style.color="#f43f5e";}}
+function tJoinSession(){if(tSessionUrl)window.open(tSessionUrl,"_blank");}
 
 function tOpenApply(){
   document.getElementById("tApplyAlert").style.display="none";
   document.getElementById("tApplyModal").style.display="flex";
+  // Reset multi-selects
+  tmsState["aSpecMS"]={selected:[],max:2};
+  tmsState["aLangMS"]={selected:[],max:99};
+  document.querySelectorAll("#aSpecMS .t-ms-option,#aLangMS .t-ms-option").forEach(function(o){o.classList.remove("selected","disabled");});
+  document.querySelectorAll(".t-ms-max-note").forEach(function(n){n.style.display="none";});
+  var sh=document.getElementById("aSpecHidden");if(sh)sh.value="";
+  var lh=document.getElementById("aLanguages");if(lh)lh.value="";
+  tmsUpdateDisplay("aSpecMS");
+  tmsUpdateDisplay("aLangMS");
 }
 
 async function tSubmitApply(){
@@ -864,14 +1134,15 @@ async function tSubmitApply(){
     country:document.getElementById("aCountry").value.trim()||"Zambia",
     city:document.getElementById("aCity").value.trim()||"Lusaka",
     profession:document.getElementById("aProfession").value.trim(),
-    specializations:document.getElementById("aSpec").value.trim(),
+    specializations:document.getElementById("aSpecHidden").value,
     yearsExperience:document.getElementById("aYears").value,
-    languages:document.getElementById("aLanguages").value.trim()||"English",
+    languages:document.getElementById("aLanguages").value||"English",
+    nrc:document.getElementById("aNRC").value.trim(),
     bio:document.getElementById("aBio").value.trim(),
     degrees:document.getElementById("aDegrees").value.trim(),
     certifications:document.getElementById("aCerts").value.trim(),
     licenseNumber:document.getElementById("aLicense").value.trim(),
-    sessionPrice:document.getElementById("aPrice").value,
+    sessionPrice:120,
     reference1Name:document.getElementById("aRef1Name").value.trim(),
     reference1Phone:document.getElementById("aRef1Phone").value.trim(),
     reference2Name:document.getElementById("aRef2Name").value.trim(),
@@ -879,42 +1150,119 @@ async function tSubmitApply(){
   };
   if(!body.fullName||!body.email||!body.phone||!body.profession||!body.yearsExperience){alrt.textContent="Please fill in all required fields.";alrt.style.display="block";alrt.style.color="#f43f5e";return;}
   if(parseInt(body.yearsExperience)<3){alrt.textContent="Minimum 3 years of experience required.";alrt.style.display="block";alrt.style.color="#f43f5e";return;}
-  btn.textContent="Submitting..."; btn.disabled=true;
-  var formData = new FormData();
-  Object.keys(body).forEach(function(k){ formData.append(k, body[k]); });
-  var cvFile = document.getElementById("aCV").files[0];
-  var licFile = document.getElementById("aLicense2").files[0];
-  var nrcFile = document.getElementById("aNRC2").files[0];
-  if (cvFile) formData.append("cv", cvFile);
-  if (licFile) formData.append("license", licFile);
-  if (nrcFile) formData.append("nrc", nrcFile);
-  var res=await fetch("/api/therapist/apply",{method:"POST",body:formData});
+  btn.textContent="Submitting...";btn.disabled=true;
+  var res=await fetch("/api/therapist/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
   var data=await res.json();
-  btn.textContent="Submit Application"; btn.disabled=false;
+  btn.textContent="Submit Application";btn.disabled=false;
   if(res.ok){alrt.textContent="✅ "+data.message;alrt.style.display="block";alrt.style.color="#4ade80";setTimeout(function(){document.getElementById("tApplyModal").style.display="none";},3000);}
   else{alrt.textContent=data.error||"Could not submit.";alrt.style.display="block";alrt.style.color="#f43f5e";}
 }
+
+// ── MULTI-SELECT DROPDOWN ENGINE ──────────────────────────────────
+var tmsState={};
+function tmsInit(msId,max){tmsState[msId]={selected:[],max:max||99};}
+function tmsToggle(msId){
+  var el=document.getElementById(msId);
+  var trigger=el.querySelector(".t-ms-trigger");
+  var dropdown=el.querySelector(".t-ms-dropdown");
+  var isOpen=dropdown.classList.contains("open");
+  document.querySelectorAll(".t-ms-dropdown.open").forEach(function(d){d.classList.remove("open");});
+  document.querySelectorAll(".t-ms-trigger.open").forEach(function(t){t.classList.remove("open");});
+  if(!isOpen){dropdown.classList.add("open");trigger.classList.add("open");}
+}
+function tmsSelect(msId,optEl){
+  if(!tmsState[msId])tmsInit(msId);
+  var val=optEl.getAttribute("data-value");
+  var state=tmsState[msId];
+  var idx=state.selected.indexOf(val);
+  if(idx>-1){state.selected.splice(idx,1);optEl.classList.remove("selected");}
+  else{if(state.selected.length>=state.max)return;state.selected.push(val);optEl.classList.add("selected");}
+  var atMax=state.selected.length>=state.max;
+  optEl.closest(".t-ms-dropdown").querySelectorAll(".t-ms-option").forEach(function(o){if(!o.classList.contains("selected"))o.classList.toggle("disabled",atMax);});
+  var maxNote=optEl.closest(".t-ms-dropdown").querySelector(".t-ms-max-note");
+  if(maxNote)maxNote.style.display=atMax?"block":"none";
+  tmsUpdateDisplay(msId);
+  if(state.selected.length>=state.max){setTimeout(function(){optEl.closest(".t-ms-dropdown").classList.remove("open");document.getElementById(msId).querySelector(".t-ms-trigger").classList.remove("open");},300);}
+  var hiddenId=msId==="aSpecMS"?"aSpecHidden":"aLanguages";
+  var hidden=document.getElementById(hiddenId);
+  if(hidden)hidden.value=state.selected.join(", ");
+}
+function tmsUpdateDisplay(msId){
+  var state=tmsState[msId];
+  var displayId=msId==="aSpecMS"?"aSpecDisplay":"aLangDisplay";
+  var display=document.getElementById(displayId);
+  if(!display)return;
+  if(!state||state.selected.length===0){display.textContent=msId==="aSpecMS"?"Select specializations...":"Select languages...";display.classList.add("placeholder");}
+  else{display.textContent=state.selected.join(" · ");display.classList.remove("placeholder");}
+}
+document.addEventListener("click",function(e){if(!e.target.closest(".t-multiselect")){document.querySelectorAll(".t-ms-dropdown.open").forEach(function(d){d.classList.remove("open");});document.querySelectorAll(".t-ms-trigger.open").forEach(function(t){t.classList.remove("open");});}});
+tmsInit("aSpecMS",2);
+tmsInit("aLangMS",99);
 </script>
 
-<!-- SESSION TIMEOUT WARNING -->
-<div id="timeoutWarning" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:900;align-items:center;justify-content:center;padding:1rem">
-  <div style="background:#0d1428;border:0.5px solid rgba(245,158,11,0.4);border-radius:20px;padding:2rem;max-width:340px;width:100%;text-align:center">
-    <div style="font-size:40px;margin-bottom:14px">⏱️</div>
-    <h3 style="font-size:18px;font-weight:600;color:#f0f4ff;margin-bottom:8px">Still there?</h3>
-    <p style="font-size:13px;color:#8b9dc3;margin-bottom:20px;line-height:1.6">You will be logged out in 5 minutes due to inactivity.</p>
-    <button onclick="SessionTimeout.stayLoggedIn()" style="width:100%;padding:13px;background:#6366f1;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:10px">Stay logged in</button>
-    <button onclick="doLogout()" style="width:100%;padding:12px;background:transparent;border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;color:#8b9dc3;font-size:14px;cursor:pointer">Log out now</button>
+<!-- PHONE VERIFICATION MODAL -->
+<div id="phoneVerifyModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:1.5rem;animation:pvFadeIn 0.3s ease">
+  <div style="width:100%;max-width:420px;background:rgba(8,13,26,0.96);border:0.5px solid rgba(167,139,250,0.2);border-radius:24px;padding:28px 24px;box-shadow:0 32px 80px rgba(0,0,0,0.6),0 0 0 0.5px rgba(167,139,250,0.08) inset;position:relative;animation:pvSlideUp 0.35s cubic-bezier(.16,1,.3,1)">
+    <button onclick="pvClose()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.1);border-radius:50%;width:32px;height:32px;color:rgba(196,181,253,0.5);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s">✕</button>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,rgba(108,99,255,0.2),rgba(139,92,246,0.15));border:0.5px solid rgba(167,139,250,0.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📱</div>
+      <div><div style="font-size:17px;font-weight:600;color:#f0eeff;margin-bottom:3px">Verify your phone number</div><div style="font-size:12px;color:rgba(196,181,253,0.5)">Keep your account secure</div></div>
+    </div>
+    <div style="font-size:13px;color:rgba(196,181,253,0.55);line-height:1.7;margin-bottom:20px;padding:12px 14px;background:rgba(108,99,255,0.06);border-radius:12px;border:0.5px solid rgba(108,99,255,0.12)">Help us keep your account secure and ensure important notifications reach you.</div>
+    <div id="pvAlert" style="display:none;padding:10px 12px;border-radius:10px;font-size:13px;margin-bottom:14px"></div>
+    <div id="pvStep1">
+      <label style="font-size:11px;color:rgba(196,181,253,0.5);display:block;margin-bottom:6px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase">Phone number</label>
+      <div style="position:relative;margin-bottom:14px">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:#a78bfa;font-weight:500;pointer-events:none">+260</span>
+        <input id="pvPhone" type="tel" placeholder="9X XXX XXXX" maxlength="12" style="width:100%;padding:12px 14px 12px 60px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(167,139,250,0.14);border-radius:12px;color:#f0eeff;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;transition:all 0.2s" onfocus="this.style.borderColor='rgba(108,99,255,0.5)';this.style.boxShadow='0 0 0 3px rgba(108,99,255,0.08)'" onblur="this.style.borderColor='rgba(167,139,250,0.14)';this.style.boxShadow='none'" onkeydown="if(event.key==='Enter')pvSendCode()"/>
+      </div>
+      <button onclick="pvSendCode()" id="pvSendBtn" style="width:100%;padding:13px;background:linear-gradient(135deg,#6c63ff,#8b5cf6);border:none;border-radius:14px;color:white;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(108,99,255,0.3);transition:all 0.2s">Send verification code</button>
+      <button onclick="pvClose()" style="width:100%;padding:11px;background:transparent;border:0.5px solid rgba(167,139,250,0.1);border-radius:14px;color:rgba(196,181,253,0.4);font-size:13px;cursor:pointer;font-family:inherit;margin-top:8px;transition:all 0.2s">Maybe later</button>
+    </div>
+    <div id="pvStep2" style="display:none">
+      <div style="font-size:13px;color:rgba(196,181,253,0.6);text-align:center;margin-bottom:16px" id="pvSentTo">Code sent to your phone</div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:18px">
+        <input class="code-box" id="pv0" maxlength="1" oninput="pvCodeInput(this,0)" onkeydown="pvCodeBack(event,0)"/>
+        <input class="code-box" id="pv1" maxlength="1" oninput="pvCodeInput(this,1)" onkeydown="pvCodeBack(event,1)"/>
+        <input class="code-box" id="pv2" maxlength="1" oninput="pvCodeInput(this,2)" onkeydown="pvCodeBack(event,2)"/>
+        <input class="code-box" id="pv3" maxlength="1" oninput="pvCodeInput(this,3)" onkeydown="pvCodeBack(event,3)"/>
+        <input class="code-box" id="pv4" maxlength="1" oninput="pvCodeInput(this,4)" onkeydown="pvCodeBack(event,4)"/>
+        <input class="code-box" id="pv5" maxlength="1" oninput="pvCodeInput(this,5)" onkeydown="pvCodeBack(event,5)"/>
+      </div>
+      <button onclick="pvVerifyCode()" id="pvVerifyBtn" style="width:100%;padding:13px;background:linear-gradient(135deg,#6c63ff,#8b5cf6);border:none;border-radius:14px;color:white;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(108,99,255,0.3);margin-bottom:12px">Verify code</button>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <button onclick="pvBack()" style="background:none;border:none;color:rgba(196,181,253,0.4);font-size:13px;cursor:pointer;font-family:inherit;padding:0">&#8592; Change number</button>
+        <button onclick="pvResend()" id="pvResendBtn" style="background:none;border:none;color:#a78bfa;font-size:13px;cursor:pointer;font-family:inherit;padding:0">Resend code</button>
+      </div>
+    </div>
+    <div id="pvStep3" style="display:none;text-align:center;padding:12px 0">
+      <div style="font-size:44px;margin-bottom:12px">✅</div>
+      <div style="font-size:18px;font-weight:600;color:#4ade80;margin-bottom:6px">Phone verified!</div>
+      <div style="font-size:13px;color:rgba(196,181,253,0.6)">Your account is now secure.</div>
+    </div>
   </div>
 </div>
 
-<!-- SESSION TIMED OUT NOTICE -->
-<div id="timeoutNotice" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:900;align-items:center;justify-content:center;padding:1rem">
-  <div style="background:#0d1428;border:0.5px solid rgba(255,255,255,0.1);border-radius:20px;padding:2rem;max-width:340px;width:100%;text-align:center">
-    <div style="font-size:40px;margin-bottom:14px">🔒</div>
-    <h3 style="font-size:18px;font-weight:600;color:#f0f4ff;margin-bottom:8px">Session expired</h3>
-    <p style="font-size:13px;color:#8b9dc3;margin-bottom:20px">You were logged out due to inactivity.</p>
-    <button onclick="document.getElementById('timeoutNotice').style.display='none'" style="width:100%;padding:13px;background:#6366f1;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:600;cursor:pointer">Log back in</button>
-  </div>
-</div>
+<script>
+function showPhoneVerifyModal(){var m=document.getElementById("phoneVerifyModal");if(!m)return;m.style.display="flex";pvReset();document.addEventListener("keydown",pvEscHandler);m.addEventListener("click",pvOutsideClick);}
+function pvEscHandler(e){if(e.key==="Escape")pvClose();}
+function pvOutsideClick(e){if(e.target===document.getElementById("phoneVerifyModal"))pvClose();}
+function pvClose(){var m=document.getElementById("phoneVerifyModal");if(m)m.style.display="none";document.removeEventListener("keydown",pvEscHandler);localStorage.setItem("pv_dismissed",Date.now().toString());}
+function pvReset(){document.getElementById("pvStep1").style.display="block";document.getElementById("pvStep2").style.display="none";document.getElementById("pvStep3").style.display="none";document.getElementById("pvAlert").style.display="none";document.getElementById("pvPhone").value="";for(var i=0;i<6;i++){var d=document.getElementById("pv"+i);if(d)d.value="";}}
+function pvAlert(msg,type){var el=document.getElementById("pvAlert");el.textContent=msg;el.style.display="block";el.style.background=type==="success"?"rgba(74,222,128,0.1)":"rgba(244,63,94,0.1)";el.style.color=type==="success"?"#4ade80":"#f43f5e";el.style.border=type==="success"?"0.5px solid rgba(74,222,128,0.2)":"0.5px solid rgba(244,63,94,0.2)";}
+async function pvSendCode(){var phone=document.getElementById("pvPhone").value.trim();if(!phone)return pvAlert("Please enter your phone number.","error");var btn=document.getElementById("pvSendBtn");btn.textContent="Sending...";btn.disabled=true;var res=await fetch("/api/phone/send-code",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+api.getToken()},body:JSON.stringify({phone:phone})});var data=await res.json();btn.textContent="Send verification code";btn.disabled=false;if(res.ok){document.getElementById("pvStep1").style.display="none";document.getElementById("pvStep2").style.display="block";document.getElementById("pvAlert").style.display="none";document.getElementById("pvSentTo").textContent="Code sent to +260"+phone.replace(/^0/,"");setTimeout(function(){document.getElementById("pv0").focus();},100);}else{pvAlert(data.error||"Could not send code.","error");}}
+function pvCodeInput(el,idx){el.value=el.value.replace(/[^0-9]/g,"");if(el.value&&idx<5){var n=document.getElementById("pv"+(idx+1));if(n)n.focus();}var code="";for(var i=0;i<6;i++){var d=document.getElementById("pv"+i);code+=d?d.value:"";}if(code.length===6)setTimeout(pvVerifyCode,200);}
+function pvCodeBack(e,idx){if(e.key==="Backspace"&&!e.target.value&&idx>0){var p=document.getElementById("pv"+(idx-1));if(p){p.value="";p.focus();}}}
+function pvBack(){document.getElementById("pvStep1").style.display="block";document.getElementById("pvStep2").style.display="none";document.getElementById("pvAlert").style.display="none";}
+async function pvResend(){var btn=document.getElementById("pvResendBtn");btn.textContent="Sending...";btn.disabled=true;var res=await fetch("/api/phone/resend",{method:"POST",headers:{"Authorization":"Bearer "+api.getToken()}});var data=await res.json();btn.textContent="Resend code";btn.disabled=false;if(res.ok)pvAlert("New code sent!","success");else pvAlert(data.error||"Could not resend.","error");}
+async function pvVerifyCode(){var code="";for(var i=0;i<6;i++){var d=document.getElementById("pv"+i);code+=d?d.value:"";}if(code.length<6)return pvAlert("Please enter the full 6-digit code.","error");var btn=document.getElementById("pvVerifyBtn");btn.textContent="Verifying...";btn.disabled=true;var res=await fetch("/api/phone/verify",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+api.getToken()},body:JSON.stringify({code:code})});var data=await res.json();btn.textContent="Verify code";btn.disabled=false;if(res.ok){document.getElementById("pvStep2").style.display="none";document.getElementById("pvStep3").style.display="block";if(state&&state.user)state.user.phoneVerified=true;localStorage.removeItem("pv_dismissed");setTimeout(function(){document.getElementById("phoneVerifyModal").style.display="none";document.removeEventListener("keydown",pvEscHandler);},1500);}else{pvAlert(data.error||"Incorrect code.","error");}}
+function checkPhoneVerifyReminder(){if(!state.user||state.user.phoneVerified)return;var dismissed=localStorage.getItem("pv_dismissed");if(dismissed){var elapsed=Date.now()-parseInt(dismissed);if(elapsed<24*60*60*1000)return;}showPhoneVerifyModal();}
+</script>
+
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/SereneChat.bundle.js"></script>
 </body>
 </html>

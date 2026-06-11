@@ -1,4 +1,11 @@
+{"id":"42c23e94-78c5-48fe-8341-3de19bc1e41a","userId":"0eba2f36-ac0d-401d-ab95-0c769c818673","date":"2026-06-09","count":20,"_id":"0DxssArZZ9vC0PiS"}
+{"id":"a3c33bbe-aef8-4abb-a2ab-297136c57d03","userId":"057db74f-5956-4f4b-a9c7-65ef8e1047d7","date":"2026-06-07","count":3,"_id":"0W7kjrLSpxYFGgyL"}
+{"id":"79c4854c-e221-4e2b-b249-cf050d8ac3f5","userId":"0eba2f36-ac0d-401d-ab95-0c769c818673","date":"2026-06-08","count":2,"_id":"J8FVSkt6UJjh1qIx"}
 {"id":"24772f88-39c7-4c83-9ce1-3229be750f38","userId":"057db74f-5956-4f4b-a9c7-65ef8e1047d7","date":"2026-06-01","count":1,"_id":"LKHVhGhfa541T3jO"}
+{"id":"b4439856-0a07-4b9e-8446-776e62d05996","userId":"0eba2f36-ac0d-401d-ab95-0c769c818673","date":"2026-06-10","count":40,"_id":"NNdfbSCfAQue4R5U"}
+{"id":"d0a2ad76-5f7f-45be-bd0b-253070e0becb","userId":"0eba2f36-ac0d-401d-ab95-0c769c818673","date":"2026-06-11","count":11,"_id":"OISGEZFK5OikigDh"}
+{"id":"400c5a21-3f08-49ce-9f13-502333081e59","userId":"057db74f-5956-4f4b-a9c7-65ef8e1047d7","date":"2026-06-06","count":3,"_id":"SakNjEq3dSGTbUwI"}
+{"id":"b2a78678-27db-4790-bf95-d6944ff3457c","userId":"0eba2f36-ac0d-401d-ab95-0c769c818673","date":"2026-06-07","count":50,"_id":"dEVDTIaMZohBDBPN"}
 {"id":"7ba5811d-d837-40d4-b012-122e6e5bb294","userId":"0eba2f36-ac0d-401d-ab95-0c769c818673","date":"2026-05-15","count":5,"_id":"dPfFOLnbI7HVqY8D"}
 {"id":"a9908ae8-c696-4bca-95da-52dff6b210f5","userId":"e8f217b2-1fcc-414b-848e-ba2547929ee4","date":"2026-05-15","count":10,"_id":"xssz6tdqX9jVX9sK"}
 {"$$indexCreated":{"fieldName":"userId","unique":false,"sparse":false}}

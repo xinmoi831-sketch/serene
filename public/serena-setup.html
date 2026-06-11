@@ -1,0 +1,239 @@
+<!-- 
+ADD THESE to index.html:
+
+1. Add BEFORE <div class="page" id="page-app">:
+   - The welcome screen
+   - The gender/age selection screen
+
+2. Add the <style> block to your existing <style> section
+
+3. Add the <script> block before </body>
+
+4. In app.js showApp() function, after phone verification check, add:
+   if (!state.user.serenaSetup) {
+     showPage("serena-setup");
+     return;
+   }
+-->
+
+<!-- SERENA SETUP PAGE — Gender/Age Selection -->
+<div class="page" id="page-serena-setup" style="background:linear-gradient(160deg,#080d1a,#0d1428)">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center">
+
+    <!-- Serena character -->
+    <div id="serenaSetupChar" style="margin-bottom:20px;position:relative"></div>
+
+    <!-- Speech bubble -->
+    <div style="background:rgba(99,102,241,0.12);border:0.5px solid rgba(99,102,241,0.3);border-radius:16px;padding:16px 20px;max-width:320px;margin-bottom:28px">
+      <p style="font-size:15px;color:#f0f4ff;line-height:1.6;margin:0" id="serenaSetupText">
+        Hi! I'm Serena, your personal wellness companion. Before we begin, let me get to know you a little better.
+      </p>
+    </div>
+
+    <!-- Step 1: Gender -->
+    <div id="setupStep1" style="width:100%;max-width:340px">
+      <p style="font-size:13px;color:#8b9dc3;margin-bottom:14px">How would you like me to appear?</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+        <button onclick="selectGender('female',this)" class="setup-btn">
+          <div style="font-size:28px;margin-bottom:6px">👩</div>
+          <div style="font-size:13px;font-weight:500">Female</div>
+        </button>
+        <button onclick="selectGender('male',this)" class="setup-btn">
+          <div style="font-size:28px;margin-bottom:6px">👨</div>
+          <div style="font-size:13px;font-weight:500">Male</div>
+        </button>
+        <button onclick="selectGender('neutral',this)" class="setup-btn">
+          <div style="font-size:28px;margin-bottom:6px">🧑</div>
+          <div style="font-size:13px;font-weight:500">Neutral</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Age -->
+    <div id="setupStep2" style="width:100%;max-width:340px;display:none">
+      <p style="font-size:13px;color:#8b9dc3;margin-bottom:14px">What's your age group?</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+        <button onclick="selectAge('young',this)" class="setup-btn">
+          <div style="font-size:28px;margin-bottom:6px">🧒</div>
+          <div style="font-size:13px;font-weight:500">13-19</div>
+          <div style="font-size:11px;color:#8b9dc3">Teen</div>
+        </button>
+        <button onclick="selectAge('adult',this)" class="setup-btn">
+          <div style="font-size:28px;margin-bottom:6px">🧑</div>
+          <div style="font-size:13px;font-weight:500">20-44</div>
+          <div style="font-size:11px;color:#8b9dc3">Adult</div>
+        </button>
+        <button onclick="selectAge('mature',this)" class="setup-btn">
+          <div style="font-size:28px;margin-bottom:6px">🧓</div>
+          <div style="font-size:13px;font-weight:500">45+</div>
+          <div style="font-size:11px;color:#8b9dc3">Mature</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Confirm -->
+    <div id="setupStep3" style="width:100%;max-width:340px;display:none;text-align:center">
+      <div id="serenaFinalChar" style="margin-bottom:16px"></div>
+      <p style="font-size:15px;color:#f0f4ff;margin-bottom:6px">Meet your companion!</p>
+      <p style="font-size:13px;color:#8b9dc3;margin-bottom:20px" id="serenaIntroText">I'm here for you, every step of the way.</p>
+      <button onclick="completeSetup()" style="width:100%;padding:14px;background:#6366f1;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
+        Let's get started! 🌿
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.setup-btn {
+  background: rgba(255,255,255,0.05);
+  border: 0.5px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 16px 8px;
+  color: #f0f4ff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  text-align: center;
+}
+.setup-btn:hover { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); }
+.setup-btn.selected { background: rgba(99,102,241,0.25); border-color: #6366f1; }
+
+/* Serena corner widget */
+#serenaCorner {
+  position: fixed;
+  top: 60px;
+  right: 12px;
+  z-index: 50;
+  cursor: pointer;
+  display: none;
+}
+#serenaCorner:hover { transform: scale(1.05); }
+
+/* Serena home screen */
+#serenaHome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+}
+</style>
+
+<script>
+var serenaGender = "female";
+var serenaAge    = "adult";
+
+function selectGender(gender, btn) {
+  serenaGender = gender;
+  document.querySelectorAll("#setupStep1 .setup-btn").forEach(function(b){ b.classList.remove("selected"); });
+  btn.classList.add("selected");
+
+  // Update character preview
+  Serena.setGender(gender);
+  Serena.setEmotion("happy");
+  Serena.speak("Great choice!");
+
+  // Move to age selection after short delay
+  setTimeout(function() {
+    document.getElementById("setupStep1").style.display = "none";
+    document.getElementById("setupStep2").style.display = "block";
+    document.getElementById("serenaSetupText").textContent = "And what age group are you in?";
+    Serena.setEmotion("listening");
+  }, 800);
+}
+
+function selectAge(age, btn) {
+  serenaAge = age;
+  document.querySelectorAll("#setupStep2 .setup-btn").forEach(function(b){ b.classList.remove("selected"); });
+  btn.classList.add("selected");
+
+  // Update character
+  Serena.setAge(age);
+  Serena.setEmotion("excited");
+
+  // Build final character preview
+  setTimeout(function() {
+    document.getElementById("setupStep2").style.display = "none";
+    document.getElementById("setupStep3").style.display = "block";
+
+    // Build final preview
+    Serena.init("serenaFinalChar", { gender: serenaGender, age: serenaAge, size: 160, emotion: "waving" });
+    Serena.playWave();
+
+    var introTexts = {
+      female: { young: "I'm here whenever you need someone to talk to!", adult: "Your wellbeing is my priority. I'm always here.", mature: "I'm honored to be your companion on this journey." },
+      male:   { young: "Hey! I've got your back, always.", adult: "I'm here to support you through everything.", mature: "Wisdom and care — that's what I'm here for." },
+      neutral:{ young: "We're in this together!", adult: "I'm here to listen, support, and guide you.", mature: "Your mental wellness matters deeply to me." }
+    };
+    var txt = introTexts[serenaGender] && introTexts[serenaGender][serenaAge]
+      ? introTexts[serenaGender][serenaAge]
+      : "I'm here for you, every step of the way.";
+    document.getElementById("serenaIntroText").textContent = txt;
+    document.getElementById("serenaSetupText").textContent = "Here I am! Ready to support you.";
+  }, 800);
+}
+
+async function completeSetup() {
+  // Save preferences to user profile
+  var token = api.getToken();
+  if (token) {
+    await fetch("/api/auth/update-serena", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body:    JSON.stringify({ serenaGender: serenaGender, serenaAge: serenaAge, serenaSetup: true }),
+    });
+    state.user.serenaSetup  = true;
+    state.user.serenaGender = serenaGender;
+    state.user.serenaAge    = serenaAge;
+  }
+  showApp();
+}
+
+// Initialize Serena on setup screen
+window.addEventListener("DOMContentLoaded", function() {
+  setTimeout(function() {
+    if (document.getElementById("serenaSetupChar")) {
+      Serena.init("serenaSetupChar", { gender: "female", age: "adult", size: 160, emotion: "waving" });
+      Serena.playWave();
+    }
+  }, 500);
+});
+
+// Initialize Serena corner widget in chat
+function initSerenaCorner() {
+  var corner = document.getElementById("serenaCorner");
+  if (!corner) {
+    corner = document.createElement("div");
+    corner.id = "serenaCorner";
+    corner.onclick = function() { Serena.speak("I'm here! How are you feeling?"); };
+    document.body.appendChild(corner);
+  }
+  corner.style.display = "block";
+  Serena.init("serenaCorner", {
+    gender:  state.user.serenaGender || "female",
+    age:     state.user.serenaAge    || "adult",
+    size:    70,
+    emotion: "idle"
+  });
+  Serena.minimize();
+}
+
+// React to chat messages
+function serenaReactToMessage(text) {
+  var emotion = Serena.detectEmotionFromText(text);
+  Serena.setEmotion(emotion);
+
+  // Speak encouraging words based on emotion
+  var responses = {
+    crisis:    "I'm right here with you. You're not alone.",
+    sad:       "I hear you. It's okay to feel this way.",
+    happy:     "That's wonderful! I'm so glad to hear that.",
+    concerned: "I understand. Let's work through this together.",
+    excited:   "That's amazing! You should be proud!",
+    listening: "I'm listening. Tell me more.",
+  };
+  if (responses[emotion]) {
+    setTimeout(function() { Serena.speak(responses[emotion], 2500); }, 500);
+  }
+}
+</script>

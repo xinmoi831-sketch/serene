@@ -31,7 +31,7 @@ const TRANSLATIONS = {
     aiName: "Serene · AI",
     you: "You",
     crisisTitle: "Need immediate support?",
-    crisisText: "Call or text 988 — Suicide & Crisis Lifeline, available 24/7",
+    crisisText: "Use the support button, open Hotlines, or call local emergency services now.",
     // Journal
     journalTitle: "Journal",
     newEntry: "New entry",

@@ -50,6 +50,22 @@ router.post("/onboarding", authenticate, async (req, res) => {
   }
 });
 
+// ── PATCH /api/user/preferences ──────────────────────────────────────────────
+// Save lightweight user preferences (voice toggle, etc.)
+router.patch("/preferences", authenticate, async (req, res) => {
+  try {
+    const { voiceEnabled } = req.body;
+    if (typeof voiceEnabled !== "boolean") {
+      return res.status(400).json({ error: "voiceEnabled must be boolean." });
+    }
+    await update(collections.users, { id: req.user.id }, { voiceEnabled });
+    res.json({ success: true, voiceEnabled });
+  } catch (err) {
+    console.error("[User] Preferences save failed:", err.message);
+    res.status(500).json({ error: "Could not save preference." });
+  }
+});
+
 // ── GET /api/user/profile ──────────────────────────────────────────────────
 // Returns public profile fields including onboarding data.
 router.get("/profile", authenticate, async (req, res) => {

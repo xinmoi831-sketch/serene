@@ -1,0 +1,2 @@
+{"$$indexCreated":{"fieldName":"userId","unique":true,"sparse":false}}
+{"$$indexCreated":{"fieldName":"userId","unique":true}}

@@ -1,0 +1,551 @@
+<!-- 
+REPLACE the entire tApplyModal in index.html with this block.
+Find: <div class="t-modal" id="tApplyModal">
+Replace everything up to its closing </div> before the BREATHING WIDGET comment
+-->
+
+<style>
+/* Fix native select dropdown background */
+.t-select {
+  width:100%;
+  padding:10px 12px;
+  background:#0d1428;
+  border:0.5px solid rgba(255,255,255,0.12);
+  border-radius:10px;
+  color:#f0f4ff;
+  font-size:14px;
+  font-family:inherit;
+  cursor:pointer;
+  appearance:none;
+  -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b9dc3' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 12px center;
+}
+.t-select:focus{outline:none;border-color:#6366f1}
+.t-select option{background:#0d1428;color:#f0f4ff;padding:8px}
+
+/* Custom checkbox dropdown */
+.check-dropdown{position:relative}
+.check-trigger{
+  width:100%;
+  padding:10px 12px;
+  background:#0d1428;
+  border:0.5px solid rgba(255,255,255,0.12);
+  border-radius:10px;
+  color:#f0f4ff;
+  font-size:14px;
+  cursor:pointer;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  user-select:none;
+}
+.check-trigger:hover{border-color:rgba(99,102,241,0.4)}
+.check-trigger .placeholder{color:#8b9dc3}
+.check-menu{
+  display:none;
+  position:absolute;
+  top:calc(100% + 4px);
+  left:0;right:0;
+  background:#0d1428;
+  border:0.5px solid rgba(99,102,241,0.3);
+  border-radius:10px;
+  z-index:200;
+  max-height:220px;
+  overflow-y:auto;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6);
+}
+.check-menu.open{display:block}
+.check-option{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px;
+  font-size:13px;
+  color:#f0f4ff;
+  cursor:pointer;
+  transition:background 0.15s;
+}
+.check-option:hover{background:rgba(99,102,241,0.15)}
+.check-option input[type="checkbox"]{
+  width:15px;height:15px;
+  accent-color:#6366f1;
+  cursor:pointer;
+  flex-shrink:0;
+}
+.field-error{font-size:11px;color:#f43f5e;margin-top:4px;display:none}
+.field-error.show{display:block}
+</style>
+
+<!-- THERAPIST: APPLY MODAL -->
+<div class="t-modal" id="tApplyModal">
+  <div class="t-card">
+    <div class="t-header">
+      <div style="font-size:18px;font-weight:600;color:#f0f4ff">Apply as a Therapist</div>
+      <button class="t-close" onclick="document.getElementById('tApplyModal').style.display='none'">✕</button>
+    </div>
+
+    <div style="background:rgba(99,102,241,0.1);border:0.5px solid rgba(99,102,241,0.25);border-radius:10px;padding:12px;margin-bottom:16px;font-size:13px;color:#a5b4fc;line-height:1.6">
+      🇿🇲 Zambian applicants only · 3+ years experience · Valid HPCZ registration · Session price fixed at <strong>K120</strong>
+    </div>
+
+    <div class="t-alert" id="tApplyAlert"></div>
+
+    <!-- PERSONAL INFORMATION -->
+    <div class="t-section">Personal Information</div>
+
+    <div class="t-field">
+      <label>Full Name <span style="color:#f43f5e">*</span></label>
+      <input id="aFullName" type="text" placeholder="Your full legal name as on NRC"/>
+      <div class="field-error" id="err-aFullName"></div>
+    </div>
+
+    <div class="t-field">
+      <label>Email Address <span style="color:#f43f5e">*</span></label>
+      <input id="aEmail" type="email" placeholder="your@email.com"/>
+      <div class="field-error" id="err-aEmail"></div>
+    </div>
+
+    <div class="t-field">
+      <label>Phone Number <span style="color:#f43f5e">*</span></label>
+      <div style="display:flex;gap:8px">
+        <select id="aPhoneCode" class="t-select" style="width:120px;flex-shrink:0">
+          <option value="+260">🇿🇲 +260</option>
+          <option value="+27">🇿🇦 +27</option>
+          <option value="+263">🇿🇼 +263</option>
+          <option value="+255">🇹🇿 +255</option>
+          <option value="+254">🇰🇪 +254</option>
+          <option value="+256">🇺🇬 +256</option>
+          <option value="+265">🇲🇼 +265</option>
+        </select>
+        <input id="aPhone" type="tel" placeholder="97 123 4567" style="flex:1"/>
+      </div>
+      <div class="field-error" id="err-aPhone"></div>
+    </div>
+
+    <div class="t-row2">
+      <div class="t-field">
+        <label>Country</label>
+        <div style="padding:10px 12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#8b9dc3;font-size:14px">🇿🇲 Zambia (only)</div>
+      </div>
+      <div class="t-field">
+        <label>Province <span style="color:#f43f5e">*</span></label>
+        <select id="aCity" class="t-select">
+          <option value="">Select province</option>
+          <option value="Lusaka">Lusaka Province</option>
+          <option value="Copperbelt">Copperbelt Province</option>
+          <option value="Eastern">Eastern Province</option>
+          <option value="Northern">Northern Province</option>
+          <option value="Northwestern">Northwestern Province</option>
+          <option value="Southern">Southern Province</option>
+          <option value="Muchinga">Muchinga Province</option>
+          <option value="Western">Western Province</option>
+          <option value="Luapula">Luapula Province</option>
+          <option value="Central">Central Province</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- PROFESSIONAL INFORMATION -->
+    <div class="t-section">Professional Information</div>
+
+    <div class="t-field">
+      <label>Professional Category <span style="color:#f43f5e">*</span></label>
+      <select id="aProfession" class="t-select">
+        <option value="">Select your profession</option>
+        <optgroup label="── Psychology">
+          <option value="Clinical Psychologist">Clinical Psychologist</option>
+          <option value="Counselling Psychologist">Counselling Psychologist</option>
+          <option value="Educational Psychologist">Educational Psychologist</option>
+          <option value="Health Psychologist">Health Psychologist</option>
+          <option value="Forensic Psychologist">Forensic Psychologist</option>
+        </optgroup>
+        <optgroup label="── Counselling">
+          <option value="Registered Counsellor">Registered Counsellor</option>
+          <option value="Marriage and Family Counsellor">Marriage and Family Counsellor</option>
+          <option value="Grief Counsellor">Grief Counsellor</option>
+          <option value="Substance Abuse Counsellor">Substance Abuse Counsellor</option>
+          <option value="Trauma Counsellor">Trauma Counsellor</option>
+          <option value="Career Counsellor">Career Counsellor</option>
+          <option value="Child and Adolescent Counsellor">Child and Adolescent Counsellor</option>
+        </optgroup>
+        <optgroup label="── Social Work">
+          <option value="Clinical Social Worker">Clinical Social Worker</option>
+          <option value="Medical Social Worker">Medical Social Worker</option>
+          <option value="Community Social Worker">Community Social Worker</option>
+        </optgroup>
+        <optgroup label="── Medicine & Nursing">
+          <option value="Psychiatrist">Psychiatrist</option>
+          <option value="Clinical Officer (Mental Health)">Clinical Officer (Mental Health)</option>
+          <option value="Psychiatric Nurse">Psychiatric Nurse</option>
+          <option value="Mental Health Nurse">Mental Health Nurse</option>
+        </optgroup>
+        <optgroup label="── Therapy">
+          <option value="Cognitive Behavioural Therapist">CBT Therapist</option>
+          <option value="Occupational Therapist">Occupational Therapist</option>
+          <option value="Art Therapist">Art Therapist</option>
+          <option value="Play Therapist">Play Therapist</option>
+          <option value="Couples Therapist">Couples Therapist</option>
+          <option value="Family Therapist">Family Therapist</option>
+        </optgroup>
+      </select>
+      <div class="field-error" id="err-aProfession"></div>
+    </div>
+
+    <!-- Specializations custom dropdown -->
+    <div class="t-field">
+      <label>Specializations <span style="color:#f43f5e">*</span></label>
+      <div class="check-dropdown" id="specDropdown">
+        <div class="check-trigger" onclick="toggleCheckMenu('specMenu')">
+          <span id="specLabel" class="placeholder">Select specializations...</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b9dc3" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="check-menu" id="specMenu">
+          <label class="check-option"><input type="checkbox" value="Anxiety"/> Anxiety & Panic Disorders</label>
+          <label class="check-option"><input type="checkbox" value="Depression"/> Depression</label>
+          <label class="check-option"><input type="checkbox" value="Trauma & PTSD"/> Trauma & PTSD</label>
+          <label class="check-option"><input type="checkbox" value="Grief & Loss"/> Grief & Loss</label>
+          <label class="check-option"><input type="checkbox" value="Relationship Issues"/> Relationship Issues</label>
+          <label class="check-option"><input type="checkbox" value="Marriage Counselling"/> Marriage Counselling</label>
+          <label class="check-option"><input type="checkbox" value="Couples Therapy"/> Couples Therapy</label>
+          <label class="check-option"><input type="checkbox" value="Postpartum Support"/> Postpartum Support</label>
+          <label class="check-option"><input type="checkbox" value="Child & Adolescent"/> Child & Adolescent</label>
+          <label class="check-option"><input type="checkbox" value="Substance Abuse"/> Substance Abuse</label>
+          <label class="check-option"><input type="checkbox" value="Stress Management"/> Stress Management</label>
+          <label class="check-option"><input type="checkbox" value="Anger Management"/> Anger Management</label>
+          <label class="check-option"><input type="checkbox" value="Self-esteem"/> Self-esteem</label>
+          <label class="check-option"><input type="checkbox" value="Career Stress"/> Career & Work Stress</label>
+          <label class="check-option"><input type="checkbox" value="Family Therapy"/> Family Therapy</label>
+          <label class="check-option"><input type="checkbox" value="Bipolar Disorder"/> Bipolar Disorder</label>
+          <label class="check-option"><input type="checkbox" value="Eating Disorders"/> Eating Disorders</label>
+          <label class="check-option"><input type="checkbox" value="Sleep Disorders"/> Sleep Disorders</label>
+        </div>
+      </div>
+      <div class="field-error" id="err-aSpec"></div>
+    </div>
+
+    <div class="t-row2">
+      <div class="t-field">
+        <label>Years of Experience <span style="color:#f43f5e">*</span></label>
+        <select id="aYears" class="t-select">
+          <option value="">Select</option>
+          <option value="3">3 years</option>
+          <option value="4">4 years</option>
+          <option value="5">5 years</option>
+          <option value="6">6 years</option>
+          <option value="7">7 years</option>
+          <option value="8">8 years</option>
+          <option value="9">9 years</option>
+          <option value="10">10 years</option>
+          <option value="12">12 years</option>
+          <option value="15">15 years</option>
+          <option value="20">20+ years</option>
+        </select>
+        <div class="field-error" id="err-aYears"></div>
+      </div>
+      <div class="t-field">
+        <label>Session Price</label>
+        <div style="padding:10px 12px;background:rgba(99,102,241,0.1);border:0.5px solid rgba(99,102,241,0.25);border-radius:10px;color:#a5b4fc;font-size:14px">K120 (fixed by Serene)</div>
+      </div>
+    </div>
+
+    <!-- Languages custom dropdown -->
+    <div class="t-field">
+      <label>Languages Spoken <span style="color:#f43f5e">*</span></label>
+      <div class="check-dropdown" id="langDropdown">
+        <div class="check-trigger" onclick="toggleCheckMenu('langMenu')">
+          <span id="langLabel">English</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b9dc3" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="check-menu" id="langMenu">
+          <label class="check-option"><input type="checkbox" value="English" checked onchange="updateLabel('langMenu','langLabel','language')"/> English</label>
+          <label class="check-option"><input type="checkbox" value="Bemba" onchange="updateLabel('langMenu','langLabel','language')"/> Bemba</label>
+          <label class="check-option"><input type="checkbox" value="Nyanja" onchange="updateLabel('langMenu','langLabel','language')"/> Nyanja</label>
+          <label class="check-option"><input type="checkbox" value="Tonga" onchange="updateLabel('langMenu','langLabel','language')"/> Tonga</label>
+          <label class="check-option"><input type="checkbox" value="Lozi" onchange="updateLabel('langMenu','langLabel','language')"/> Lozi</label>
+          <label class="check-option"><input type="checkbox" value="Kaonde" onchange="updateLabel('langMenu','langLabel','language')"/> Kaonde</label>
+          <label class="check-option"><input type="checkbox" value="Luvale" onchange="updateLabel('langMenu','langLabel','language')"/> Luvale</label>
+          <label class="check-option"><input type="checkbox" value="Lunda" onchange="updateLabel('langMenu','langLabel','language')"/> Lunda</label>
+          <label class="check-option"><input type="checkbox" value="Namwanga" onchange="updateLabel('langMenu','langLabel','language')"/> Namwanga</label>
+          <label class="check-option"><input type="checkbox" value="Mambwe" onchange="updateLabel('langMenu','langLabel','language')"/> Mambwe</label>
+          <label class="check-option"><input type="checkbox" value="Ushi" onchange="updateLabel('langMenu','langLabel','language')"/> Ushi</label>
+          <label class="check-option"><input type="checkbox" value="Swahili" onchange="updateLabel('langMenu','langLabel','language')"/> Swahili</label>
+        </div>
+      </div>
+      <div class="field-error" id="err-aLang"></div>
+    </div>
+
+    <div class="t-field">
+      <label>Professional Bio</label>
+      <textarea id="aBio" rows="3" placeholder="Describe your experience, approach and what clients can expect..."></textarea>
+    </div>
+
+    <!-- CREDENTIALS -->
+    <div class="t-section">Credentials & Registration</div>
+
+    <div class="t-field">
+      <label>HPCZ Registration Number <span style="color:#f43f5e">*</span></label>
+      <input id="aLicense" type="text" placeholder="e.g. HPCZ/PSY/2020/001"/>
+      <div class="field-error" id="err-aLicense"></div>
+      <div style="font-size:11px;color:#8b9dc3;margin-top:4px">Health Professions Council of Zambia format</div>
+    </div>
+
+    <div class="t-field">
+      <label>Highest Qualification <span style="color:#f43f5e">*</span></label>
+      <select id="aDegrees" class="t-select">
+        <option value="">Select qualification</option>
+        <option value="Certificate in Counselling">Certificate in Counselling</option>
+        <option value="Diploma in Counselling">Diploma in Counselling</option>
+        <option value="Diploma in Mental Health">Diploma in Mental Health</option>
+        <option value="BSc Psychology">BSc Psychology</option>
+        <option value="BA Psychology">BA Psychology</option>
+        <option value="BSc Social Work">BSc Social Work</option>
+        <option value="BSc Nursing (Mental Health)">BSc Nursing (Mental Health)</option>
+        <option value="MBBS / MBChB">MBBS / MBChB (Medicine)</option>
+        <option value="MSc Clinical Psychology">MSc Clinical Psychology</option>
+        <option value="MSc Counselling Psychology">MSc Counselling Psychology</option>
+        <option value="MSc Social Work">MSc Social Work</option>
+        <option value="MA Counselling">MA Counselling</option>
+        <option value="PhD Psychology">PhD Psychology</option>
+        <option value="DPsych">DPsych (Doctorate in Psychology)</option>
+      </select>
+    </div>
+
+    <!-- Certifications custom dropdown -->
+    <div class="t-field">
+      <label>Additional Certifications</label>
+      <div class="check-dropdown" id="certDropdown">
+        <div class="check-trigger" onclick="toggleCheckMenu('certMenu')">
+          <span id="certLabel" class="placeholder">Select certifications...</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b9dc3" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="check-menu" id="certMenu">
+          <label class="check-option"><input type="checkbox" value="CBT" onchange="updateLabel('certMenu','certLabel','cert')"/> CBT (Cognitive Behavioural Therapy)</label>
+          <label class="check-option"><input type="checkbox" value="DBT" onchange="updateLabel('certMenu','certLabel','cert')"/> DBT (Dialectical Behaviour Therapy)</label>
+          <label class="check-option"><input type="checkbox" value="EMDR" onchange="updateLabel('certMenu','certLabel','cert')"/> EMDR</label>
+          <label class="check-option"><input type="checkbox" value="Trauma-Informed Care" onchange="updateLabel('certMenu','certLabel','cert')"/> Trauma-Informed Care</label>
+          <label class="check-option"><input type="checkbox" value="Motivational Interviewing" onchange="updateLabel('certMenu','certLabel','cert')"/> Motivational Interviewing</label>
+          <label class="check-option"><input type="checkbox" value="Solution-Focused Therapy" onchange="updateLabel('certMenu','certLabel','cert')"/> Solution-Focused Therapy</label>
+          <label class="check-option"><input type="checkbox" value="Person-Centred Therapy" onchange="updateLabel('certMenu','certLabel','cert')"/> Person-Centred Therapy</label>
+          <label class="check-option"><input type="checkbox" value="Mindfulness-Based Therapy" onchange="updateLabel('certMenu','certLabel','cert')"/> Mindfulness-Based Therapy</label>
+          <label class="check-option"><input type="checkbox" value="Narrative Therapy" onchange="updateLabel('certMenu','certLabel','cert')"/> Narrative Therapy</label>
+          <label class="check-option"><input type="checkbox" value="Gottman Method" onchange="updateLabel('certMenu','certLabel','cert')"/> Gottman Method (Couples)</label>
+          <label class="check-option"><input type="checkbox" value="Play Therapy" onchange="updateLabel('certMenu','certLabel','cert')"/> Child & Play Therapy</label>
+          <label class="check-option"><input type="checkbox" value="Grief Counselling" onchange="updateLabel('certMenu','certLabel','cert')"/> Grief Counselling</label>
+          <label class="check-option"><input type="checkbox" value="Addiction Counselling" onchange="updateLabel('certMenu','certLabel','cert')"/> Addiction Counselling</label>
+          <label class="check-option"><input type="checkbox" value="MHFA" onchange="updateLabel('certMenu','certLabel','cert')"/> Mental Health First Aid</label>
+          <label class="check-option"><input type="checkbox" value="Postpartum Support" onchange="updateLabel('certMenu','certLabel','cert')"/> Postpartum Support</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="t-field">
+      <label>NRC Number <span style="color:#f43f5e">*</span></label>
+      <input id="aNRC" type="text" placeholder="e.g. 123456/78/1"/>
+      <div class="field-error" id="err-aNRC"></div>
+      <div style="font-size:11px;color:#8b9dc3;margin-top:4px">Zambian NRC format: 123456/78/1</div>
+    </div>
+
+    <!-- DOCUMENTS -->
+    <div class="t-section">Documents Upload</div>
+    <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#8b9dc3">PDF, JPG or PNG · Max 10MB per file</div>
+    <div class="t-field"><label>CV / Resume <span style="color:#f43f5e">*</span></label><input id="aCV" type="file" accept=".pdf,.jpg,.jpeg,.png" style="color:#8b9dc3"/></div>
+    <div class="t-field"><label>HPCZ License / Certificate <span style="color:#f43f5e">*</span></label><input id="aLicenseFile" type="file" accept=".pdf,.jpg,.jpeg,.png" style="color:#8b9dc3"/></div>
+    <div class="t-field"><label>NRC / National ID <span style="color:#f43f5e">*</span></label><input id="aNRCFile" type="file" accept=".pdf,.jpg,.jpeg,.png" style="color:#8b9dc3"/></div>
+
+    <!-- REFERENCES -->
+    <div class="t-section">Traceable References (2 required)</div>
+    <div class="t-row2">
+      <div class="t-field"><label>Reference 1 Name <span style="color:#f43f5e">*</span></label><input id="aRef1Name" type="text" placeholder="Full name"/></div>
+      <div class="t-field"><label>Reference 1 Phone <span style="color:#f43f5e">*</span></label><input id="aRef1Phone" type="tel" placeholder="Phone number"/></div>
+    </div>
+    <div class="t-row2">
+      <div class="t-field"><label>Reference 2 Name <span style="color:#f43f5e">*</span></label><input id="aRef2Name" type="text" placeholder="Full name"/></div>
+      <div class="t-field"><label>Reference 2 Phone <span style="color:#f43f5e">*</span></label><input id="aRef2Phone" type="tel" placeholder="Phone number"/></div>
+    </div>
+
+    <button class="t-submit" id="tApplyBtn" onclick="tSubmitApply()">Submit Application</button>
+    <p style="font-size:11px;color:#4a5568;text-align:center;margin-top:10px">
+      Session price fixed at K120 · Serene takes 20% (K24) · You receive 80% (K96)<br>
+      Applications reviewed within 2-3 business days.
+    </p>
+  </div>
+</div>
+
+<script>
+// ── CUSTOM CHECKBOX DROPDOWN ──────────────────────────────────────
+function toggleCheckMenu(menuId) {
+  var menu = document.getElementById(menuId);
+  var isOpen = menu.classList.contains('open');
+  // Close all menus
+  document.querySelectorAll('.check-menu').forEach(function(m){ m.classList.remove('open'); });
+  if (!isOpen) menu.classList.add('open');
+}
+
+// Close when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.check-dropdown')) {
+    document.querySelectorAll('.check-menu').forEach(function(m){ m.classList.remove('open'); });
+  }
+});
+
+function updateLabel(menuId, labelId, type) {
+  var checked = document.querySelectorAll('#' + menuId + ' input:checked');
+  var label   = document.getElementById(labelId);
+  if (checked.length === 0) {
+    label.textContent = type === 'language' ? 'Select languages...' : type === 'cert' ? 'Select certifications...' : 'Select...';
+    label.classList.add('placeholder');
+  } else if (checked.length <= 2) {
+    label.textContent = Array.from(checked).map(function(c){ return c.value; }).join(', ');
+    label.classList.remove('placeholder');
+  } else {
+    label.textContent = checked.length + ' selected';
+    label.classList.remove('placeholder');
+  }
+}
+
+// Specializations use same pattern but with own handler
+document.querySelectorAll('#specMenu input').forEach(function(cb) {
+  cb.addEventListener('change', function() {
+    var checked = document.querySelectorAll('#specMenu input:checked');
+    var label   = document.getElementById('specLabel');
+    if (checked.length === 0) { label.textContent = 'Select specializations...'; label.classList.add('placeholder'); }
+    else if (checked.length <= 2) { label.textContent = Array.from(checked).map(function(c){ return c.value; }).join(', '); label.classList.remove('placeholder'); }
+    else { label.textContent = checked.length + ' selected'; label.classList.remove('placeholder'); }
+  });
+});
+
+// ── FORM RESET ────────────────────────────────────────────────────
+function tResetApplyForm() {
+  ['aFullName','aEmail','aPhone','aLicense','aNRC','aBio','aRef1Name','aRef1Phone','aRef2Name','aRef2Phone'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value = '';
+  });
+  ['aCity','aProfession','aYears','aDegrees'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.selectedIndex = 0;
+  });
+  // Reset all checkboxes
+  document.querySelectorAll('.check-menu input[type="checkbox"]').forEach(function(cb){ cb.checked = false; });
+  // Re-check English
+  var engCb = document.querySelector('#langMenu input[value="English"]');
+  if (engCb) { engCb.checked = true; }
+  // Reset labels
+  document.getElementById('specLabel').textContent = 'Select specializations...';
+  document.getElementById('specLabel').classList.add('placeholder');
+  document.getElementById('langLabel').textContent  = 'English';
+  document.getElementById('langLabel').classList.remove('placeholder');
+  document.getElementById('certLabel').textContent  = 'Select certifications...';
+  document.getElementById('certLabel').classList.add('placeholder');
+  // Reset files
+  ['aCV','aLicenseFile','aNRCFile'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  // Reset phone code
+  document.getElementById('aPhoneCode').value = '+260';
+  // Reset alert
+  var alrt = document.getElementById('tApplyAlert');
+  alrt.style.display = 'none'; alrt.textContent = '';
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────────
+async function tSubmitApply() {
+  var alrt = document.getElementById('tApplyAlert');
+  var btn  = document.getElementById('tApplyBtn');
+  alrt.style.display = 'none';
+
+  var fullName   = document.getElementById('aFullName').value.trim();
+  var email      = document.getElementById('aEmail').value.trim();
+  var phoneCode  = document.getElementById('aPhoneCode').value;
+  var phone      = document.getElementById('aPhone').value.trim();
+  var city       = document.getElementById('aCity').value;
+  var profession = document.getElementById('aProfession').value;
+  var years      = document.getElementById('aYears').value;
+  var bio        = document.getElementById('aBio').value.trim();
+  var degrees    = document.getElementById('aDegrees').value;
+  var license    = document.getElementById('aLicense').value.trim();
+  var nrc        = document.getElementById('aNRC').value.trim();
+  var ref1Name   = document.getElementById('aRef1Name').value.trim();
+  var ref1Phone  = document.getElementById('aRef1Phone').value.trim();
+  var ref2Name   = document.getElementById('aRef2Name').value.trim();
+  var ref2Phone  = document.getElementById('aRef2Phone').value.trim();
+  var cvFile     = document.getElementById('aCV').files[0];
+  var licFile    = document.getElementById('aLicenseFile').files[0];
+  var nrcFile    = document.getElementById('aNRCFile').files[0];
+
+  var specs = Array.from(document.querySelectorAll('#specMenu input:checked')).map(function(c){ return c.value; });
+  var langs = Array.from(document.querySelectorAll('#langMenu input:checked')).map(function(c){ return c.value; });
+  var certs = Array.from(document.querySelectorAll('#certMenu input:checked')).map(function(c){ return c.value; });
+
+  var errors = [];
+  if (!fullName)  errors.push('Full name is required.');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Valid email is required.');
+  if (!phone)     errors.push('Phone number is required.');
+  if (!city)      errors.push('Please select your province.');
+  if (!profession) errors.push('Please select your profession.');
+  if (!years)     errors.push('Please select years of experience.');
+  if (specs.length === 0) errors.push('Please select at least one specialization.');
+  if (langs.length === 0) errors.push('Please select at least one language.');
+  if (!license)   errors.push('HPCZ registration number is required.');
+  if (!/^HPCZ\/[A-Z]+\/\d{4}\/\d+$/i.test(license)) errors.push('HPCZ format: HPCZ/PSY/2020/001');
+  if (!nrc)       errors.push('NRC number is required.');
+  if (!/^\d{6}\/\d{2}\/\d{1}$/.test(nrc)) errors.push('NRC format: 123456/78/1');
+  if (!ref1Name || !ref1Phone) errors.push('Reference 1 name and phone are required.');
+  if (!ref2Name || !ref2Phone) errors.push('Reference 2 name and phone are required.');
+  if (!cvFile)    errors.push('Please upload your CV.');
+  if (!licFile)   errors.push('Please upload your HPCZ license.');
+  if (!nrcFile)   errors.push('Please upload your NRC.');
+
+  if (errors.length > 0) {
+    alrt.innerHTML = errors.map(function(e){ return '• ' + e; }).join('<br>');
+    alrt.style.display = 'block'; alrt.style.color = '#f43f5e';
+    alrt.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    return;
+  }
+
+  btn.textContent = 'Submitting...'; btn.disabled = true;
+
+  try {
+    var formData = new FormData();
+    formData.append('fullName',        fullName);
+    formData.append('email',           email);
+    formData.append('phone',           phoneCode + ' ' + phone);
+    formData.append('country',         'Zambia');
+    formData.append('city',            city);
+    formData.append('profession',      profession);
+    formData.append('specializations', specs.join(','));
+    formData.append('yearsExperience', years);
+    formData.append('languages',       langs.join(','));
+    formData.append('sessionPrice',    '120');
+    formData.append('bio',             bio);
+    formData.append('degrees',         degrees);
+    formData.append('certifications',  certs.join(','));
+    formData.append('licenseNumber',   license);
+    formData.append('nrcNumber',       nrc);
+    formData.append('reference1Name',  ref1Name);
+    formData.append('reference1Phone', ref1Phone);
+    formData.append('reference2Name',  ref2Name);
+    formData.append('reference2Phone', ref2Phone);
+    if (cvFile)  formData.append('cv',      cvFile);
+    if (licFile) formData.append('license', licFile);
+    if (nrcFile) formData.append('nrc',     nrcFile);
+
+    var res  = await fetch('/api/therapist/apply', { method:'POST', body:formData });
+    var data = await res.json();
+    btn.textContent = 'Submit Application'; btn.disabled = false;
+
+    if (res.ok) {
+      alrt.textContent = '✅ ' + data.message;
+      alrt.style.display = 'block'; alrt.style.color = '#4ade80';
+      setTimeout(function() {
+        tResetApplyForm();
+        document.getElementById('tApplyModal').style.display = 'none';
+      }, 2000);
+    } else {
+      alrt.textContent = data.error || 'Could not submit.';
+      alrt.style.display = 'block'; alrt.style.color = '#f43f5e';
+    }
+  } catch(err) {
+    btn.textContent = 'Submit Application'; btn.disabled = false;
+    alrt.textContent = 'Network error. Please try again.';
+    alrt.style.display = 'block'; alrt.style.color = '#f43f5e';
+  }
+}
+</script>
